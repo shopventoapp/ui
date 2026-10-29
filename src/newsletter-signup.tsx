@@ -13,25 +13,25 @@ export const newsletterOptInLabel = "Newsletter per E-Mail abonnieren";
 
 /** Props for standalone and account newsletter signup with explicit consent and double opt-in. */
 export type NewsletterSignupProps = PublicFormOptions & {
-  /** Site Key for this public form or flow. */
+  /** Public Turnstile key for guest signup. */
   siteKey: string;
-  /** Source for this public form or flow. */
+  /** Consent provenance passed to the public API. */
   source?: "website-footer" | "reservation" | "website";
-  /** Initial Email for this public form or flow. */
+  /** Prefilled email address, still editable by the customer. */
   initialEmail?: string;
-  /** Initial First Name for this public form or flow. */
+  /** Optional editable first-name prefill. */
   initialFirstName?: string;
-  /** Variant for this public form or flow. */
+  /** Full marketing section or compact card layout. */
   variant?: "section" | "card";
-  /** On Subscribe for this public form or flow. */
+  /** Authenticated signup adapter; omitting it uses the guest transport. */
   onSubscribe?: () => Promise<void>;
-  /** Pending for this public form or flow. */
+  /** An outstanding confirmation email already exists. */
   pending?: boolean;
-  /** Automatic for this public form or flow. */
+  /** One-shot signup after previously recorded explicit consent. */
   automatic?: {
-    /** On Attempt for this public form or flow. */
-    onAttempt: () => boolean /** Already Subscribed for this public form or flow. */;
-    /** Already Subscribed for this public form or flow. */
+    /** Consume consent atomically and return whether signup may proceed. */
+    onAttempt: () => boolean;
+    /** Consume the intent without sending another request. */
     alreadySubscribed?: boolean;
   };
 };
@@ -213,9 +213,7 @@ export function NewsletterSignup({
         },
       );
       const data = (await res.json().catch(() => ({}))) as {
-        /** Ok for this public form or flow. */
         ok?: boolean;
-        /** Error for this public form or flow. */
         error?: string;
       };
       if (res.ok && (config.shopvento || data.ok)) {
@@ -240,12 +238,12 @@ export function NewsletterSignup({
   }
 
   const inputStyle: React.CSSProperties = {
-    fontFamily: "var(--sv-font)",
+    fontFamily: "var(--sv-font, Georgia, serif)",
     fontSize: 16,
     padding: "14px 16px",
-    border: "1px solid var(--sv-border-2)",
-    background: "var(--sv-background)",
-    color: "var(--sv-text)",
+    border: "1px solid var(--sv-border-2, #ccc)",
+    background: "var(--sv-background, #fff)",
+    color: "var(--sv-text, #1f1f1f)",
     width: "100%",
     borderRadius: 2,
   };
@@ -255,9 +253,8 @@ export function NewsletterSignup({
       id="newsletter"
       ref={sectionRootRef}
       style={{
-        background: "var(--sv-surface-2)",
-        padding:
-          variant === "card" ? "24px" : text("clamp(48px, 10vw, 100px) 24px"),
+        background: "var(--sv-surface-2, #f5f5f5)",
+        padding: variant === "card" ? "24px" : "clamp(48px, 10vw, 100px) 24px",
       }}
       className={`sv-newsletter ${variant === "card" ? "vv-shop-newsletter-card" : "sv-newsletter-section"}`}
     >
@@ -271,11 +268,11 @@ export function NewsletterSignup({
         {variant !== "card" && (
           <p
             style={{
-              fontFamily: "var(--sv-font-label)",
+              fontFamily: "var(--sv-font-label, ui-monospace, monospace)",
               fontSize: 12,
               letterSpacing: "0.3em",
               textTransform: "uppercase",
-              color: "var(--sv-accent)",
+              color: "var(--sv-accent, #0b5cad)",
               margin: 0,
               marginBottom: 18,
             }}
@@ -285,7 +282,7 @@ export function NewsletterSignup({
         )}
         <h2
           style={{
-            fontFamily: "var(--sv-font-display)",
+            fontFamily: "var(--sv-font-display, Georgia, serif)",
             lineHeight: variant === "card" ? 1.15 : 1.0,
             letterSpacing: "-0.02em",
             margin: 0,
@@ -302,7 +299,12 @@ export function NewsletterSignup({
           ) : (
             <>
               {text("Veranstaltungen und")}{" "}
-              <span style={{ fontStyle: "italic", color: "var(--sv-accent)" }}>
+              <span
+                style={{
+                  fontStyle: "italic",
+                  color: "var(--sv-accent, #0b5cad)",
+                }}
+              >
                 {text("Empfehlungen.")}
               </span>
             </>
@@ -310,10 +312,10 @@ export function NewsletterSignup({
         </h2>
         <p
           style={{
-            fontFamily: "var(--sv-font)",
+            fontFamily: "var(--sv-font, Georgia, serif)",
             fontStyle: "italic",
             fontSize: 19,
-            color: "var(--sv-text-2)",
+            color: "var(--sv-text-2, #444)",
             margin: 0,
             marginBottom: 36,
             maxWidth: 600,
@@ -328,8 +330,8 @@ export function NewsletterSignup({
           <div
             role="status"
             style={{
-              background: "var(--sv-background)",
-              border: "1px solid var(--sv-accent)",
+              background: "var(--sv-background, #fff)",
+              border: "1px solid var(--sv-accent, #0b5cad)",
               padding: 28,
               maxWidth: 540,
               margin: "0 auto",
@@ -337,11 +339,11 @@ export function NewsletterSignup({
           >
             <p
               style={{
-                fontFamily: "var(--sv-font-label)",
+                fontFamily: "var(--sv-font-label, ui-monospace, monospace)",
                 fontSize: 11,
                 letterSpacing: "0.22em",
                 textTransform: "uppercase",
-                color: "var(--sv-accent)",
+                color: "var(--sv-accent, #0b5cad)",
                 margin: 0,
                 marginBottom: 12,
               }}
@@ -350,10 +352,10 @@ export function NewsletterSignup({
             </p>
             <p
               style={{
-                fontFamily: "var(--sv-font)",
+                fontFamily: "var(--sv-font, Georgia, serif)",
                 fontSize: 16,
                 lineHeight: 1.6,
-                color: "var(--sv-text)",
+                color: "var(--sv-text, #1f1f1f)",
                 margin: 0,
               }}
             >
@@ -419,11 +421,11 @@ export function NewsletterSignup({
               <div
                 role="alert"
                 style={{
-                  background: "var(--sv-error-soft)",
-                  border: "1px solid var(--sv-accent)",
-                  color: "var(--sv-primary)",
+                  background: "var(--sv-error-soft, #fff0f0)",
+                  border: "1px solid var(--sv-accent, #0b5cad)",
+                  color: "var(--sv-primary, #0b5cad)",
                   padding: "12px 14px",
-                  fontFamily: "var(--sv-font)",
+                  fontFamily: "var(--sv-font, Georgia, serif)",
                   fontSize: 14,
                   lineHeight: 1.5,
                 }}
@@ -436,7 +438,7 @@ export function NewsletterSignup({
               type="submit"
               disabled={status === "submitting"}
               style={{
-                fontFamily: "var(--sv-font-label)",
+                fontFamily: "var(--sv-font-label, ui-monospace, monospace)",
                 fontWeight: 500,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
@@ -444,9 +446,9 @@ export function NewsletterSignup({
                 borderRadius: 2,
                 padding: "16px 28px",
                 fontSize: 13,
-                background: "var(--sv-primary)",
-                color: "var(--sv-background)",
-                border: "1px solid var(--sv-primary)",
+                background: "var(--sv-primary, #0b5cad)",
+                color: "var(--sv-background, #fff)",
+                border: "1px solid var(--sv-primary, #0b5cad)",
                 alignSelf: "center",
                 opacity: status === "submitting" ? 0.7 : 1,
               }}
@@ -458,9 +460,9 @@ export function NewsletterSignup({
 
             <p
               style={{
-                fontFamily: "var(--sv-font)",
+                fontFamily: "var(--sv-font, Georgia, serif)",
                 fontSize: 12,
-                color: "var(--sv-text-3)",
+                color: "var(--sv-text-3, #666)",
                 margin: 0,
                 marginTop: 4,
                 lineHeight: 1.5,
@@ -488,7 +490,7 @@ export function NewsletterSignup({
               <a
                 href={privacyUrl}
                 style={{
-                  color: "var(--sv-primary)",
+                  color: "var(--sv-primary, #0b5cad)",
                   textDecoration: "underline",
                   textUnderlineOffset: 3,
                 }}

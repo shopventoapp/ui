@@ -2,19 +2,12 @@ import type { AccountProfile } from "./account-client";
 import type { CheckoutAddress, CheckoutContact } from "./shop-model";
 /** Persisted checkout contact, address and fulfilment-date draft. */
 export type Draft = {
-  /** Fulfillment Date for this public form or flow. */
   fulfillmentDate?: string;
-  /** Date Key for this public form or flow. */
   dateKey?: string;
-  /** Contact for this public form or flow. */
   contact: CheckoutContact;
-  /** Address for this public form or flow. */
   address: CheckoutAddress;
-  /** Address Choice for this public form or flow. */
   addressChoice?: string;
-  /** Account Id for this public form or flow. */
   accountId?: number;
-  /** Updated for this public form or flow. */
   updated: number;
 };
 /** Create an empty checkout draft with a fresh timestamp. */

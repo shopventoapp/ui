@@ -13,9 +13,9 @@ export interface PublicFormOptions {
   publicApi?: () => Promise<PublicFormApiConfig>;
   /** Optional host script loader, e.g. a framework-managed script component. */
   ScriptComponent?: ComponentType<{
-    /** Src for this public form or flow. */
+    /** URL of the public challenge script. */
     src: string;
-    /** Strategy for this public form or flow. */
+    /** Hint for host script managers to defer loading until hydration. */
     strategy?: "afterInteractive";
   }>;
   /** Partial German message overrides keyed by default text. Placeholders use {0}, {1}, etc. */
@@ -23,18 +23,14 @@ export interface PublicFormOptions {
   /** Privacy policy route. */
   privacyUrl?: string;
 }
-/** Default Public Form Api for this public form or flow. */
 export const defaultPublicFormApi = async (): Promise<PublicFormApiConfig> => ({
   shopvento: true,
   locationId: null,
 });
-/** Public Form Script for this public form or flow. */
 export function PublicFormScript({
   src,
 }: {
-  /** Src for this public form or flow. */
   src: string;
-  /** Strategy for this public form or flow. */
   strategy?: "afterInteractive";
 }) {
   useEffect(() => {

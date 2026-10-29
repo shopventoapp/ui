@@ -18,9 +18,10 @@ All notable changes to this package are documented here. The format follows [Kee
 - Framework-neutral `ShopFlow` for catalogue, category and product views, persistent cart, guest/account checkout, postcode delivery-zone quotes, offered dates, legal acceptance, hosted Stripe Checkout and verified order returns.
 - Configurable legacy storage keys, route adapters, product mapping, feature policies, editorial slots and German message dictionaries.
 - Focused `@shopvento/ui/shop-flow` and `@shopvento/ui/forms` entrypoints with shared ESM chunks keep checkout out of marketing-page JavaScript.
+- Separate additive `shop-flow.css` export preserves the byte-identical 0.2 `shop.css`.
 - Separate `forms.css` export keeps standalone public forms independent of shop assets.
 - Generic `ReservationForm` and `NewsletterSignup` with runtime public API adapters, Turnstile, opening-hour validation, account prefill and separate double opt-in.
-- Public cart, draft, checkout validation, fulfilment, display and return-consent helpers; migrated consumer regressions and new form/validation tests.
+- Internal cart, draft, checkout validation, fulfilment, display and return-consent logic; migrated consumer regressions and new form/validation tests.
 - Complete cart/checkout, reservation and newsletter guides with typechecked examples and documented public APIs.
 
 ### Compatibility

@@ -24,29 +24,19 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 
 declare global {
   interface Window {
-    /** Turnstile for this public form or flow. */
     turnstile?: {
-      /** Render for this public form or flow. */
       render: (
         container: string | HTMLElement,
         options: {
-          /** Sitekey for this public form or flow. */
           sitekey: string;
-          /** Theme for this public form or flow. */
           theme?: "light" | "dark" | "auto";
-          /** Callback for this public form or flow. */
           callback?: (token: string) => void;
-          /** Error-callback for this public form or flow. */
           "error-callback"?: () => void;
-          /** Expired-callback for this public form or flow. */
           "expired-callback"?: () => void;
-          /** Appearance for this public form or flow. */
           appearance?: "always" | "execute" | "interaction-only";
         },
       ) => string;
-      /** Reset for this public form or flow. */
       reset: (widgetId?: string) => void;
-      /** Get Response for this public form or flow. */
       getResponse: (widgetId?: string) => string | undefined;
     };
   }
@@ -55,22 +45,22 @@ declare global {
 type Status = "idle" | "submitting" | "success" | "inquiry" | "error";
 
 const inputStyle: React.CSSProperties = {
-  fontFamily: "var(--sv-font)",
+  fontFamily: "var(--sv-font, Georgia, serif)",
   fontSize: 16,
   padding: "12px 14px",
-  border: "1px solid var(--sv-border-2)",
-  background: "var(--sv-background)",
-  color: "var(--sv-text)",
+  border: "1px solid var(--sv-border-2, #ccc)",
+  background: "var(--sv-background, #fff)",
+  color: "var(--sv-text, #1f1f1f)",
   width: "100%",
   borderRadius: 2,
 };
 
 const labelStyle: React.CSSProperties = {
-  fontFamily: "var(--sv-font-label)",
+  fontFamily: "var(--sv-font-label, ui-monospace, monospace)",
   fontSize: 11,
   letterSpacing: "0.18em",
   textTransform: "uppercase",
-  color: "var(--sv-text-2)",
+  color: "var(--sv-text-2, #444)",
   marginBottom: 6,
   display: "block",
 };
@@ -204,11 +194,11 @@ export function ReservationForm({
         )
       : null;
   const fieldMessageStyle: React.CSSProperties = {
-    fontFamily: "var(--sv-font)",
+    fontFamily: "var(--sv-font, Georgia, serif)",
     fontSize: 14,
     lineHeight: 1.5,
     margin: "6px 0 0",
-    color: "var(--sv-text-2)",
+    color: "var(--sv-text-2, #444)",
   };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Preserve transaction lifecycle; host adapters must keep stable identities.
@@ -235,13 +225,9 @@ export function ReservationForm({
             text("Online-Reservierungen sind gerade nicht verfügbar."),
           );
         const settings = (await response.json()) as {
-          /** Ready for this public form or flow. */
           ready: boolean;
-          /** Turnstile site key for this public form or flow. */
           turnstile_site_key: string;
-          /** Online party min for this public form or flow. */
           online_party_min: number;
-          /** Online party max for this public form or flow. */
           online_party_max: number;
         } & OpeningSettings;
         if (!settings.ready || !settings.turnstile_site_key)
@@ -379,15 +365,10 @@ export function ReservationForm({
         },
       );
       const data = (await res.json().catch(() => ({}))) as {
-        /** Status for this public form or flow. */
         status?: string;
-        /** Detail for this public form or flow. */
         detail?: string;
-        /** Ok for this public form or flow. */
         ok?: boolean;
-        /** Confirmed for this public form or flow. */
         confirmed?: boolean;
-        /** Error for this public form or flow. */
         error?: string;
       };
 
@@ -431,10 +412,10 @@ export function ReservationForm({
         className="sv-reservation"
         role="status"
         style={{
-          background: "var(--sv-background)",
+          background: "var(--sv-background, #fff)",
           padding: 36,
-          border: "1px solid var(--sv-border-2)",
-          fontFamily: "var(--sv-font)",
+          border: "1px solid var(--sv-border-2, #ccc)",
+          fontFamily: "var(--sv-font, Georgia, serif)",
           lineHeight: 1.6,
         }}
       >
@@ -456,9 +437,9 @@ export function ReservationForm({
         <div
           className="sv-reservation"
           style={{
-            background: "var(--sv-background)",
+            background: "var(--sv-background, #fff)",
             padding: 44,
-            border: "1px solid var(--sv-border-2)",
+            border: "1px solid var(--sv-border-2, #ccc)",
             display: "flex",
             flexDirection: "column",
             gap: 16,
@@ -466,11 +447,11 @@ export function ReservationForm({
         >
           <p
             style={{
-              fontFamily: "var(--sv-font-label)",
+              fontFamily: "var(--sv-font-label, ui-monospace, monospace)",
               fontSize: 11,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "var(--sv-accent)",
+              color: "var(--sv-accent, #0b5cad)",
               margin: 0,
             }}
           >
@@ -480,7 +461,7 @@ export function ReservationForm({
           </p>
           <h2
             style={{
-              fontFamily: "var(--sv-font-display)",
+              fontFamily: "var(--sv-font-display, Georgia, serif)",
               fontSize: 36,
               lineHeight: 1.05,
               margin: 0,
@@ -490,10 +471,10 @@ export function ReservationForm({
           </h2>
           <p
             style={{
-              fontFamily: "var(--sv-font)",
+              fontFamily: "var(--sv-font, Georgia, serif)",
               fontSize: 17,
               lineHeight: 1.6,
-              color: "var(--sv-text-2)",
+              color: "var(--sv-text-2, #444)",
               margin: 0,
             }}
           >
@@ -523,15 +504,15 @@ export function ReservationForm({
           )}
           <p
             style={{
-              fontFamily: "var(--sv-font)",
+              fontFamily: "var(--sv-font, Georgia, serif)",
               fontSize: 15,
               lineHeight: 1.6,
-              color: "var(--sv-text-3)",
+              color: "var(--sv-text-3, #666)",
               margin: 0,
             }}
           >
             {text("Wenn es dringend ist, ruf uns auch gerne direkt an:")}{" "}
-            <a href={phoneHref} style={{ color: "var(--sv-primary)" }}>
+            <a href={phoneHref} style={{ color: "var(--sv-primary, #0b5cad)" }}>
               {phoneLabel}
             </a>
             .
@@ -554,9 +535,9 @@ export function ReservationForm({
         ref={formRootRef}
         onSubmit={onSubmit}
         style={{
-          background: "var(--sv-background)",
+          background: "var(--sv-background, #fff)",
           padding: 36,
-          border: "1px solid var(--sv-border-2)",
+          border: "1px solid var(--sv-border-2, #ccc)",
           display: "flex",
           flexDirection: "column",
           gap: 14,
@@ -565,11 +546,11 @@ export function ReservationForm({
         <div>
           <p
             style={{
-              fontFamily: "var(--sv-font-label)",
+              fontFamily: "var(--sv-font-label, ui-monospace, monospace)",
               fontSize: 11,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              color: "var(--sv-accent)",
+              color: "var(--sv-accent, #0b5cad)",
               margin: 0,
               marginBottom: 8,
             }}
@@ -578,7 +559,7 @@ export function ReservationForm({
           </p>
           <h2
             style={{
-              fontFamily: "var(--sv-font-display)",
+              fontFamily: "var(--sv-font-display, Georgia, serif)",
               fontSize: 28,
               lineHeight: 1.1,
               margin: 0,
@@ -664,7 +645,9 @@ export function ReservationForm({
                 role={dateError ? "alert" : undefined}
                 style={{
                   ...fieldMessageStyle,
-                  color: dateError ? "var(--sv-primary)" : "var(--sv-text-2)",
+                  color: dateError
+                    ? "var(--sv-primary, #0b5cad)"
+                    : "var(--sv-text-2, #444)",
                 }}
               >
                 {dateMessage}
@@ -695,7 +678,10 @@ export function ReservationForm({
               <p
                 id="resv-time-message"
                 role="alert"
-                style={{ ...fieldMessageStyle, color: "var(--sv-primary)" }}
+                style={{
+                  ...fieldMessageStyle,
+                  color: "var(--sv-primary, #0b5cad)",
+                }}
               >
                 {timeError}
               </p>
@@ -704,7 +690,10 @@ export function ReservationForm({
           <div>
             <p style={{ margin: "0 0 20px" }}>
               {text("Für Gruppen ab 9 Personen sende uns bitte eine ")}
-              <a href={groupInquiryHref} style={{ color: "var(--sv-primary)" }}>
+              <a
+                href={groupInquiryHref}
+                style={{ color: "var(--sv-primary, #0b5cad)" }}
+              >
                 {text("Anfrage")}
               </a>
               {text(". Du erhältst ein individuelles Angebot.")}
@@ -748,7 +737,7 @@ export function ReservationForm({
               ...inputStyle,
               resize: "vertical",
               minHeight: 100,
-              fontFamily: "var(--sv-font)",
+              fontFamily: "var(--sv-font, Georgia, serif)",
             }}
           />
         </div>
@@ -759,10 +748,10 @@ export function ReservationForm({
             display: "flex",
             alignItems: "flex-start",
             gap: 10,
-            fontFamily: "var(--sv-font)",
+            fontFamily: "var(--sv-font, Georgia, serif)",
             fontSize: 14,
             lineHeight: 1.5,
-            color: "var(--sv-text-2)",
+            color: "var(--sv-text-2, #444)",
             cursor: "pointer",
             padding: "8px 0",
           }}
@@ -775,13 +764,13 @@ export function ReservationForm({
               marginTop: 3,
               width: 16,
               height: 16,
-              accentColor: "var(--sv-primary)",
+              accentColor: "var(--sv-primary, #0b5cad)",
               flexShrink: 0,
               cursor: "pointer",
             }}
           />
           <span>
-            <strong style={{ color: "var(--sv-text)" }}>
+            <strong style={{ color: "var(--sv-text, #1f1f1f)" }}>
               {text("Newsletter abonnieren")}
             </strong>
             {text(
@@ -796,11 +785,11 @@ export function ReservationForm({
           <div
             role="alert"
             style={{
-              background: "var(--sv-error-soft)",
-              border: "1px solid var(--sv-accent)",
-              color: "var(--sv-primary)",
+              background: "var(--sv-error-soft, #fff0f0)",
+              border: "1px solid var(--sv-accent, #0b5cad)",
+              color: "var(--sv-primary, #0b5cad)",
               padding: "12px 14px",
-              fontFamily: "var(--sv-font)",
+              fontFamily: "var(--sv-font, Georgia, serif)",
               fontSize: 14,
               lineHeight: 1.5,
             }}
@@ -813,7 +802,7 @@ export function ReservationForm({
           type="submit"
           disabled={status === "submitting"}
           style={{
-            fontFamily: "var(--sv-font-label)",
+            fontFamily: "var(--sv-font-label, ui-monospace, monospace)",
             fontWeight: 500,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
@@ -821,9 +810,9 @@ export function ReservationForm({
             borderRadius: 2,
             padding: "16px 28px",
             fontSize: 13,
-            background: "var(--sv-primary)",
-            color: "var(--sv-background)",
-            border: "1px solid var(--sv-primary)",
+            background: "var(--sv-primary, #0b5cad)",
+            color: "var(--sv-background, #fff)",
+            border: "1px solid var(--sv-primary, #0b5cad)",
             alignSelf: "flex-start",
             opacity: status === "submitting" ? 0.7 : 1,
           }}
@@ -834,7 +823,7 @@ export function ReservationForm({
         {termsEnabled && (
           <p style={{ margin: 0 }}>
             {text("Es gelten unsere ")}
-            <a href={termsUrl} style={{ color: "var(--sv-primary)" }}>
+            <a href={termsUrl} style={{ color: "var(--sv-primary, #0b5cad)" }}>
               {text("AGB")}
             </a>
             .
@@ -843,9 +832,9 @@ export function ReservationForm({
 
         <p
           style={{
-            fontFamily: "var(--sv-font)",
+            fontFamily: "var(--sv-font, Georgia, serif)",
             fontSize: 13,
-            color: "var(--sv-text-3)",
+            color: "var(--sv-text-3, #666)",
             margin: 0,
             lineHeight: 1.5,
           }}
@@ -853,7 +842,7 @@ export function ReservationForm({
           {text(
             "Deine Angaben nutzen wir nur für Deine Reservierung. Mehr dazu in der",
           )}{" "}
-          <a href={privacyUrl} style={{ color: "var(--sv-primary)" }}>
+          <a href={privacyUrl} style={{ color: "var(--sv-primary, #0b5cad)" }}>
             {text("Datenschutzerklärung")}
           </a>
           {text(". Dieses Formular ist durch")}{" "}

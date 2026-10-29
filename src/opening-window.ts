@@ -1,51 +1,35 @@
 /** Weekly public opening interval with Monday represented by zero. */
 export type OpeningHours = {
-  /** Weekday for this public form or flow. */
-  weekday: number /** Opens for this public form or flow. */;
-  /** Opens for this public form or flow. */
-  opens: string /** Closes for this public form or flow. */;
-  /** Closes for this public form or flow. */
+  weekday: number;
+  opens: string;
   closes: string;
 };
 /** Inclusive ISO date range overriding regular opening hours. */
 export type OpeningException = {
-  /** From for this public form or flow. */
   from: string;
-  /** Until for this public form or flow. */
   until: string;
-  /** Opens for this public form or flow. */
   opens?: string;
-  /** Closes for this public form or flow. */
   closes?: string;
-  /** Label for this public form or flow. */
   label?: string;
 };
 /** Public weekly opening hours and date exceptions. */
 export type OpeningSettings = {
-  /** Opening hours for this public form or flow. */
   opening_hours?: OpeningHours[] | null;
-  /** Opening exceptions for this public form or flow. */
   opening_exceptions?: OpeningException[];
 };
 /** Resolved open, closed or unrestricted reservation window. */
 export type OpeningWindow =
   | {
-      /** Kind for this public form or flow. */ kind: "unrestricted";
+      kind: "unrestricted";
     }
   | {
-      /** Kind for this public form or flow. */
-      kind: "closed" /** Label for this public form or flow. */;
-      /** Label for this public form or flow. */
+      kind: "closed";
       label?: string;
     }
   | {
-      /** Kind for this public form or flow. */
-      kind: "open" /** Opens for this public form or flow. */;
-      /** Opens for this public form or flow. */
-      opens: string /** Closes for this public form or flow. */;
-      /** Closes for this public form or flow. */
-      closes: string /** Label for this public form or flow. */;
-      /** Label for this public form or flow. */
+      kind: "open";
+      opens: string;
+      closes: string;
       label?: string;
     };
 

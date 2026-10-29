@@ -72,6 +72,8 @@ import {
 import { consumeNewsletterIntent } from "./shop-newsletter-intent";
 import { Turnstile } from "./turnstile";
 
+const STRIPE_CHECKOUT_HOST = "checkout.stripe.com";
+
 function FreeShippingProgress({
   threshold,
   remaining,
@@ -327,6 +329,11 @@ function ShopFlowPage({
     categoryKey,
     productModel,
     visibleSections,
+    sections,
+    isGiftBasket,
+    recommendedSection,
+    recommendationLinkLabel,
+    ageNotice,
     physicalSectionsEnabled,
     bookingEnabled,
     accountEnabled,
@@ -568,16 +575,20 @@ function ShopFlowPage({
   const category = parts[1];
   const slug = parts[2];
   const isGiftCatalogue =
-    parts[0] === "shop" && category === "geschenke" && !slug;
+    parts[0] === "shop" && isGiftBasket(category) && !slug;
+  const businessAnchor = sections.find(
+    (section) => section.key === category,
+  )?.businessAnchor;
   useEffect(() => {
     if (
       isGiftCatalogue &&
       catalogState !== "loading" &&
-      window.location.hash === "#firmenkunden"
+      businessAnchor &&
+      window.location.hash === `#${businessAnchor}`
     ) {
-      document.getElementById("firmenkunden")?.scrollIntoView();
+      document.getElementById(businessAnchor)?.scrollIntoView();
     }
-  }, [isGiftCatalogue, catalogState]);
+  }, [isGiftCatalogue, catalogState, businessAnchor]);
   const isCheckout = parts[0] === "kasse" || route.path === "/bestellung";
   const isSuccess =
     (isCheckout && parts[1] === "erfolg") || route.path === "/bestellung";
@@ -724,10 +735,10 @@ function ShopFlowPage({
   // biome-ignore lint/correctness/useExhaustiveDependencies: Preserve transaction lifecycle; host adapters must keep stable identities.
   useEffect(() => {
     const first = document.getElementById(Object.keys(errors)[0]);
-    const control = first?.matches(text("input, select, textarea"))
+    const control = first?.matches("input, select, textarea")
       ? first
       : first?.querySelector<HTMLElement>(
-          text("input:not(:disabled), select, textarea"),
+          "input:not(:disabled), select, textarea",
         );
     if (Object.keys(errors).length || checkoutError)
       (control || errorRef.current)?.focus();
@@ -973,25 +984,23 @@ function ShopFlowPage({
       taxLabel={
         p.category === "gutscheine"
           ? undefined
-          : p.category === "geschenke"
+          : isGiftBasket(p.category)
             ? text("inkl. MwSt., Abholung oder Lieferung")
             : p.pickupOnly
               ? text("inkl. MwSt., Abholung")
               : text("inkl. MwSt., zzgl.")
       }
       shippingLabel={
-        p.category === "gutscheine" ||
-        p.category === "geschenke" ||
-        p.pickupOnly
+        p.category === "gutscheine" || isGiftBasket(p.category) || p.pickupOnly
           ? undefined
           : text("Versand")
       }
       shippingHref={resolveHref("/versand")}
-      addLabel={`${p.title}: ${p.customerDefinedPrice || (p.variants?.length ?? 0) > 1 || p.category === "geschenke" ? text("Auswahl öffnen") : text("in den Warenkorb")}`}
+      addLabel={`${p.title}: ${p.customerDefinedPrice || (p.variants?.length ?? 0) > 1 || isGiftBasket(p.category) ? text("Auswahl öffnen") : text("in den Warenkorb")}`}
       onAdd={
         p.customerDefinedPrice ||
         (p.variants?.length ?? 0) > 1 ||
-        p.category === "geschenke" ||
+        isGiftBasket(p.category) ||
         p.pickupOnly
           ? undefined
           : () => add(p, 1, { variant: p.variants?.[0]?.id ?? null })
@@ -1373,7 +1382,7 @@ function ShopFlowPage({
                   : p.unitPrice
               }
             />
-            {p.category === "geschenke" ? (
+            {isGiftBasket(p.category) ? (
               <span>{text("Abholung oder Lieferung")}</span>
             ) : (
               p.pickupOnly && <span>{text("Nur Abholung")}</span>
@@ -1712,7 +1721,7 @@ function ShopFlowPage({
       });
       if (!quoteContainsCart(latest, cart)) {
         setQuoteReady(false);
-        throw new Error(text("Incomplete quote"));
+        throw new Error("Incomplete quote");
       }
       if (fulfillmentDateKey(latest.selected_fulfillment_option) !== dateKey) {
         setQuote(latest);
@@ -1806,9 +1815,9 @@ function ShopFlowPage({
         const target = new URL(response.checkout_url);
         if (
           target.protocol !== "https:" ||
-          target.hostname !== text("checkout.stripe.com")
+          target.hostname !== STRIPE_CHECKOUT_HOST
         )
-          throw new Error(text("Unexpected checkout destination"));
+          throw new Error("Unexpected checkout destination");
         navigate(target.href);
       } else if (
         response.status === "no_payment_required" &&
@@ -1824,7 +1833,7 @@ function ShopFlowPage({
         } catch {}
         updateCart(emptyCart());
         navigate("/kasse/erfolg?angelegt=1");
-      } else throw new Error(text("Missing payment destination"));
+      } else throw new Error("Missing payment destination");
     } catch (error) {
       const detail = errorText(error, text);
       if (error instanceof ShopApiError && error.status === 400) {
@@ -2927,10 +2936,12 @@ function ShopFlowPage({
               </strong>
               <span>{pickupAddress(pickupOption)}</span>
             </div>
-            <div>
-              <strong>{text("Alkohol ab 18 Jahren")}</strong>
-              <span>{text("Wir prüfen das Alter bei Übergabe")}</span>
-            </div>
+            {ageNotice && (
+              <div>
+                <strong>{ageNotice.title}</strong>
+                <span>{ageNotice.description}</span>
+              </div>
+            )}
           </div>
         )}
         <ShopSection title={text("Sortiment")}>
@@ -2998,8 +3009,10 @@ function ShopFlowPage({
             </>
           }
           link={
-            shopSectionEnabled("wein") ? (
-              <a href={resolveHref("/shop/wein")}>{text("Alle Weine")}</a>
+            recommendedSection ? (
+              <a href={resolveHref(`/shop/${recommendedSection.key}`)}>
+                {recommendationLinkLabel || recommendedSection.label}
+              </a>
             ) : undefined
           }
         >
@@ -3008,7 +3021,8 @@ function ShopFlowPage({
               .filter(
                 (p) =>
                   !p.unavailable &&
-                  (!shopSectionEnabled("wein") || p.category === "wein"),
+                  (!recommendedSection ||
+                    p.category === recommendedSection.key),
               )
               .slice(0, 5)
               .map(card)}
@@ -3402,7 +3416,8 @@ function Catalogue({
   card: (p: ShopProduct) => ReactNode;
   loading: boolean;
 }) {
-  const { categoryKey, sections, resolveHref, text } = useShopFlow();
+  const { categoryKey, sections, resolveHref, text, isGiftBasket } =
+    useShopFlow();
 
   const section = sections.find((s) => s.key === category);
   const base = articles.filter((a) => categoryKey(a) === category);
@@ -3430,7 +3445,7 @@ function Catalogue({
         <h1>{section?.label}</h1>
         <p className="sv-shop-lead">{section?.description}</p>
       </header>
-      {category === "geschenke" && (
+      {isGiftBasket(category) && (
         <ShopNotice>
           {products.length > 0 &&
             `${products
@@ -3605,6 +3620,7 @@ function ProductPage({
   const {
     sections,
     giftBasketDelivery,
+    isGiftBasket,
     resolveHref,
     text,
     phoneHref,
@@ -3646,7 +3662,7 @@ function ProductPage({
             taxLabel={
               p.category === "gutscheine"
                 ? undefined
-                : p.category === "geschenke"
+                : isGiftBasket(p.category)
                   ? text("inkl. MwSt., Abholung oder Lieferung")
                   : p.pickupOnly
                     ? text("inkl. MwSt., Abholung")
@@ -3654,7 +3670,7 @@ function ProductPage({
             }
             shippingLabel={
               p.category === "gutscheine" ||
-              p.category === "geschenke" ||
+              isGiftBasket(p.category) ||
               p.pickupOnly
                 ? undefined
                 : text("Versandkosten")
@@ -3698,7 +3714,7 @@ function ProductPage({
               }
             />
           )}{" "}
-          {p.category === "geschenke" && (
+          {isGiftBasket(p.category) && (
             <div className="sv-shop-field">
               <label htmlFor="line-note">
                 {text("Deine Wünsche / Grußkarte (optional)")}
@@ -3738,7 +3754,7 @@ function ProductPage({
             </ShopButton>
           </div>
           <ShopNotice>
-            {p.category === "geschenke"
+            {isGiftBasket(p.category)
               ? giftBasketDelivery
               : p.pickupOnly
                 ? text(
@@ -3756,7 +3772,7 @@ function ProductPage({
                       )}
             <br />
             {p.category !== "gutscheine" &&
-              p.category !== "geschenke" &&
+              !isGiftBasket(p.category) &&
               pickupOption &&
               text(
                 "Click & Collect: {0}, {1}.",
@@ -3819,6 +3835,7 @@ function ShippingPage({
     shopImages,
     shopPaymentMethods,
     giftBasketDelivery,
+    ageNotice,
     resolveHref,
     text,
   } = useShopFlow();
@@ -3854,11 +3871,7 @@ function ShippingPage({
               <ul>
                 {shippingOption && <li>{shippingTerms(shippingOption)}</li>}
 
-                <li>
-                  {text(
-                    "DHL Alterssichtprüfung 18+ bei Alkohol, keine Packstation",
-                  )}
-                </li>
+                {ageNotice?.shippingNote && <li>{ageNotice.shippingNote}</li>}
                 <li>{giftBasketDelivery}</li>
               </ul>
             </div>

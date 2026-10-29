@@ -5,5 +5,6 @@ export type {
   ShopFlowLabels,
   ShopFlowProps,
   ShopFlowRoutes,
+  ShopFlowStorage,
   ShopSectionDefinition,
 } from "./shop-flow-context";

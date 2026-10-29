@@ -9,14 +9,6 @@ export * from "./booking-labels";
 export * from "./booking-result";
 export * from "./booking-storage";
 export * from "./calendar";
-export type { Draft as CheckoutDraft } from "./checkout-draft";
-export {
-  deliversToCountry,
-  freshDraft as freshCheckoutDraft,
-  prefillCheckoutDraft,
-} from "./checkout-draft";
-export type { CheckoutValidationInput } from "./checkout-validation";
-export { validateCheckoutDetails } from "./checkout-validation";
 export * from "./client";
 export * from "./components";
 export * from "./dashboard-client";
@@ -29,18 +21,6 @@ export * from "./hooks";
 export type { NewsletterSignupProps } from "./newsletter-signup";
 export { NewsletterSignup, newsletterOptInLabel } from "./newsletter-signup";
 export { defaultNewsletterLabels } from "./newsletter-signup-labels";
-export type {
-  OpeningException,
-  OpeningHours,
-  OpeningSettings,
-  OpeningWindow,
-} from "./opening-window";
-export { openingWindow, timeInOpeningWindow } from "./opening-window";
-export {
-  maskReservationDate,
-  publicApiError,
-  reservationDate,
-} from "./public-form-api";
 export type {
   PublicFormApiConfig,
   PublicFormOptions,
@@ -55,47 +35,11 @@ export type {
   ShopFlowLabels,
   ShopFlowProps,
   ShopFlowRoutes,
+  ShopFlowStorage,
   ShopSectionDefinition,
 } from "./shop-flow-context";
 export { defaultShopFlowLabels } from "./shop-flow-labels";
-export type {
-  Article as ShopArticle,
-  CartItem as ShopCartItem,
-  CheckoutAddress,
-  CheckoutContact,
-  Fulfillment as ShopFulfillment,
-  Quote as ShopQuote,
-  Settings as ShopFlowSettings,
-  ShopCart,
-} from "./shop-model";
-export {
-  checkoutFulfillmentFields,
-  defaultFulfillmentId,
-  emptyCart,
-  facetCount,
-  filterKeys,
-  filterShopArticles,
-  formatFulfillmentDate,
-  formatPrice,
-  fulfillmentDateKey,
-  fulfillmentPriceLabel,
-  hasPhysicalItems,
-  lineKey,
-  mergeLine,
-  nutritionRows,
-  orderAmounts,
-  pickupAddress,
-  pickupTerms,
-  quoteContainsCart,
-  readCart as readShopCart,
-  shippingTerms,
-  voucherLabel,
-  writeCart as writeShopCart,
-} from "./shop-model";
-export {
-  consumeNewsletterIntent,
-  pendingOrderKey,
-} from "./shop-newsletter-intent";
+export type { Article as ShopArticle } from "./shop-model";
 export {
   defaultCategoryKey,
   defaultShopProduct,

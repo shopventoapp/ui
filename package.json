@@ -54,7 +54,8 @@
       "types": "./dist/shop-flow-entry.d.ts",
       "import": "./dist/shop-flow-entry.js",
       "default": "./dist/shop-flow-entry.js"
-    }
+    },
+    "./shop-flow.css": "./dist/shop-flow.css"
   },
   "publishConfig": {
     "access": "public",

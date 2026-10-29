@@ -21,11 +21,12 @@ bun add @shopvento/ui
 # or: npm install @shopvento/ui
 ```
 
-Import the styles once in your root layout. `shop.css` is only needed when you use the shop components. Standalone reservation and newsletter forms can import `@shopvento/ui/forms.css` instead, so shop styles stay out of shop-disabled builds.
+Import the styles once in your root layout. `shop.css` is only needed when you use the shop primitives. Complete `ShopFlow` pages also import the additive `shop-flow.css`. Standalone reservation and newsletter forms can import `@shopvento/ui/forms.css` instead, so shop styles stay out of shop-disabled builds.
 
 ```ts
 import "@shopvento/ui/styles.css";
 import "@shopvento/ui/shop.css";
+import "@shopvento/ui/shop-flow.css";
 ```
 
 ## Minimal usage

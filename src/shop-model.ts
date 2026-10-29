@@ -47,11 +47,8 @@ export const formatPrice = (amount: number) =>
   );
 /** Persisted cart request; totals and prices are calculated by the server. */
 export type ShopCart = {
-  /** Items for this public form or flow. */
   items: CartItem[];
-  /** Voucher codes for this public form or flow. */
   voucher_codes: string[];
-  /** Fulfillment option id for this public form or flow. */
   fulfillment_option_id?: string | null;
 };
 /** Create a new empty cart with independent item and voucher arrays. */

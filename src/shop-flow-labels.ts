@@ -1,4 +1,4 @@
-/** German defaults for shop flow. Override messages through labels; preserve numbered placeholders and surrounding whitespace. */
+/** German customer-visible defaults; numbered placeholders and surrounding whitespace are preserved. */
 export const defaultShopFlowLabels: Readonly<Record<string, string>> =
   /* @__PURE__ */ Object.freeze({
     "Noch {0} bis zum kostenlosen Versand":
@@ -40,9 +40,6 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     "Artikel werden geladen.": "Artikel werden geladen.",
     "Diesen Artikel gibt es gerade nicht online.":
       "Diesen Artikel gibt es gerade nicht online.",
-    "input, select, textarea": "input, select, textarea",
-    "input:not(:disabled), select, textarea":
-      "input:not(:disabled), select, textarea",
     "Dein Warenkorb wurde an das aktuelle Online-Sortiment angepasst.":
       "Dein Warenkorb wurde an das aktuelle Online-Sortiment angepasst.",
     "Ein Artikel konnte nicht bestätigt werden. Bitte prüfe Deinen Warenkorb.":
@@ -118,14 +115,10 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
       "Bitte akzeptiere die AGB und lies die Widerrufsbelehrung.",
     "Bitte schließe die Sicherheitsprüfung ab.":
       "Bitte schließe die Sicherheitsprüfung ab.",
-    "Incomplete quote": "Incomplete quote",
     "Die verfügbaren Termine haben sich geändert. Bitte wähle erneut einen Termin aus.":
       "Die verfügbaren Termine haben sich geändert. Bitte wähle erneut einen Termin aus.",
     "Dein Einkauf hat sich geändert. Prüfe die neuen Preise und bestätige Deine Bestellung erneut.":
       "Dein Einkauf hat sich geändert. Prüfe die neuen Preise und bestätige Deine Bestellung erneut.",
-    "checkout.stripe.com": "checkout.stripe.com",
-    "Unexpected checkout destination": "Unexpected checkout destination",
-    "Missing payment destination": "Missing payment destination",
     "Bestellung {0}": "Bestellung {0}",
     Danke: "Danke",
     "Deine Bestellung ist eingegangen.": "Deine Bestellung ist eingegangen.",
@@ -255,8 +248,6 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
       " Wir schreiben Dir, sobald alles abholbereit ist.",
     " entdecken →": " entdecken →",
     "Versand in ganz Deutschland": "Versand in ganz Deutschland",
-    "Alkohol ab 18 Jahren": "Alkohol ab 18 Jahren",
-    "Wir prüfen das Alter bei Übergabe": "Wir prüfen das Alter bei Übergabe",
     Sortiment: "Sortiment",
     " online": " online",
     "Bei Veranstaltungen": "Bei Veranstaltungen",
@@ -265,7 +256,6 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     Veranstaltungstermine: "Veranstaltungstermine",
     "Gerade ": "Gerade ",
     empfohlen: "empfohlen",
-    "Alle Weine": "Alle Weine",
     Shop: "Shop",
     "Im Shop suchen": "Im Shop suchen",
     "Wein, Winzer, Rebsorte suchen": "Wein, Winzer, Rebsorte suchen",
@@ -354,8 +344,6 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     "Ware wird für den Versand vorbereitet":
       "Ware wird für den Versand vorbereitet",
     "Nach Hause, innerhalb Deutschlands": "Nach Hause, innerhalb Deutschlands",
-    "DHL Alterssichtprüfung 18+ bei Alkohol, keine Packstation":
-      "DHL Alterssichtprüfung 18+ bei Alkohol, keine Packstation",
     Geschäft: "Geschäft",
     Abholung: "Abholung",
     "Wir schreiben Dir, sobald alles bereitliegt":

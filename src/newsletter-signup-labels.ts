@@ -1,4 +1,4 @@
-/** German defaults for newsletter signup. Override messages through labels; preserve numbered placeholders and surrounding whitespace. */
+/** German customer-visible defaults; numbered placeholders and surrounding whitespace are preserved. */
 export const defaultNewsletterLabels: Readonly<Record<string, string>> =
   /* @__PURE__ */ Object.freeze({
     "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.":
@@ -9,7 +9,6 @@ export const defaultNewsletterLabels: Readonly<Record<string, string>> =
       "Bitte warte kurz, bis die Sicherheitsprüfung geladen ist.",
     "Verbindung fehlgeschlagen. Bitte später erneut versuchen.":
       "Verbindung fehlgeschlagen. Bitte später erneut versuchen.",
-    "clamp(48px, 10vw, 100px) 24px": "clamp(48px, 10vw, 100px) 24px",
     "◆ Erste Reihe": "◆ Erste Reihe",
     "Neuigkeiten zuerst erfahren": "Neuigkeiten zuerst erfahren",
     "Veranstaltungen und": "Veranstaltungen und",

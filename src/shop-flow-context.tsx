@@ -32,6 +32,10 @@ export interface ShopSectionDefinition {
   description: string;
   /** Key in the host image map. */
   image: string;
+  /** Enable gift basket copy, customization and fulfilment presentation for this section. */
+  giftBasket?: boolean;
+  /** Optional element ID to scroll to when this section opens with the matching hash. */
+  businessAnchor?: string;
 }
 /** Canonical flow route overrides. Paths must be rooted on the host website. */
 export interface ShopFlowRoutes {
@@ -58,6 +62,17 @@ export interface ShopFlowRoutes {
 }
 /** German messages keyed by their default text. Missing entries retain German defaults; placeholders use {0}, {1}, etc. */
 export type ShopFlowLabels = Partial<Record<string, string>>;
+/** Browser persistence names for a shop installation. Preserve legacy values when upgrading. */
+export interface ShopFlowStorage {
+  /** Local-storage key for cart lines, voucher codes and fulfilment choice. */
+  cart?: string;
+  /** Session-storage key for the contact, address and date draft. */
+  checkout?: string;
+  /** Session-storage key associating a payment return with its cart and consent. */
+  pendingOrder?: string;
+  /** Browser event dispatched after a local cart update. */
+  cartEvent?: string;
+}
 /** Host composition for the complete shop flow. Keep object and client identities stable across renders. */
 export interface ShopFlowProps {
   /** Initial canonical route, useful for server rendering a static route shell. */
@@ -84,6 +99,19 @@ export interface ShopFlowProps {
   sections?: ShopSectionDefinition[];
   /** Enable individual category and search slugs. */
   sectionEnabled?: (slug: string) => boolean;
+  /** Restrict recommendations to this section when it is configured and enabled. */
+  recommendedSection?: string;
+  /** Customer-visible recommendation link text; defaults to the section title. */
+  recommendationLinkLabel?: string;
+  /** Optional catalogue age notice supplied by the host. Product age restrictions still come from the API. */
+  ageNotice?: {
+    /** Short notice heading. */
+    title: string;
+    /** Explanation of the age check. */
+    description: string;
+    /** Optional carrier-specific age-check information for the shipping page. */
+    shippingNote?: string;
+  };
   /** Resolve a category marketing link, including hidden-category fallback. */
   sectionPath?: (slug: string, hash?: string) => string;
   /** Remove items excluded by the host catalogue allowlist after hydration. */
@@ -97,16 +125,7 @@ export interface ShopFlowProps {
   /** Public Turnstile fallback key, overridden by shop settings. */
   turnstileSiteKey?: string;
   /** Browser persistence keys and notification event. Keep legacy values during migration. */
-  storage?: {
-    /** Cart for this public form or flow. */
-    cart?: string;
-    /** Checkout for this public form or flow. */
-    checkout?: string;
-    /** Pending Order for this public form or flow. */
-    pendingOrder?: string;
-    /** Cart Event for this public form or flow. */
-    cartEvent?: string;
-  };
+  storage?: ShopFlowStorage;
   /** Host image URLs keyed by section image names, regal (hero), laden (pickup) and lieferung (shipping). */
   images?: Record<string, string>;
   /** Opening-hours text displayed in pickup details. */
@@ -125,7 +144,8 @@ export interface ShopFlowProps {
   businessInformation?: ReactNode;
   /** Optional host success icon, retaining the host's SVG markup. */
   SuccessIcon?: ComponentType<{
-    /** Size for this public form or flow. */ size?: number;
+    /** Rendered width and height in CSS pixels. */
+    size?: number;
   }>;
   /** Customer service telephone URL. */
   phoneHref?: string;
@@ -153,11 +173,7 @@ const disabledAccountClient = {
   },
 };
 const defaultDashboardClient = /* @__PURE__ */ createDashboardClient();
-const DefaultCheck = ({
-  size = 20,
-}: {
-  /** Size for this public form or flow. */ size?: number;
-}) => (
+const DefaultCheck = ({ size = 20 }: { size?: number }) => (
   <svg
     width={size}
     height={size}
@@ -219,7 +235,7 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
       (
         config.onNavigate ||
         ((target: string) => window.location.assign(target))
-      )(resolveHref(path)),
+      )(/^https?:\/\//i.test(path) ? path : resolveHref(path)),
     client: config.client || defaultClient,
     accountClient,
     dashboardClient,
@@ -237,6 +253,15 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
       ((article: Article) => defaultShopProduct(article, config.labels)),
     sections,
     visibleSections,
+    isGiftBasket: (category: string) =>
+      visibleSections.some(
+        (section) => section.key === category && section.giftBasket === true,
+      ),
+    recommendedSection: visibleSections.find(
+      (section) => section.key === config.recommendedSection,
+    ),
+    recommendationLinkLabel: config.recommendationLinkLabel,
+    ageNotice: config.ageNotice,
     physicalSectionsEnabled: visibleSections.some(
       (section) => section.key !== "gutscheine",
     ),
@@ -267,20 +292,16 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
 const ShopFlowContext = /* @__PURE__ */ createContext<ReturnType<
   typeof resolveConfig
 > | null>(null);
-/** Use Shop Flow for this public form or flow. */
 export function useShopFlow() {
   const config = useContext(ShopFlowContext);
   if (!config) throw new Error("Shop flow provider missing");
   return config;
 }
-/** Shop Flow Provider for this public form or flow. */
 export function ShopFlowProvider({
   config,
   children,
 }: {
-  /** Config for this public form or flow. */
   config: Omit<ShopFlowProps, "initialPath">;
-  /** Children for this public form or flow. */
   children: ReactNode;
 }) {
   const resolved = useMemo(() => resolveConfig(config), [config]);
