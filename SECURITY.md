@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please do not open a public issue for security problems. Email info@cuisine.digital with a description, the affected version and steps to reproduce. We acknowledge reports within five working days and keep you informed until a fix is released.
+Please do not open a public issue for security problems. Email info@shopvento.de with a description, the affected version and steps to reproduce. We acknowledge reports within five working days and keep you informed until a fix is released.
 
 ## Supported versions
 
