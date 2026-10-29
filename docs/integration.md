@@ -268,3 +268,7 @@ to prefill the first booking step. Use `voucherCodeFromQuery` before forwarding
 the parameter across date-selection routes; it rejects markup, control characters
 and values longer than 100 characters. Prefilling does not redeem or validate
 credit: the existing voucher check and booking validation remain authoritative.
+
+## Complete shop and public forms (0.3)
+
+Use [ShopFlow](guides/shop.md) for catalogue, cart, checkout and payment returns. Configure original browser storage names when upgrading an existing host. Keep route shells, brand copy, editorial slots and the Worker/API proxy in the host. [ReservationForm](guides/reservations.md) and [NewsletterSignup](guides/newsletter.md) share framework-neutral script and runtime API adapters; German copy overrides use exported default message dictionaries. All earlier controlled shop primitives remain supported.

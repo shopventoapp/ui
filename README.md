@@ -1,8 +1,8 @@
 # @shopvento/ui
 
-React components for storefronts built on the Shopvento API: event booking with vouchers, customer accounts (sign-in, registration, dashboard with bookings, orders, vouchers and reservations) and shop building blocks (product cards, prices, dialogs, summaries). The components are plain React with one CSS file per area, no router and no styling runtime. Prices, availability, voucher balances and booking rules stay authoritative in the backend.
+React components for storefronts built on the Shopvento API: catalogue, cart, checkout, table reservations, newsletter signup, event booking with vouchers, customer accounts (sign-in, registration, dashboard with bookings, orders, vouchers and reservations) and shop building blocks (product cards, prices, dialogs, summaries). The components are plain React with one CSS file per area, no router and no styling runtime. Prices, availability, voucher balances and booking rules stay authoritative in the backend.
 
-Version 0.2 covers booking, vouchers, the customer account and shop presentation primitives. A complete shop flow (cart and checkout) is planned for a later release.
+Version 0.3 adds the complete catalogue, cart, guest/account checkout and order-return flow, plus table reservations and newsletter signup. All 0.2 exports and props remain available. The host owns routing, editorial content, branding and its same-origin proxy.
 
 Full English documentation: [docs.shopvento.de](https://docs.shopvento.de), including guides, the generated component/type reference and the public Shop API reference.
 
@@ -21,7 +21,7 @@ bun add @shopvento/ui
 # or: npm install @shopvento/ui
 ```
 
-Import the styles once in your root layout. `shop.css` is only needed when you use the shop components.
+Import the styles once in your root layout. `shop.css` is only needed when you use the shop components. Standalone reservation and newsletter forms can import `@shopvento/ui/forms.css` instead, so shop styles stay out of shop-disabled builds.
 
 ```ts
 import "@shopvento/ui/styles.css";
@@ -63,6 +63,8 @@ export function Login() {
   return <LoginForm client={client} onSuccess={() => window.location.assign("/account")} />;
 }
 ```
+
+The [shop flow guide](docs/guides/shop.md), [reservations guide](docs/guides/reservations.md) and [newsletter guide](docs/guides/newsletter.md) explain host composition, legacy storage keys, validation and payment returns. New integrations can start with `ShopFlow`; existing hosts must configure their original cart, draft, pending-order and event names through `storage`.
 
 The [integration guide](docs/integration.md) describes every component, the booking flow, the account dashboard, the shop primitives and the backend contract in detail.
 

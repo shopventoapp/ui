@@ -4,7 +4,7 @@ Run scripts from the repository root with Bun 1.3.10. The root README lists all 
 
 | Script | Command | Purpose |
 | --- | --- | --- |
-| `copy-css.ts` | Called by `bun run build` | Copy the scoped styles and bundled font into the package output. |
+| `copy-css.ts` | Called by `bun run build` | Copy the scoped styles and bundled font into the package output, including standalone forms.css and the combined shop stylesheet. |
 | `generate-client.ts` | `bun run generate:client <backend-openapi.json>` | Generate narrow booking/account wire contracts. |
 | `generate-shop-client.ts` | `bun run generate:shop-client <catalogue.json> <checkout.json> [legal.json]` | Generate public catalogue and checkout wire contracts. |
 | `wire-documentation.ts` | Imported by generators | Preserve public TSDoc purpose and field comments when wire contracts are regenerated. |

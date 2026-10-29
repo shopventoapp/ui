@@ -7,10 +7,11 @@ These source files are typechecked by `bun run typecheck` and copied verbatim in
 - `vouchers.ts`: sanitize and check a public voucher code on demand.
 - `labels.tsx`: retain host Tasting terminology through label overrides.
 - `customer-account.tsx`: stable same-origin account client and login form.
+- `shop-flow.tsx`: complete shop flow with configurable storage, plus public reservation and newsletter forms.
 - `shop.tsx`: a controlled product presentation with integer-cent prices.
 - `next-app/app/layout.tsx` and `page.tsx`: Next.js App Router CSS and client boundary. Copy the shared `event-booking.tsx` at the relative location or adjust the import.
 - `next-app/app/api/shop/[...path]/route.ts`: host-owned Node-runtime session proxy recipe. It checks mutation Origins, allowlists public operations, encrypts session tokens in secure HttpOnly cookies and redacts upstream credentials. The guide explains the server-only environment variables and OAuth/download boundaries.
 
 To run the components, copy the relevant source into a React 18.2/19 ESM app with `@shopvento/ui` installed, import its CSS once, and replace the public placeholder configuration. For Next.js, put the layout and page under `app/` and adapt the example import. The repository does not install or run a second Next.js application just to validate these standard React and Web Request/Response examples.
 
-The package build runs before a second examples typecheck in CI, so examples are checked against both the source API and the actual published declaration surface. Complete cart and checkout UI flows are not provided by the package.
+The package build runs before a second examples typecheck in CI, so examples are checked against both the source API and the actual published declaration surface. `ShopFlow` provides the complete cart and checkout flow; route shells, editorial content and the API proxy remain host-owned.

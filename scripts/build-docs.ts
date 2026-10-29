@@ -23,7 +23,9 @@ const guides = [
   ["event-booking", "Event booking"],
   ["vouchers", "Vouchers"],
   ["customer-account", "Customer account"],
-  ["shop", "Shop primitives"],
+  ["shop", "Cart and checkout"],
+  ["reservations", "Table reservations"],
+  ["newsletter", "Newsletter signup"],
   ["theming", "Theming"],
   ["labels", "Labels and copy"],
 ];
@@ -38,7 +40,7 @@ function header(current: string) {
 function sidebar(slug: string) {
   return `<aside class="sidebar"><nav aria-label="Documentation"><p>Build with Shopvento</p><ul>${guides.map(([id, name]) => `<li><a href="/guides/${id}/" ${slug === id ? 'aria-current="page"' : ""}>${name}</a></li>`).join("")}</ul><p>Reference</p><ul><li><a href="/reference/">Components and types</a></li><li><a href="/api/">Shop API</a></li></ul></nav></aside>`;
 }
-const footer = `<footer class="page-footer">Shopvento UI 0.2.0 · <a href="https://github.com/shopventoapp/ui" target="_blank" rel="noopener noreferrer">Source</a> · <a href="https://www.npmjs.com/package/@shopvento/ui" target="_blank" rel="noopener noreferrer">npm</a> · <a href="https://shopvento.de" target="_blank" rel="noopener noreferrer">shopvento.de</a></footer>`;
+const footer = `<footer class="page-footer">Shopvento UI 0.3.0 · <a href="https://github.com/shopventoapp/ui" target="_blank" rel="noopener noreferrer">Source</a> · <a href="https://www.npmjs.com/package/@shopvento/ui" target="_blank" rel="noopener noreferrer">npm</a> · <a href="https://shopvento.de" target="_blank" rel="noopener noreferrer">shopvento.de</a></footer>`;
 function page(title: string, content: string, slug = "", api = false) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)} | Shopvento Docs</title><meta name="description" content="English integration guides, React component and type reference, and the public Shopvento API."><script src="/assets/theme.js"></script><link rel="stylesheet" href="/assets/site.css"></head><body class="${api ? "api-page" : ""}">${header(api ? "api" : slug ? "guides" : "")}<div class="site-layout">${sidebar(slug)}<main id="main" class="content ${api ? "api-content" : ""}">${content}${footer}</main></div></body></html>`;
 }

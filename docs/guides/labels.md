@@ -28,3 +28,14 @@ Shop primitives receive their labels directly: search text, add/close actions, q
 ## Migration from 0.1
 
 Deprecated aliases remain until 1.0: `TastingBooking` / `TastingBookingProps` become `EventBooking` / `EventBookingProps`; `Tasting` becomes `ShopEvent`; `useTastings` becomes `useEvents`; `AccountTastingDetail` becomes `AccountEventDetail`; `TastingColors` / `tastingStyle` become `EventColors` / `eventStyle`. Replace the old event identifier and collection prop spellings with `eventId` and `events`, client list/detail calls with `listEvents` / `getEvent`, and `--sv-tasting`, `k-tasting` and `t-tasting` with `--sv-event`, `k-event` and `t-event`. New props win when both spellings are supplied. Backend paths and wire field names are unchanged. The generated reference marks aliases as deprecated.
+
+## Complete shop and public forms
+
+`ShopFlow`, `NewsletterSignup` and `ReservationForm` accept a partial message dictionary. Keys are the German defaults in `defaultShopFlowLabels`, `defaultNewsletterLabels` and `defaultReservationLabels`. Missing keys keep their default; messages with runtime values use numbered placeholders such as `{0}` and `{1}`. Keep all placeholders in an override. For example:
+
+```tsx
+<ShopFlow labels={{ "Noch nichts im Korb.": "Your cart is empty." }} />
+<NewsletterSignup siteKey="PUBLIC-KEY" labels={{ "Newsletter abonnieren": "Subscribe" }} />
+```
+
+Product mapping, section copy, imagery, gift delivery notes, payment method names and editorial slots remain host props. This dictionary supplements the existing controlled primitive labels; it does not change the 0.2 booking or account label contracts.

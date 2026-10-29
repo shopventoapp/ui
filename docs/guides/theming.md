@@ -109,3 +109,7 @@ Dashboard selectors write these properties on each button or action. They are co
 ## Dark themes
 
 The package does not switch themes automatically. Override the same tokens under the host dark-mode selector, including surfaces, text, borders, status backgrounds and focus. Check the contrast of host event colors and product images in both modes. Keep visible keyboard focus and readable disabled and error states.
+
+## Shop flow and public forms
+
+The flow adds `--sv-flow-border` for its structural borders (falling back to `--sv-border-2`) and `--sv-surface-3` for outer checkout/cart surfaces. Reservation and newsletter scopes are `.sv-reservation` and `.sv-newsletter`; set their standard `--sv-font`, `--sv-font-display`, `--sv-font-label`, `--sv-background`, `--sv-surface-2`, `--sv-text`, `--sv-text-2`, `--sv-text-3`, `--sv-border-2`, `--sv-primary`, `--sv-accent` and `--sv-error-soft` tokens on those scopes. Hosts migrating an existing layout can retain its token bridge. Responsive form grids ship with `forms.css` (also included by `shop.css`) and do not require Tailwind.
