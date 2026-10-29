@@ -32,7 +32,7 @@ const slot: Timewindow = {
 };
 const data: CalendarData = {
   windows: [slot],
-  tastings: [
+  events: [
     {
       tasting_id: 5,
       tasting_name: "Example",
@@ -218,17 +218,17 @@ test("calendar file carries Berlin DST rules, valid seconds and escaped event va
 test("mixed variants keep per-seat allocation while quantities change", async () => {
   const mixed = {
     ...data,
-    tastings: [
-      ...data.tastings,
+    events: [
+      ...data.events,
       {
-        ...data.tastings[0],
+        ...data.events[0],
         variant_id: "v2",
         variant_name: "Second",
         price: 5400,
       },
     ],
   };
-  mixed.tastings[0] = { ...mixed.tastings[0], variant_name: "First" };
+  mixed.events[0] = { ...mixed.events[0], variant_name: "First" };
   startFlowDraft("mixed", slot.timewindow_id, 2, "v1");
   render(
     <BookingFlow

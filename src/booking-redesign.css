@@ -536,7 +536,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: var(--sv-tasting, var(--_c, var(--sv-primary)));
+  background: var(--sv-event, var(--sv-tasting, var(--_c, var(--sv-primary))));
 }
 .sv-redesign .slot-card:hover {
   border-color: color-mix(in srgb, var(--sv-text) 30%, transparent);
@@ -565,7 +565,7 @@
   line-height: 1;
   flex: none;
 
-  background: var(--sv-tasting, var(--sv-primary));
+  background: var(--sv-event, var(--sv-tasting, var(--sv-primary)));
   color: var(--sv-on-primary);
 }
 .sv-redesign .date-tile .wd {
@@ -590,7 +590,7 @@
   margin-top: 4px;
 }
 .sv-redesign .date-tile.on {
-  background: var(--sv-tasting, var(--_c, var(--sv-primary)));
+  background: var(--sv-event, var(--sv-tasting, var(--_c, var(--sv-primary))));
   color: var(--sv-on-primary);
 }
 .sv-redesign .date-tile.on .wd,
@@ -1087,13 +1087,13 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--sv-tasting, var(--sv-primary));
+  background: var(--sv-event, var(--sv-tasting, var(--sv-primary)));
 }
 .sv-redesign .cal-dot.s-full,
 .sv-redesign .cal-dot.s-past,
 .sv-redesign .cal-dot.s-closed {
   background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--sv-tasting, var(--_c));
+  box-shadow: inset 0 0 0 1.5px var(--sv-event, var(--sv-tasting, var(--_c)));
   opacity: 0.6;
 }
 .sv-redesign .cal-dot.s-few {
@@ -1123,19 +1123,19 @@
   cursor: pointer;
   font-size: 0.8rem;
   line-height: 1.25;
-  border-left: 3px solid var(--sv-tasting, var(--sv-primary));
+  border-left: 3px solid var(--sv-event, var(--sv-tasting, var(--sv-primary)));
   color: var(--sv-text);
 
   background: color-mix(
     in srgb,
-    var(--sv-tasting, var(--sv-primary)) 9%,
+    var(--sv-event, var(--sv-tasting, var(--sv-primary))) 9%,
     var(--sv-surface)
   );
 }
 .sv-redesign .cal-ev:hover {
   background: color-mix(
     in srgb,
-    var(--sv-tasting, var(--_c)) 16%,
+    var(--sv-event, var(--sv-tasting, var(--_c))) 16%,
     var(--sv-surface)
   );
 }
@@ -1246,7 +1246,7 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: var(--sv-tasting, var(--_c));
+  background: var(--sv-event, var(--sv-tasting, var(--_c)));
 }
 .sv-redesign .ag-row:hover {
   border-color: color-mix(in srgb, var(--sv-text) 30%, transparent);
@@ -2506,7 +2506,7 @@
 .sv-redesign .cal-dot.s-closed,
 .sv-redesign .cal-dot.s-past {
   background: transparent;
-  border: 1px solid var(--sv-tasting, var(--sv-primary));
+  border: 1px solid var(--sv-event, var(--sv-tasting, var(--sv-primary)));
 }
 .sv-redesign .cal-cell.past {
   color: var(--sv-text-3);

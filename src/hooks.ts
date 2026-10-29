@@ -9,19 +9,19 @@ import {
   type GuestFieldErrors,
   type Location,
   type Seat,
+  type ShopEvent,
   type ShopSettings,
-  type Tasting,
   type Timewindow,
   windowStarted,
 } from "./client";
 
 export function useBookingData(
   client: BookingClient,
-  tastingId: number,
+  eventId: number,
   locationId?: number,
 ) {
   const [data, setData] = useState<{
-    variants: Tasting[];
+    variants: ShopEvent[];
     windows: Timewindow[];
     settings: ShopSettings;
     locations: Location[];
@@ -36,8 +36,8 @@ export function useBookingData(
     setError(null);
     setData(null);
     Promise.all([
-      client.getTasting(tastingId, controller.signal),
-      client.listTimewindows(tastingId, controller.signal, locationId),
+      client.getEvent(eventId, controller.signal),
+      client.listTimewindows(eventId, controller.signal, locationId),
       client.getSettings(controller.signal),
       client.listLocations(controller.signal),
     ])
@@ -62,7 +62,7 @@ export function useBookingData(
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [client, tastingId, locationId, revision]);
+  }, [client, eventId, locationId, revision]);
   return { data, loading, error, reload: () => setRevision((r) => r + 1) };
 }
 export interface BookingDraft {
@@ -98,7 +98,7 @@ function validDraft(value: unknown): value is BookingDraft {
     (d.contact.phone === undefined || typeof d.contact.phone === "string")
   );
 }
-/** Key must include installation and tasting to avoid cross-installation drafts. */
+/** Key must include installation and event to avoid cross-installation drafts. */
 export function useBookingDraft(key: string) {
   const [draft, setDraft] = useState<BookingDraft>(emptyDraft);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
@@ -224,9 +224,9 @@ export function useSubmitBooking(
   return { submit, pending, error, fieldErrors, result, clearError };
 }
 
-/** Independent public list hook for host-owned tasting navigation. */
-export function useTastings(client: BookingClient) {
-  const [tastings, setTastings] = useState<Tasting[]>([]);
+/** Independent public list hook for host-owned event navigation. */
+export function useEvents(client: BookingClient) {
+  const [events, setEvents] = useState<ShopEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -234,9 +234,9 @@ export function useTastings(client: BookingClient) {
     setLoading(true);
     setError(null);
     client
-      .listTastings(controller.signal)
+      .listEvents(controller.signal)
       .then((rows) => {
-        if (!controller.signal.aborted) setTastings(rows);
+        if (!controller.signal.aborted) setEvents(rows);
       })
       .catch((error) => {
         if (!controller.signal.aborted) setError(bookingErrorMessage(error));
@@ -246,5 +246,14 @@ export function useTastings(client: BookingClient) {
       });
     return () => controller.abort();
   }, [client]);
-  return { tastings, loading, error };
+  return {
+    events,
+    /** @deprecated Use events. Removed in 1.0. */
+    tastings: events,
+    loading,
+    error,
+  };
 }
+
+/** @deprecated Use useEvents. Removed in 1.0. */
+export const useTastings = useEvents;

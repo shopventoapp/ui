@@ -3,7 +3,7 @@ import type {
   BookingResponse,
   GuestBookingRequest,
   Location,
-  Tasting,
+  Tasting as WireEvent,
   ShopSettings as WireSettings,
   Timewindow as WireTimewindow,
 } from "./wire";
@@ -14,8 +14,11 @@ export type {
   GuestBookingRequest,
   Location,
   ShopSettings as WireSettings,
-  Tasting,
 } from "./wire";
+/** A public event variant using the unchanged backend field names. */
+export type ShopEvent = WireEvent;
+/** @deprecated Use ShopEvent. Removed in 1.0. */
+export type Tasting = ShopEvent;
 export type ShopSettings = WireSettings & {
   guest_max_seats?: number;
   online_lead_hours?: number;
@@ -158,20 +161,24 @@ export function createBookingClient(options: ClientOptions) {
     }
     return response.json() as Promise<T>;
   }
-  const listTastings = (signal?: AbortSignal) =>
-    request<Tasting[]>("/tastings/", { signal });
+  const listEvents = (signal?: AbortSignal) =>
+    request<ShopEvent[]>("/tastings/", { signal });
+  // There is no public detail route. One event can have multiple variant rows.
+  const getEvent = async (id: number, signal?: AbortSignal) =>
+    (await listEvents(signal)).filter((event) => event.tasting_id === id);
   return {
-    listTastings,
-    // There is no public detail route. One tasting can have multiple variant rows.
-    async getTasting(id: number, signal?: AbortSignal) {
-      return (await listTastings(signal)).filter((t) => t.tasting_id === id);
-    },
+    listEvents,
+    getEvent,
+    /** @deprecated Use listEvents. Removed in 1.0. */
+    listTastings: listEvents,
+    /** @deprecated Use getEvent. Removed in 1.0. */
+    getTasting: getEvent,
     listTimewindows: (id: number, signal?: AbortSignal, locationId?: number) =>
       request<{ timewindows: Timewindow[]; total: number }>(
         `/tastings/timewindows?tasting_id=${id}&start_date=${berlinToday()}${locationId === undefined ? "" : `&location_id=${locationId}`}`,
         { signal },
       ),
-    /** Discover timewindows across all tastings at one location. */
+    /** Discover timewindows across all events at one location. */
     listLocationTimewindows: (
       locationId: number,
       {

@@ -101,7 +101,7 @@ function Payments({ payments }: { payments: AccountOrder["payments"] }) {
     </dl>
   );
 }
-export function AccountTastingDetail({
+export function AccountEventDetail({
   booking: b,
   windows = [],
   locations = [],
@@ -1089,3 +1089,6 @@ export function AccountReservationDetail({
     </>
   );
 }
+
+/** @deprecated Use AccountEventDetail. Removed in 1.0. */
+export const AccountTastingDetail = AccountEventDetail;

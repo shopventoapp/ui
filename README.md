@@ -1,8 +1,8 @@
 # @shopvento/ui
 
-React components for storefronts built on the Shopvento API: tasting and event booking with vouchers, customer accounts (sign-in, registration, dashboard with bookings, orders, vouchers and reservations) and shop building blocks (product cards, prices, dialogs, summaries). The components are plain React with one CSS file per area, no router and no styling runtime. Prices, availability, voucher balances and booking rules stay authoritative in the backend.
+React components for storefronts built on the Shopvento API: event booking with vouchers, customer accounts (sign-in, registration, dashboard with bookings, orders, vouchers and reservations) and shop building blocks (product cards, prices, dialogs, summaries). The components are plain React with one CSS file per area, no router and no styling runtime. Prices, availability, voucher balances and booking rules stay authoritative in the backend.
 
-Version 0.1 covers booking, vouchers, the customer account and shop presentation primitives. A complete shop flow (cart and checkout) is planned for a later release.
+Version 0.2 covers booking, vouchers, the customer account and shop presentation primitives. A complete shop flow (cart and checkout) is planned for a later release.
 
 ## Requirements
 
@@ -30,13 +30,13 @@ import "@shopvento/ui/shop.css";
 
 ```tsx
 "use client";
-import { TastingBooking } from "@shopvento/ui";
+import { EventBooking } from "@shopvento/ui";
 
 export default function BookingForm() {
   return (
-    <TastingBooking
+    <EventBooking
       baseUrl="https://your-instance.example"
-      tastingId={123}
+      eventId={123}
       locationId={1}
       turnstileSiteKey="YOUR-PUBLIC-TURNSTILE-SITE-KEY"
       termsUrl="/terms"
@@ -64,6 +64,26 @@ export function Login() {
 
 The [integration guide](docs/integration.md) describes every component, the booking flow, the account dashboard, the shop primitives and the backend contract in detail.
 
+## Renamed in 0.2.0
+
+The old names remain deprecated aliases until 1.0. Both prop names work; the new
+name takes precedence when both are supplied. Backend paths and wire fields are
+unchanged.
+
+| Previous name | New name |
+| --- | --- |
+| `TastingBooking` | `EventBooking` |
+| `TastingBookingProps` | `EventBookingProps` |
+| `tastingId` | `eventId` |
+| `Tasting` | `ShopEvent` |
+| `useTastings` | `useEvents` |
+| `tastings` (hook result, calendar data and props) | `events` |
+| `client.listTastings`, `client.getTasting` | `client.listEvents`, `client.getEvent` |
+| `AccountTastingDetail` | `AccountEventDetail` |
+| `TastingColors`, `tastingStyle` | `EventColors`, `eventStyle` |
+| `--sv-tasting` | `--sv-event` |
+| `k-tasting`, `t-tasting` | `k-event`, `t-event` |
+
 ## Theming
 
 All selectors are scoped (`.sv-booking`, `.sv-account`, `.sv-redesign`, `.sv-shop-*`) and no global reset is shipped. Components read CSS custom properties with the `--sv-` prefix; set them on any ancestor:
@@ -80,7 +100,7 @@ All selectors are scoped (`.sv-booking`, `.sv-account`, `.sv-redesign`, `.sv-sho
 }
 ```
 
-The full variable list with defaults is in the [integration guide](docs/integration.md#css-variables). The user interface texts are German by default; account and shop components take their labels as props.
+The full variable list with defaults is in the [integration guide](docs/integration.md#css-variables). The user interface texts are German by default. Booking components accept `labels` overrides through `Partial<BookingLabels>`; account and shop components also take their labels as props.
 
 ## Development
 

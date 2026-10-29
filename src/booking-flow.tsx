@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AccountClient, AccountProfile } from "./account-client";
 import { AccountAccess } from "./account-entry";
+import { type BookingLabels, defaultBookingLabels } from "./booking-labels";
 import { writeBookingResult } from "./booking-storage";
 import {
   AvailabilityBadge,
@@ -17,8 +18,9 @@ import {
   type CalendarData,
   DateList,
   DateTile,
+  type EventColors,
+  eventsFrom,
   SeatStepper,
-  type TastingColors,
 } from "./calendar";
 import {
   BookingApiError,
@@ -206,7 +208,7 @@ export function normalizeBookingPhone(value: string, prefix: string) {
 }
 export function voucherProblem(
   check: VoucherCheck,
-  tastingId: number,
+  eventId: number,
   locationId: number | null | undefined,
 ) {
   if (check.redeemed) return "Dieser Gutschein wurde bereits eingelöst.";
@@ -214,7 +216,7 @@ export function voucherProblem(
     return "Dieser Gutschein hat kein Guthaben mehr.";
   if (
     check.redeemable_tasting_ids?.length &&
-    !check.redeemable_tasting_ids.includes(tastingId)
+    !check.redeemable_tasting_ids.includes(eventId)
   )
     return "Dieser Gutschein gilt nicht für diesen Termin.";
   if (
@@ -283,6 +285,7 @@ export function voucherCodeFromQuery(value: string | null | undefined): string {
     : "";
 }
 export interface BookingFlowProps {
+  labels?: Partial<BookingLabels>;
   initialVoucherCode?: string;
 
   client: BookingClient;
@@ -307,10 +310,11 @@ export interface BookingFlowProps {
   onSignOut?: () => void | Promise<void>;
   countryCodes?: readonly string[];
   format?: BookingFormat;
-  colors?: TastingColors;
+  colors?: EventColors;
   onRedirect?: (url: string) => void;
 }
 export function BookingFlow({
+  labels,
   initialVoucherCode,
   client,
   data,
@@ -337,6 +341,7 @@ export function BookingFlow({
   colors = {},
   onRedirect = (url) => window.location.assign(url),
 }: BookingFlowProps) {
+  const copy = { ...defaultBookingLabels, ...labels };
   const [changingDate, setChangingDate] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [draft, setDraft] = useState<FlowDraft | null>(null);
@@ -371,7 +376,7 @@ export function BookingFlow({
     ["checkout.stripe.com"],
     (response) => {
       const w = data.windows.find((w) => w.timewindow_id === draft?.windowId);
-      const t = data.tastings.find((t) => t.tasting_id === w?.tasting_id);
+      const t = eventsFrom(data).find((t) => t.tasting_id === w?.tasting_id);
       const location = data.locations.find(
         (l) => l.id === w?.franchise_location_id,
       );
@@ -527,7 +532,9 @@ export function BookingFlow({
       </div>
     );
   const w = data.windows.find((w) => w.timewindow_id === draft.windowId);
-  const variants = data.tastings.filter((t) => t.tasting_id === w?.tasting_id);
+  const variants = eventsFrom(data).filter(
+    (t) => t.tasting_id === w?.tasting_id,
+  );
   const lead = data.settings.online_lead_hours ?? 24;
   const count = draft.seats.length;
   if (!w || !variants.length)
@@ -619,8 +626,7 @@ export function BookingFlow({
             voucherIssues[c],
         ))
     )
-      e.code =
-        "Bitte gib für jeden Platz einen gültigen Tasting-Gutschein ein.";
+      e.code = copy.eventVoucherRequired;
     if (code.trim() && !draft.codes.includes(code.trim()))
       e.code =
         "Bitte löse den eingetragenen Gutschein ein oder leere das Feld.";
@@ -971,6 +977,7 @@ export function BookingFlow({
             settings={data.settings}
             phone={texts.phone}
             phoneLabel={texts.phoneLabel}
+            labels={labels}
           />
           {(conflict || !a.bookable) && (
             <div className="notice" role="alert">
@@ -1134,11 +1141,7 @@ export function BookingFlow({
                     </p>
                     {mode === "voucher" && missingVouchers > 0 && (
                       <p className="hint" role="status">
-                        {missingVouchers}{" "}
-                        {missingVouchers === 1
-                          ? "Platz braucht"
-                          : "Plätze brauchen"}{" "}
-                        noch einen Tasting-Gutschein.
+                        {copy.eventVoucherMissing(missingVouchers)}
                       </p>
                     )}
                     {rateLimited.length > 0 && (
@@ -1210,7 +1213,7 @@ export function BookingFlow({
                             <small>
                               {voucherIssues[c] ??
                                 (checks[c]?.kind === "SINGLE_PURPOSE"
-                                  ? "Tasting-Gutschein für 1 Person, deckt 1 Platz"
+                                  ? copy.eventVoucherDescription
                                   : checks[c]?.kind
                                     ? `Wertgutschein, ${bookingMoney(checks[c].remaining_value ?? 0, format)} von ${bookingMoney(checks[c].value ?? checks[c].remaining_value ?? 0, format)} Guthaben`
                                     : "Prüfen und verrechnen wir beim Bezahlen.")}
@@ -1577,7 +1580,7 @@ export function BookingFlow({
                 candidate.tasting_id === w.tasting_id &&
                 availability(candidate, count, lead).bookable,
             )}
-            tastings={variants}
+            events={variants}
             locations={data.locations}
             seats={count}
             leadHours={lead}

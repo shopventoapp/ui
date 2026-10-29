@@ -4,6 +4,32 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-29
+
+### Added
+
+- Generic public event names: `EventBooking`, `EventBookingProps`, `ShopEvent`,
+  `useEvents`, `AccountEventDetail`, `EventColors`, `eventStyle`, booking
+  `eventId`, calendar/list `events`, and client `listEvents`/`getEvent`.
+- Event CSS token `--sv-event` and account selectors `k-event`/`t-event`, with
+  legacy custom-property fallbacks and both class names emitted.
+- Partial `BookingLabels` overrides on booking forms, flows, date sheets and
+  booking-mode notices for all event-specific default copy.
+
+### Changed
+
+- German defaults use "Veranstaltung" and "Veranstaltungsgutschein" instead of
+  tasting-specific terminology. Hosts can override every changed message.
+- Booking error-focus tests avoid expensive DOM-object diagnostic formatting
+  during asynchronous focus polling, without increasing timeouts.
+
+### Deprecated
+
+- All previous `Tasting`/`tasting` public names remain compatible aliases until
+  1.0. New props take precedence when both names are supplied. Backend endpoints,
+  generated wire contracts, request fields, draft storage and URL filters stay
+  unchanged.
+
 ## [0.1.0] - 2026-10-29
 
 First public release.

@@ -7,14 +7,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { type BookingLabels, defaultBookingLabels } from "./booking-labels";
 import {
   type BookingClient,
   berlinToday,
   bookingErrorMessage,
   deadlinePassed,
   type Location,
+  type ShopEvent,
   type ShopSettings,
-  type Tasting,
   type Timewindow,
   windowStarted,
   windowTooSoon,
@@ -50,11 +51,14 @@ export function BookingModeNotice({
   settings,
   phone,
   phoneLabel,
+  labels,
 }: {
   settings: ShopSettings;
   phone?: string;
   phoneLabel?: string;
+  labels?: Partial<BookingLabels>;
 }) {
+  const copy = { ...defaultBookingLabels, ...labels };
   const mode = bookingMode(settings);
   if (mode === "full") return null;
   return (
@@ -89,19 +93,15 @@ export function BookingModeNotice({
           </p>
         )}
         {mode === "voucher" && (
-          <p className="small">
-            Jeder Platz braucht einen Tasting-Gutschein. Dafür meldest Du Dich
-            mit Deinem Konto an. Ältere Codes prüfen wir verbindlich beim
-            Buchen.
-          </p>
+          <p className="small">{copy.eventVoucherNotice}</p>
         )}
       </div>
     </div>
   );
 }
-export type TastingColors = Record<number, string>;
-export const tastingStyle = (color?: string) =>
-  ({ "--sv-tasting": color ?? "var(--sv-primary)" }) as CSSProperties;
+export type EventColors = Record<number, string>;
+export const eventStyle = (color?: string) =>
+  ({ "--sv-event": color, "--sv-tasting": color }) as CSSProperties;
 export function BookingIcon({
   name,
   className = "i",
@@ -267,12 +267,24 @@ export function SeatStepper({
     </div>
   );
 }
-export interface CalendarData {
-  tastings: Tasting[];
+export type EventCollection =
+  | {
+      events: ShopEvent[];
+      /** @deprecated Use events. Removed in 1.0. */
+      tastings?: ShopEvent[];
+    }
+  | {
+      events?: ShopEvent[];
+      /** @deprecated Use events. Removed in 1.0. */
+      tastings: ShopEvent[];
+    };
+export const eventsFrom = (data: EventCollection): ShopEvent[] =>
+  data.events ?? data.tastings ?? [];
+export type CalendarData = EventCollection & {
   windows: Timewindow[];
   settings: ShopSettings;
   locations: Location[];
-}
+};
 export function useCalendar({
   client,
   locationId,
@@ -284,7 +296,9 @@ export function useCalendar({
   from?: string;
   to?: string;
 }) {
-  const [data, setData] = useState<CalendarData | null>(null);
+  const [data, setData] = useState<
+    (CalendarData & Required<EventCollection>) | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const range = useRef<string | null>(null);
@@ -298,7 +312,7 @@ export function useCalendar({
     }
     setError(null);
     Promise.all([
-      client.listTastings(controller.signal),
+      client.listEvents(controller.signal),
       client.listLocationTimewindows(locationId, {
         startDate: from,
         endDate: to,
@@ -307,10 +321,12 @@ export function useCalendar({
       client.getSettings(controller.signal),
       client.listLocations(controller.signal),
     ])
-      .then(([tastings, result, settings, locations]) => {
+      .then(([events, result, settings, locations]) => {
         if (!controller.signal.aborted)
           setData({
-            tastings,
+            events,
+            /** @deprecated Use events. Removed in 1.0. */
+            tastings: events,
             windows: result.timewindows.sort((a, b) =>
               `${a.date} ${a.start_time}`.localeCompare(
                 `${b.date} ${b.start_time}`,
@@ -343,7 +359,7 @@ export function DateTile({
 }) {
   const d = new Date(`${w.date}T12:00:00Z`);
   return (
-    <span className="date-tile" style={tastingStyle(color)} aria-hidden="true">
+    <span className="date-tile" style={eventStyle(color)} aria-hidden="true">
       <span className="wd">
         {d.toLocaleDateString(locale, { weekday: "short", timeZone: "UTC" })}
       </span>
@@ -356,6 +372,7 @@ export function DateTile({
 }
 export function DateList({
   windows,
+  events,
   tastings,
   locations = [],
   seats = 1,
@@ -366,15 +383,15 @@ export function DateList({
   groupMonths = true,
 }: {
   windows: Timewindow[];
-  tastings: Tasting[];
   locations?: Location[];
   seats?: number;
   leadHours?: number;
   onSelect: (w: Timewindow) => void;
-  colors?: TastingColors;
+  colors?: EventColors;
   format?: BookingFormat;
   groupMonths?: boolean;
-}) {
+} & EventCollection) {
+  const eventRows = eventsFrom({ events, tastings } as EventCollection);
   let month = "";
   return (
     <div className="agenda">
@@ -385,7 +402,7 @@ export function DateList({
         const group = w.date.slice(0, 7);
         const heading = group !== month;
         month = group;
-        const t = tastings.find((t) => t.tasting_id === w.tasting_id);
+        const t = eventRows.find((t) => t.tasting_id === w.tasting_id);
         const l = locations.find((l) => l.id === w.franchise_location_id);
         return (
           <div key={w.timewindow_id}>
@@ -403,7 +420,7 @@ export function DateList({
             )}
             <button
               className="ag-row"
-              style={tastingStyle(colors[w.tasting_id])}
+              style={eventStyle(colors[w.tasting_id])}
               type="button"
               onClick={() => onSelect(w)}
             >
@@ -437,6 +454,7 @@ export function DateList({
 export function MonthCalendar({
   month,
   windows,
+  events,
   tastings,
   seats = 1,
   leadHours = 24,
@@ -449,16 +467,16 @@ export function MonthCalendar({
 }: {
   month: string;
   windows: Timewindow[];
-  tastings: Tasting[];
   seats?: number;
   leadHours?: number;
   onSelect: (w: Timewindow) => void;
   compact?: boolean;
   onMonthChange?: (month: string) => void;
   locations?: Location[];
-  colors?: TastingColors;
+  colors?: EventColors;
   format?: BookingFormat;
-}) {
+} & EventCollection) {
+  const eventRows = eventsFrom({ events, tastings } as EventCollection);
   const first = new Date(`${month}-01T12:00:00Z`);
   const offset = (first.getUTCDay() + 6) % 7;
   const days = new Date(
@@ -558,7 +576,7 @@ export function MonthCalendar({
                     onFocus={() => setDay(key)}
                     tabIndex={key === focusDay ? 0 : -1}
                     aria-pressed={key === focusDay}
-                    aria-label={`${bookingDate(key, false, format.locale)}: ${list.length ? list.map((w) => `${tastings.find((t) => t.tasting_id === w.tasting_id)?.tasting_name ?? w.event_name}, ${w.start_time.slice(0, 5)}, ${availability(w, seats, leadHours).text}`).join("; ") : "kein Termin"}`}
+                    aria-label={`${bookingDate(key, false, format.locale)}: ${list.length ? list.map((w) => `${eventRows.find((t) => t.tasting_id === w.tasting_id)?.tasting_name ?? w.event_name}, ${w.start_time.slice(0, 5)}, ${availability(w, seats, leadHours).text}`).join("; ") : "kein Termin"}`}
                     onClick={() => selectDay(key)}
                   >
                     <span className="cal-num">{n}</span>
@@ -566,7 +584,7 @@ export function MonthCalendar({
                       {list.slice(0, 3).map((w) => (
                         <span
                           key={w.timewindow_id}
-                          style={tastingStyle(colors[w.tasting_id])}
+                          style={eventStyle(colors[w.tasting_id])}
                           className={`cal-dot s-${availability(w, seats, leadHours).state}`}
                         />
                       ))}
@@ -577,14 +595,14 @@ export function MonthCalendar({
                     {list.map((w) => (
                       <button
                         type="button"
-                        style={tastingStyle(colors[w.tasting_id])}
+                        style={eventStyle(colors[w.tasting_id])}
                         className={`cal-ev s-${availability(w, seats, leadHours).state}`}
                         key={w.timewindow_id}
                         onClick={() => onSelect(w)}
-                        aria-label={`${bookingDate(key, false, format.locale)}, ${bookingTime(w)}: ${tastings.find((t) => t.tasting_id === w.tasting_id)?.tasting_name ?? w.event_name}. ${availability(w, seats, leadHours).text}`}
+                        aria-label={`${bookingDate(key, false, format.locale)}, ${bookingTime(w)}: ${eventRows.find((t) => t.tasting_id === w.tasting_id)?.tasting_name ?? w.event_name}. ${availability(w, seats, leadHours).text}`}
                       >
                         <strong>{w.start_time.slice(0, 5)}</strong>{" "}
-                        {tastings.find((t) => t.tasting_id === w.tasting_id)
+                        {eventRows.find((t) => t.tasting_id === w.tasting_id)
                           ?.tasting_name ?? w.event_name}
                         <AvailabilityBadge
                           window={w}
@@ -623,7 +641,7 @@ export function MonthCalendar({
                 type="button"
                 onClick={() => onSelect(w)}
               >
-                {tastings.find((t) => t.tasting_id === w.tasting_id)
+                {eventRows.find((t) => t.tasting_id === w.tasting_id)
                   ?.tasting_name ?? w.event_name}
                 , {bookingTime(w)}{" "}
                 <AvailabilityBadge
@@ -636,7 +654,7 @@ export function MonthCalendar({
         ) : (
           <DateList
             windows={windows.filter((w) => w.date === focusDay)}
-            tastings={tastings}
+            events={eventRows}
             locations={locations}
             seats={seats}
             leadHours={leadHours}
@@ -661,6 +679,7 @@ export function DateSheet({
   detailUrl,
   phone,
   phoneLabel,
+  labels,
   nextWindow,
   onSelect,
   windows = [],
@@ -668,7 +687,7 @@ export function DateSheet({
   format = {},
 }: {
   window: Timewindow;
-  variants: Tasting[];
+  variants: ShopEvent[];
   location?: Location;
   settings: ShopSettings;
   initialSeats?: number;
@@ -677,6 +696,7 @@ export function DateSheet({
   detailUrl?: string;
   phone?: string;
   phoneLabel?: string;
+  labels?: Partial<BookingLabels>;
   nextWindow?: Timewindow;
   onSelect?: (window: Timewindow) => void;
   windows?: Timewindow[];
@@ -687,6 +707,7 @@ export function DateSheet({
   const title = useId();
   const max = Math.min(settings.guest_max_seats ?? 8, w.free_spots || 1);
   const [seats, setSeats] = useState(Math.max(1, Math.min(initialSeats, max)));
+  const copy = { ...defaultBookingLabels, ...labels };
   const mode = bookingMode(settings);
   const alternative =
     windows.find(
@@ -764,6 +785,7 @@ export function DateSheet({
           settings={settings}
           phone={phone}
           phoneLabel={phoneLabel}
+          labels={labels}
         />
         {a.bookable && mode !== "paused" ? (
           <>
@@ -829,7 +851,7 @@ export function DateSheet({
         )}
         {detailUrl && (
           <a className="btn-link mono-link" href={detailUrl}>
-            Mehr zum Tasting <BookingIcon name="arrow" />
+            {copy.eventDetails} <BookingIcon name="arrow" />
           </a>
         )}
       </div>
@@ -879,3 +901,8 @@ export function BookingDialog({
     </dialog>
   );
 }
+
+/** @deprecated Use EventColors. Removed in 1.0. */
+export type TastingColors = EventColors;
+/** @deprecated Use eventStyle. Removed in 1.0. */
+export const tastingStyle = eventStyle;

@@ -15,6 +15,7 @@ import {
   bookingDate,
   bookingTime,
   type CalendarData,
+  eventsFrom,
 } from "./calendar";
 
 export function bookingCalendarFile(
@@ -224,8 +225,9 @@ export function BookingOutcome({
         <div className="card card-pad stack">
           <p className="eyebrow">Deine Auswahl</p>
           <h2 className="display h3">
-            {data?.tastings.find((t) => t.tasting_id === selected?.tasting_id)
-              ?.tasting_name ?? "Dein Termin"}
+            {(data ? eventsFrom(data) : []).find(
+              (t) => t.tasting_id === selected?.tasting_id,
+            )?.tasting_name ?? "Dein Termin"}
           </h2>
           {selected ? (
             <>

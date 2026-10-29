@@ -2,7 +2,10 @@
 
 Detailed behaviour of the `@shopvento/ui` components and the backend contract they rely on. Start with the [README](../README.md) for installation and a minimal example.
 
-## Booking (`TastingBooking`)
+## Booking (`EventBooking`)
+
+Pass the event identifier as `eventId`. `ShopEvent` describes an event variant;
+its backend field names remain unchanged.
 
 `baseUrl` is the backend origin, without `/api/shop`. The backend must permit the storefront origin via CORS. Public requests default to `credentials: 'omit'`. `mode="account"` requires the host to supply `getAccessToken` or configure cookie authentication via `credentials="include"`; token callbacks may return a token synchronously or asynchronously. Changes to `fetch` and `getAccessToken` callback identity do not reload the form. Account creation and sign-in components use the separate same-origin account client described below. Guest booking requires both `guest_booking_enabled=true` and `direct_booking_enabled=true`, even when all seats have vouchers. The form and Turnstile widget are hidden when either flag is false. In account mode, `direct_booking_enabled=false` requires a voucher for every seat.
 
@@ -10,7 +13,7 @@ Detailed behaviour of the `@shopvento/ui` components and the backend contract th
 
 Guest submission sends flat contact fields, `timewindow_id`, `seats`, `turnstile_token` and `terms_privacy_accepted` from the current consent checkbox. Guests can book one to eight seats. Optional phone numbers require an international prefix (for example +49 151 23456789). German backend 422 messages appear alongside the matching contact field when identifiable and in the focused error summary.
 
-`turnstileSiteKey` is public and required for guest submission. The package loads Cloudflare's explicit-render script only for an enabled guest form, invalidates expired tokens and interactive challenge timeouts, removes widgets on unmount, and remounts after submission errors. The backend must validate the token. See [Cloudflare's client rendering contract](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/). Configure CSP and allowed hostnames in the consumer. Names, email addresses and voucher codes (which carry monetary value) live in plain tab-scoped sessionStorage with the draft. Phone numbers, consent and Turnstile tokens are not persisted. Drafts are scoped by backend, tasting, optional location and booking mode, and cleared after successful booking submission. Cancelling Stripe Checkout therefore starts a fresh form; preserving a cancelled draft requires a future backend reconciliation contract.
+`turnstileSiteKey` is public and required for guest submission. The package loads Cloudflare's explicit-render script only for an enabled guest form, invalidates expired tokens and interactive challenge timeouts, removes widgets on unmount, and remounts after submission errors. The backend must validate the token. See [Cloudflare's client rendering contract](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/). Configure CSP and allowed hostnames in the consumer. Names, email addresses and voucher codes (which carry monetary value) live in plain tab-scoped sessionStorage with the draft. Phone numbers, consent and Turnstile tokens are not persisted. Drafts are scoped by backend, event, optional location and booking mode, and cleared after successful booking submission. Cancelling Stripe Checkout therefore starts a fresh form; preserving a cancelled draft requires a future backend reconciliation contract.
 
 `onRedirect` may override browser navigation for host integration or tests. Checkout redirects accept only HTTPS URLs at `checkout.stripe.com` by default. `checkoutHosts={["checkout.stripe.com", "checkout.example.com"]}` can explicitly allow an installation's custom Stripe domain (hostnames only). A rejected Checkout URL, failed success response or failed navigation shows the backend order number and blocks duplicate submission; the customer should contact the installation before retrying. The default navigates with `window.location.assign`. A fully voucher-funded response without a Checkout URL displays the accepted booking and its order number.
 
@@ -31,11 +34,11 @@ Use `<BookingResult outcome="cancel" retryUrl="/booking" />` for cancellation. T
 
 ## Booking exports
 
-`TastingBooking`, `BookingResult`, `DateTimePicker`, `SeatSelector`, `GuestFields`, `BookingSummary`; `createBookingClient`, `bookingErrorMessage`, `bookingFieldErrors`, `deadlinePassed`, `windowBookable`, `windowTooSoon`; `useTastings`, `useBookingData`, `useBookingDraft`, `useSubmitBooking`; and their TypeScript contracts. `getTasting` derives detail/variants by filtering the existing public tasting list, because there is no public detail endpoint.
+`EventBooking`, `BookingResult`, `DateTimePicker`, `SeatSelector`, `GuestFields`, `BookingSummary`; `createBookingClient`, `bookingErrorMessage`, `bookingFieldErrors`, `deadlinePassed`, `windowBookable`, `windowTooSoon`; `useEvents`, `useBookingData`, `useBookingDraft`, `useSubmitBooking`; and their TypeScript contracts. `getEvent` derives detail/variants by filtering the existing public event list, because there is no public detail endpoint.
 
 When using `useSubmitBooking` directly, call `submit(draft, true, turnstileToken, consent)` for guests; the fourth argument is the current consent state and defaults to false. Account submissions keep `submit(draft, false, "")`. The hook exposes `fieldErrors` alongside the error summary.
 
-## Discover bookable tastings at a location
+## Discover bookable events at a location
 
 ```ts
 import { createBookingClient, windowBookable } from '@shopvento/ui';
@@ -45,10 +48,57 @@ const { timewindows, total } = await client.listLocationTimewindows(3, {
   startDate: '2026-11-01',
   signal: controller.signal,
 });
-const tastingIds = [...new Set(timewindows.filter(slot => windowBookable(slot)).map(slot => slot.tasting_id))];
+const eventIds = [...new Set(timewindows.filter(slot => windowBookable(slot)).map(slot => slot.tasting_id))];
 ```
 
-`listLocationTimewindows(locationId, { startDate, signal })` makes one `GET /api/shop/tastings/timewindows?location_id=...&start_date=...` request without `tasting_id`. Location IDs must be positive integers; invalid IDs throw before making a request. Options are optional; `startDate` defaults to today in Europe/Berlin and `signal` supports cancellation. The response preserves the backend's `{ timewindows, total }` envelope across all tastings; apply `windowBookable` for the local 24-hour and capacity checks. `listTimewindows` remains available for a single tasting.
+`listLocationTimewindows(locationId, { startDate, signal })` makes one `GET /api/shop/tastings/timewindows?location_id=...&start_date=...` request without `tasting_id`. Location IDs must be positive integers; invalid IDs throw before making a request. Options are optional; `startDate` defaults to today in Europe/Berlin and `signal` supports cancellation. The response preserves the backend's `{ timewindows, total }` envelope across all events; apply `windowBookable` for the local 24-hour and capacity checks. `listTimewindows` remains available for a single event.
+
+## Renamed in 0.2.0
+
+The old names remain deprecated aliases until 1.0. Both prop names work; the new
+name takes precedence when both are supplied. Backend paths and wire fields are
+unchanged.
+
+| Previous name | New name |
+| --- | --- |
+| `TastingBooking` | `EventBooking` |
+| `TastingBookingProps` | `EventBookingProps` |
+| `tastingId` | `eventId` |
+| `Tasting` | `ShopEvent` |
+| `useTastings` | `useEvents` |
+| `tastings` (hook result, calendar data and props) | `events` |
+| `client.listTastings`, `client.getTasting` | `client.listEvents`, `client.getEvent` |
+| `AccountTastingDetail` | `AccountEventDetail` |
+| `TastingColors`, `tastingStyle` | `EventColors`, `eventStyle` |
+| `--sv-tasting` | `--sv-event` |
+| `k-tasting`, `t-tasting` | `k-event`, `t-event` |
+
+## Event labels
+
+German defaults use "Veranstaltung" and "Veranstaltungsgutschein". Pass partial
+`BookingLabels` through `labels` on `EventBooking`, `BookingFlow`, `DateSheet`
+and `BookingModeNotice`, following the same host-owned copy pattern as account
+`labels.events`. `DateSheet` and `BookingFlow` forward the labels to their mode
+notices. `guestDisabledMessage` still takes precedence over `labels.guestDisabled`.
+
+```tsx
+<EventBooking
+  baseUrl="https://your-instance.example"
+  eventId={123}
+  termsUrl="/terms"
+  privacyUrl="/privacy"
+  labels={{
+    eventsLoading: 'Veranstaltungen laden…',
+    eventUnavailable: 'Dieses Event ist gerade nicht buchbar.',
+    guestDisabled: 'Bitte melde Dich für die Buchung an.',
+  }}
+/>
+```
+
+Other keys are `eventDetails`, `eventVoucherNotice`, `eventVoucherRequired`,
+`eventVoucherDescription`, and `eventVoucherMissing: (count: number) => string`.
+Every event-specific default can be replaced with the host's terminology.
+`defaultBookingLabels` exports the complete defaults.
 
 ## CSS variables
 
@@ -82,10 +132,15 @@ Set variables on any host ancestor or `.sv-booking`. Defaults are fallback value
 }
 ```
 
+Calendar and list components accept `colors: EventColors`, keyed by event ID;
+`eventStyle(color)` supplies `--sv-event`. Set `--sv-event` on a host ancestor to
+provide a default color. Account event vouchers and date tiles expose `k-event`
+and `t-event`; the previous selectors and tokens remain supported in parallel.
+
 ## Backend contract
 
 - Public routes: `GET /api/shop/tastings/`, `GET /api/shop/tastings/timewindows?tasting_id=…`. Always send the timewindow's `timewindow_id` for booking. The row `id` is only a rendering key; materialized rows have a different numeric row ID. Requests include `start_date` equal to today in Europe/Berlin, and optional `location_id`. Past dates and elapsed local starts are excluded.
-- Contracts: settings flags at `GET /api/shop/settings`; `POST /api/shop/tastings/bookings` accepts `seats`; response adds `order_number`. Variant IDs are UUID strings. Tasting prices are integer euro cents.
+- Contracts: settings flags at `GET /api/shop/settings`; `POST /api/shop/tastings/bookings` accepts `seats`; response adds `order_number`. Variant IDs are UUID strings. Event prices are integer euro cents.
 - `POST /api/shop/tastings/bookings/guest` accepts `first_name`, `last_name`, `email`, optional nullable `phone`, `turnstile_token`, required `terms_privacy_accepted`, `timewindow_id`, and one to eight `seats`. Both feature flags are required.
 - Pending: optional `booking_deadline` is an ISO timestamp with UTC offset on each timewindow. When present, the UI disables expired dates and rechecks at submit. The picker also excludes starts less than 24 hours ahead and rechecks at submission, matching the backend's Berlin local datetime subtraction, including daylight saving transitions. Exactly 24 hours ahead is eligible. The backend must enforce the deadline and capacity at submission.
 - There is no quote endpoint or voucher balance in the current public contract. Summary shows backend variant prices before voucher allocation; the final payable amount comes from Stripe Checkout. Customer-safe German details are preserved, including counts, voucher codes, 500/503 messages and the slowapi 429 `error` envelope. Its prefix is stripped; recognized German messages preserve the backend wait time, while other rate limits use a German one-minute fallback. German 422 messages are mapped to contact fields where possible, with local German hints for email format and empty names; body-level messages appear in the summary. Contact field errors use `--sv-error` styling and disappear when the customer edits that field; a new rejected submission shows fresh errors. Generic technical and network errors use local messages.
@@ -137,7 +192,7 @@ return alone does not confirm payment; confirmation remains the backend's email.
 Voucher lookup uses the existing public `/vouchers/{code}` endpoint. Legacy codes
 that return 404 or rate-limited checks (429) stay pending for backend validation.
 The booking contract accepts one code per seat. The summary and review deduct
-checked tasting vouchers from their assigned seat first, then apply value voucher
+checked event vouchers from their assigned seat first, then apply value voucher
 balances across the remaining seats in submit order. They show “Zu zahlen” with
 the remaining amount; only pending checks retain “Höchstens zu zahlen” and the
 Stripe hint, with known deductions already applied. Codes are rechecked on
@@ -148,7 +203,7 @@ provided by the backend and is never hard-coded into these components.
 
 Booking modes use the effective backend flags: absent settings pause online booking;
 both flags off keep account booking with a voucher for every seat;
-direct off and guest on requires tasting vouchers and an account; direct on and
+direct off and guest on requires event vouchers and an account; direct on and
 guest off requires an account. Pass `onReloadAvailability` to refresh the calendar
 after a 400/409 seat conflict and `onSignOut` to expose account sign-out.
 
@@ -159,13 +214,13 @@ or checkout URL. Cancel renders the current selection using fresh `data`.
 
 Hosts can pass `countryCodes` to `BookingFlow` (without it, enter an international
 number), `format` (`locale`, `currency`) to the flow/date components, and `colors`
-keyed by tasting ID to calendars/lists. `DateTile` and `DateSheet` accept `color`.
+keyed by event ID to calendars/lists. `DateTile` and `DateSheet` accept `color`.
 Notes are limited to 300 characters in the flow while the public API still accepts
 500. The backend OpenAPI caps guest `seats` at 99; runtime `guest_max_seats` can
 apply a smaller limit. Public booking requests send `notes`; `booking_note` is
 restricted to back office and is deliberately absent from this client's contract.
 
-`TastingBooking` remains available as the compatibility form for existing hosts.
+`EventBooking` provides the compact booking form for existing hosts.
 
 ## Account dashboard
 
@@ -173,7 +228,7 @@ The account components consume the additive customer API through `createDashboar
 
 Set optional `AccountLabels.eventVoucherSingular` for a single event voucher (fallback: “Gutschein”); `eventVoucher` remains the plural label. Reservation updates submit only changed fields so stored legacy counts and free-text times remain editable. `reservationStartInstant` mirrors the backend midnight fallback for stored times outside strict HH:MM (00:00 to 23:59). Unchanged reservation forms disable saving and never send an empty PATCH.
 
-Exports: `AccountLayout`, `AccountOverview`, `AccountBookings`, `AccountTastingDetail`, `AccountOrderDetail`, `AccountReservationDetail`, `AccountVouchers`, `AccountVoucherDetail`, `AccountSettings`. The host owns loading detail records, refreshing after mutations, sign-in redirects, logout, public event windows and static detail routing. Filters use `zeit` and `typ` query parameters, while detail links carry opaque IDs.
+Exports: `AccountLayout`, `AccountOverview`, `AccountBookings`, `AccountEventDetail`, `AccountOrderDetail`, `AccountReservationDetail`, `AccountVouchers`, `AccountVoucherDetail`, `AccountSettings`. The host owns loading detail records, refreshing after mutations, sign-in redirects, logout, public event windows and static detail routing. Filters use `zeit` and `typ` query parameters, while detail links carry opaque IDs.
 
 Newsletter uses the `NewsletterAdapter` (`status`, `subscribe`, `unsubscribe`) interface. Status is `false` (off), `"pending"` (requested but unconfirmed), or `true` (confirmed). `profileNewsletterAdapter` reads the profile timestamps and requests or resends DOI with an explicit profile PUT true. Account settings explain the five-minute resend cooldown, 24-hour expiry and previous-link invalidation. Cancellation and revocation POST to `/api/shop/user/newsletter/unsubscribe` without a body. Unchanged newsletter consent is omitted from personal-data saves. Registration explains the separate newsletter confirmation email when opted in.
 

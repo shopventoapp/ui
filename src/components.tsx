@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { type BookingLabels, defaultBookingLabels } from "./booking-labels";
 import {
   type BookingClient,
   type ClientOptions,
@@ -16,7 +17,7 @@ import {
   type GuestFieldErrors,
   type Location,
   type Seat,
-  type Tasting,
+  type ShopEvent,
   type Timewindow,
   windowBookable,
   windowTooSoon,
@@ -106,7 +107,7 @@ export function SeatSelector({
   maxSeats = Math.max(20, seats.length),
 }: {
   seats: Seat[];
-  variants: Tasting[];
+  variants: ShopEvent[];
   onChange: (seats: Seat[]) => void;
   directBookingEnabled: boolean;
   maxSeats?: number;
@@ -267,7 +268,7 @@ export function BookingSummary({
   location,
 }: {
   draft: BookingDraft;
-  variants: Tasting[];
+  variants: ShopEvent[];
   window?: Timewindow;
   location?: Location;
 }) {
@@ -304,8 +305,8 @@ export function BookingSummary({
     </section>
   );
 }
-export interface TastingBookingProps extends ClientOptions {
-  tastingId: number;
+export interface EventBookingOptions extends ClientOptions {
+  labels?: Partial<BookingLabels>;
   locationId?: number;
   checkoutHosts?: readonly string[];
   guestDisabledMessage?: string;
@@ -317,7 +318,22 @@ export interface TastingBookingProps extends ClientOptions {
   client?: BookingClient;
   onRedirect?: (url: string) => void;
 }
-export function TastingBooking(props: TastingBookingProps) {
+export type EventBookingProps = EventBookingOptions &
+  (
+    | {
+        eventId: number;
+        /** @deprecated Use eventId. Removed in 1.0. */
+        tastingId?: number;
+      }
+    | {
+        eventId?: number;
+        /** @deprecated Use eventId. Removed in 1.0. */
+        tastingId: number;
+      }
+  );
+export function EventBooking(props: EventBookingProps) {
+  const labels = { ...defaultBookingLabels, ...props.labels };
+  const eventId = props.eventId ?? props.tastingId ?? 0;
   const callbacks = useRef(props);
   callbacks.current = props;
   const client = useMemo(
@@ -337,9 +353,9 @@ export function TastingBooking(props: TastingBookingProps) {
     error: loadError,
     loading,
     reload,
-  } = useBookingData(client, props.tastingId, props.locationId);
+  } = useBookingData(client, eventId, props.locationId);
   const { draft, setDraft, ready, clear } = useBookingDraft(
-    `vv:booking:${props.baseUrl}:${props.tastingId}:${props.locationId ?? "all"}:${props.mode ?? "guest"}`,
+    `vv:booking:${props.baseUrl}:${eventId}:${props.locationId ?? "all"}:${props.mode ?? "guest"}`,
   );
   const { submit, pending, error, fieldErrors, result } = useSubmitBooking(
     client,
@@ -430,7 +446,7 @@ export function TastingBooking(props: TastingBookingProps) {
   if (loading || !ready)
     return (
       <div className="sv-booking" role="status">
-        Tastings werden geladen…
+        {labels.eventsLoading}
       </div>
     );
   if (loadError)
@@ -443,7 +459,7 @@ export function TastingBooking(props: TastingBookingProps) {
       </div>
     );
   if (!data?.variants.length)
-    return <p className="sv-booking">Dieses Tasting ist nicht verfügbar.</p>;
+    return <p className="sv-booking">{labels.eventUnavailable}</p>;
   if (
     guest &&
     (!data.settings.guest_booking_enabled ||
@@ -451,8 +467,7 @@ export function TastingBooking(props: TastingBookingProps) {
   )
     return (
       <p className="sv-booking">
-        {props.guestDisabledMessage ??
-          "Onlinebuchungen ohne Anmeldung sind derzeit nicht verfügbar. Bitte kontaktiere uns, um dieses Tasting zu buchen."}
+        {props.guestDisabledMessage ?? labels.guestDisabled}
       </p>
     );
   if (result)
@@ -596,3 +611,8 @@ export function BookingResult({
     </section>
   );
 }
+
+/** @deprecated Use EventBookingProps. Removed in 1.0. */
+export type TastingBookingProps = EventBookingProps;
+/** @deprecated Use EventBooking. Removed in 1.0. */
+export const TastingBooking = EventBooking;

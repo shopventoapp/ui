@@ -498,6 +498,11 @@ test("calendar clears a changed range but keeps the same range mounted during re
   });
   function CalendarProbe({ from }: { from: string }) {
     const calendar = useCalendar({ client, locationId: 1, from });
+    if (calendar.data) {
+      // Loaded data exposes both required keys to old and new TypeScript hosts.
+      expect(calendar.data.events.length).toBe(calendar.data.tastings.length);
+      expect(calendar.data.events === calendar.data.tastings).toBe(true);
+    }
     return (
       <>
         <span>{calendar.data ? "loaded" : "loading"}</span>
@@ -679,7 +684,9 @@ test("rate limited restored vouchers allow progress and an explicit retry", asyn
   fireEvent.click(
     screen.getByRole("button", { name: "In einer Minute erneut prüfen" }),
   );
-  await screen.findByText("Tasting-Gutschein für 1 Person, deckt 1 Platz");
+  await screen.findByText(
+    "Veranstaltungsgutschein für 1 Person, deckt 1 Platz",
+  );
   expect(calls).toBe(2);
   expect(screen.queryByText(/Bitte warte kurz/)).toBeNull();
 });
@@ -718,10 +725,10 @@ test("voucher counter uses the missing count and disappears when complete", asyn
     );
     if (c === "ONE")
       expect(
-        screen.getByText("1 Platz braucht noch einen Tasting-Gutschein."),
+        screen.getByText("1 Platz braucht noch einen Veranstaltungsgutschein."),
       ).toBeTruthy();
   }
-  expect(screen.queryByText(/noch einen Tasting-Gutschein/)).toBeNull();
+  expect(screen.queryByText(/noch einen Veranstaltungsgutschein/)).toBeNull();
 });
 
 test("voucher rejection focuses the code after asynchronous navigation and clears on removal", async () => {
@@ -848,4 +855,47 @@ test("contact error links focus the field after delayed step navigation", async 
   expect(target).toBe(2);
   view.rerender(<BookingFlow {...props} step={2} />);
   await waitFor(() => expect(document.activeElement?.id).toBe("f-first_name"));
+});
+
+test("booking flow overrides every event voucher message with host copy", async () => {
+  startFlowDraft("labels", slot.timewindow_id, 2, "v1");
+  const client = createBookingClient({
+    baseUrl: "https://example.invalid",
+    fetch: async () =>
+      Response.json({ kind: "SINGLE_PURPOSE", remaining_value: 4900 }),
+  });
+  const props = {
+    ...base,
+    client,
+    data: {
+      ...data,
+      settings: { ...data.settings, direct_booking_enabled: false },
+    },
+    draftKey: "labels",
+    labels: {
+      eventVoucherNotice: "Tastings nur mit Gutschein.",
+      eventVoucherRequired: "Bitte gib die Tasting-Gutscheine ein.",
+      eventVoucherMissing: (count: number) =>
+        `Noch ${count} Tasting-Gutscheine.`,
+      eventVoucherDescription: "Tasting-Gutschein für einen Platz",
+    },
+  };
+  const view = render(<BookingFlow {...props} step={1} />);
+  const input = await screen.findByLabelText("Gutscheincode");
+  expect(screen.getByText("Tastings nur mit Gutschein.")).toBeTruthy();
+  expect(screen.getByText("Noch 2 Tasting-Gutscheine.")).toBeTruthy();
+  fireEvent.change(input, { target: { value: "ONE" } });
+  fireEvent.click(screen.getByRole("button", { name: "Einlösen" }));
+  await screen.findByText("Tasting-Gutschein für einen Platz");
+  expect(screen.getByText("Noch 1 Tasting-Gutscheine.")).toBeTruthy();
+  // Host-owned navigation can open review with an incomplete voucher selection.
+  view.rerender(<BookingFlow {...props} step={3} />);
+  fireEvent.submit(
+    screen
+      .getByRole("button", { name: "Zahlungspflichtig buchen" })
+      .closest("form") as HTMLFormElement,
+  );
+  expect(
+    screen.getByText("Bitte gib die Tasting-Gutscheine ein."),
+  ).toBeTruthy();
 });

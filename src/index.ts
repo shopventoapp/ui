@@ -5,6 +5,7 @@ export * from "./account-entry";
 export * from "./account-fields";
 export * from "./account-hooks";
 export * from "./booking-flow";
+export * from "./booking-labels";
 export * from "./booking-result";
 export * from "./booking-storage";
 export * from "./calendar";

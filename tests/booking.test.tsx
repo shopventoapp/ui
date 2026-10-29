@@ -23,6 +23,7 @@ import {
 import {
   BookingResult,
   DateTimePicker,
+  EventBooking,
   TastingBooking,
 } from "../src/components";
 import { useBookingDraft, useSubmitBooking } from "../src/hooks";
@@ -242,7 +243,9 @@ describe("booking flow", () => {
       );
       const alert = await screen.findByRole("alert");
       expect(alert.textContent).toBe(detail);
-      await waitFor(() => expect(document.activeElement).toBe(alert));
+      // Bun formats the entire happy-dom graph on a failed DOM-object assertion.
+      // Focus effects may still be pending on the first poll on a busy CI runner.
+      await waitFor(() => expect(document.activeElement === alert).toBe(true));
     },
   );
   test("voucher only setting rejects seats with no voucher", async () => {
@@ -422,7 +425,7 @@ describe("draft and returns", () => {
           privacyUrl="/privacy"
         />,
       ),
-    ).toContain("Tastings werden geladen");
+    ).toContain("Veranstaltungen werden geladen");
   });
 });
 test("rate limit and network mapping", () => {
@@ -683,7 +686,7 @@ test("callback identity changes preserve a loaded form and use refreshed authent
       onRedirect={() => {}}
     />,
   );
-  expect(screen.queryByText("Tastings werden geladen…")).toBeNull();
+  expect(screen.queryByText("Veranstaltungen werden geladen…")).toBeNull();
   expect(fetcher.mock.calls).toHaveLength(count);
   fireEvent.click(screen.getByRole("button"));
   await screen.findByText("Buchungsnummer: SV123");
@@ -1003,4 +1006,81 @@ describe("final guest contract regressions", () => {
       expect(screen.getByText(/mindestens 24 Stunden/)).toBeTruthy();
     },
   );
+});
+
+test("old and new booking names render the same loaded form and preserve drafts", async () => {
+  const { client, fetcher } = fixture();
+  const props = {
+    baseUrl: "https://api.example",
+    client,
+    mode: "account" as const,
+    termsUrl: "/terms",
+    privacyUrl: "/privacy",
+  };
+  const view = render(<TastingBooking {...props} tastingId={1} />);
+  const picker = await screen.findByLabelText("Termin");
+  fireEvent.change(picker, { target: { value: slot.timewindow_id } });
+  const before = view.container.innerHTML;
+  view.rerender(<EventBooking {...props} eventId={1} tastingId={999} />);
+  expect(view.container.innerHTML).toBe(before);
+  expect(fetcher.mock.calls).toHaveLength(4);
+  expect(
+    sessionStorage.getItem("vv:booking:https://api.example:1:all:account"),
+  ).toContain(slot.timewindow_id);
+  expect(
+    sessionStorage.getItem("vv:booking:https://api.example:999:all:account"),
+  ).toBeNull();
+  // A real submission through the new name keeps the backend wire contract.
+  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Zahlungspflichtig buchen" }),
+  );
+  await screen.findByText("Buchungsnummer: SV123");
+  const call = fetcher.mock.calls.find(([, init]) => init?.method === "POST");
+  expect(String(call?.[0])).toBe(
+    "https://api.example/api/shop/tastings/bookings",
+  );
+  expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+    timewindow_id: slot.timewindow_id,
+    seats: [{ variant_id: variant.variant_id }],
+  });
+});
+
+test.each([
+  [
+    { variants: [] as Tasting[] },
+    "eventUnavailable",
+    "Dieses Tasting ist nicht verfügbar.",
+  ],
+  [{ guest: false }, "guestDisabled", "Tasting nur mit Anmeldung."],
+] as const)(
+  "booking event labels can retain host terminology: %s",
+  async (options, key, text) => {
+    const { client } = fixture(options);
+    render(
+      <EventBooking
+        baseUrl="https://api.example"
+        client={client}
+        eventId={1}
+        termsUrl="/terms"
+        privacyUrl="/privacy"
+        labels={{ [key]: text }}
+      />,
+    );
+    expect(await screen.findByText(text)).toBeTruthy();
+  },
+);
+
+test("booking loading label is overridable during server rendering", () => {
+  expect(
+    renderToString(
+      <EventBooking
+        baseUrl="https://api.example"
+        eventId={1}
+        termsUrl="/terms"
+        privacyUrl="/privacy"
+        labels={{ eventsLoading: "Tastings laden" }}
+      />,
+    ),
+  ).toContain("Tastings laden");
 });
