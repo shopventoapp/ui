@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { type BookingLabels, defaultBookingLabels } from "./booking-labels";
+import { type BookingLabels, mergeBookingLabels } from "./booking-labels";
 import {
   type BookingClient,
   type ClientOptions,
@@ -332,7 +332,7 @@ export type EventBookingProps = EventBookingOptions &
       }
   );
 export function EventBooking(props: EventBookingProps) {
-  const labels = { ...defaultBookingLabels, ...props.labels };
+  const labels = mergeBookingLabels(props.labels);
   const eventId = props.eventId ?? props.tastingId ?? 0;
   const callbacks = useRef(props);
   callbacks.current = props;

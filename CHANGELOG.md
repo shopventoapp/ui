@@ -30,6 +30,18 @@ All notable changes to this package are documented here. The format follows [Kee
   generated wire contracts, request fields, draft storage and URL filters stay
   unchanged.
 
+- When both `events` and deprecated `tastings` are supplied, `events` wins.
+  Hosts replacing only `tastings` on data returned by `useCalendar` must replace
+  `events` instead. `CalendarData` keeps both arrays required; `CalendarInput`
+  accepts either key for component props.
+- The package calls `client.listEvents` and `client.getEvent`. Hand-written
+  clients must provide these methods; overriding only `listTastings` or
+  `getTasting` no longer takes effect.
+- Eight German default texts changed to generic event terminology: loading,
+  unavailable event, disabled guest booking, required voucher, missing voucher
+  count, voucher description, voucher notice and event details. Hosts that want
+  "Tasting" wording must pass `labels` overrides.
+
 ## [0.1.0] - 2026-10-29
 
 First public release.

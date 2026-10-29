@@ -15,7 +15,7 @@ import {
 } from "../src/booking-flow";
 import { BookingOutcome, bookingCalendarFile } from "../src/booking-result";
 import { writeBookingResult } from "../src/booking-storage";
-import { availability, type CalendarData } from "../src/calendar";
+import { availability, type CalendarInput } from "../src/calendar";
 import { createBookingClient, type Timewindow } from "../src/client";
 
 const slot: Timewindow = {
@@ -30,7 +30,7 @@ const slot: Timewindow = {
   free_spots: 10,
   franchise_location_id: 1,
 };
-const data: CalendarData = {
+const data = {
   windows: [slot],
   events: [
     {
@@ -51,7 +51,7 @@ const data: CalendarData = {
   locations: [
     { id: 1, location_name: "Example", location_street: "Example Street" },
   ],
-};
+} satisfies CalendarInput;
 const texts = {
   withdrawal: "Fixed date",
   minimum: "Minimum guests",

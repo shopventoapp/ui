@@ -5,13 +5,16 @@ import {
   AccountEventDetail,
   AccountTastingDetail,
   BookingModeNotice,
+  type CalendarData,
   createBookingClient,
   DateList,
   DateSheet,
+  defaultBookingLabels,
   type EventBookingProps,
   type EventColors,
   eventStyle,
   MonthCalendar,
+  mergeBookingLabels,
   type ShopEvent,
   type ShopSettings,
   type Tasting,
@@ -115,6 +118,65 @@ test("calendar props accept both collection names with events taking precedence"
   ).toContain("Cooking class");
 });
 
+test("CalendarData exposes required arrays to legacy calendar consumers", () => {
+  const data: CalendarData = {
+    events: [event],
+    tastings: [event],
+    windows: [slot],
+    settings,
+    locations: [],
+  };
+  // Explicit annotations catch optional-array regressions during typecheck.
+  const events: ShopEvent[] = data.events;
+  const tastings: ShopEvent[] = data.tastings;
+  expect(events).toEqual(tastings);
+  const props = { windows: data.windows, onSelect: () => {} };
+  expect(
+    renderToStaticMarkup(<DateList {...props} tastings={data.tastings} />),
+  ).toContain("Cooking class");
+  expect(
+    renderToStaticMarkup(
+      <MonthCalendar {...props} month="2099-10" tastings={data.tastings} />,
+    ),
+  ).toContain("Cooking class");
+});
+
+test("undefined booking labels preserve defaults and defined overrides", () => {
+  const labels = {
+    eventsLoading: "",
+    eventDetails: undefined,
+    eventVoucherNotice: undefined,
+    eventVoucherMissing: undefined,
+  };
+  const original = { ...labels };
+  const copy = mergeBookingLabels(labels);
+  expect(copy.eventsLoading).toBe("");
+  expect(copy.eventDetails).toBe(defaultBookingLabels.eventDetails);
+  expect(copy.eventVoucherMissing(2)).toBe(
+    defaultBookingLabels.eventVoucherMissing(2),
+  );
+  expect(mergeBookingLabels()).toEqual(defaultBookingLabels);
+  expect(labels).toEqual(original);
+  expect(
+    renderToStaticMarkup(
+      <BookingModeNotice settings={settings} labels={labels} />,
+    ),
+  ).toContain(defaultBookingLabels.eventVoucherNotice);
+  expect(
+    renderToStaticMarkup(
+      <DateSheet
+        window={slot}
+        variants={[event]}
+        settings={settings}
+        detailUrl="/event"
+        onClose={() => {}}
+        onContinue={() => {}}
+        labels={labels}
+      />,
+    ),
+  ).toContain(defaultBookingLabels.eventDetails);
+});
+
 test("date-sheet and booking-mode copy allow host terminology", () => {
   const labels = {
     eventDetails: "Mehr zum Tasting",
@@ -143,8 +205,15 @@ test("date-sheet and booking-mode copy allow host terminology", () => {
 });
 
 test("event and legacy CSS tokens and selectors remain available together", async () => {
-  expect(eventStyle("#123456")).toHaveProperty("--sv-event", "#123456");
-  expect(eventStyle("#123456")).toHaveProperty("--sv-tasting", "#123456");
+  for (const style of [eventStyle, tastingStyle]) {
+    expect(Object.entries(style())).toEqual([
+      ["--sv-tasting", "var(--sv-primary)"],
+    ]);
+    expect(Object.entries(style("#123456"))).toEqual([
+      ["--sv-event", "#123456"],
+      ["--sv-tasting", "#123456"],
+    ]);
+  }
   const css = await Bun.file(
     new URL("../src/booking-redesign.css", import.meta.url),
   ).text();

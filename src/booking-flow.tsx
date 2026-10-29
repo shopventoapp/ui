@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AccountClient, AccountProfile } from "./account-client";
 import { AccountAccess } from "./account-entry";
-import { type BookingLabels, defaultBookingLabels } from "./booking-labels";
+import { type BookingLabels, mergeBookingLabels } from "./booking-labels";
 import { writeBookingResult } from "./booking-storage";
 import {
   AvailabilityBadge,
@@ -15,7 +15,7 @@ import {
   bookingMode,
   bookingMoney,
   bookingTime,
-  type CalendarData,
+  type CalendarInput,
   DateList,
   DateTile,
   type EventColors,
@@ -289,7 +289,7 @@ export interface BookingFlowProps {
   initialVoucherCode?: string;
 
   client: BookingClient;
-  data: CalendarData;
+  data: CalendarInput;
   draftKey: string;
   step: number;
   onStep: (step: number) => void;
@@ -341,7 +341,7 @@ export function BookingFlow({
   colors = {},
   onRedirect = (url) => window.location.assign(url),
 }: BookingFlowProps) {
-  const copy = { ...defaultBookingLabels, ...labels };
+  const copy = mergeBookingLabels(labels);
   const [changingDate, setChangingDate] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [draft, setDraft] = useState<FlowDraft | null>(null);

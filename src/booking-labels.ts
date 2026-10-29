@@ -24,3 +24,15 @@ export const defaultBookingLabels: BookingLabels = {
     "Jeder Platz braucht einen Veranstaltungsgutschein. Dafür meldest Du Dich mit Deinem Konto an. Ältere Codes prüfen wir verbindlich beim Buchen.",
   eventDetails: "Mehr zur Veranstaltung",
 };
+
+/** Undefined overrides retain the default, including function-valued labels. */
+export function mergeBookingLabels(
+  labels?: Partial<BookingLabels>,
+): BookingLabels {
+  return {
+    ...defaultBookingLabels,
+    ...Object.fromEntries(
+      Object.entries(labels ?? {}).filter(([, value]) => value !== undefined),
+    ),
+  };
+}

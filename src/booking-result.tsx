@@ -14,7 +14,7 @@ import {
   BookingIcon,
   bookingDate,
   bookingTime,
-  type CalendarData,
+  type CalendarInput,
   eventsFrom,
 } from "./calendar";
 
@@ -103,7 +103,7 @@ export function BookingOutcome({
   routeUrl?: string;
   registerUrl?: string;
   registerHint?: string;
-  data?: CalendarData | null;
+  data?: CalendarInput | null;
   format?: BookingFormat;
 }) {
   const [snapshot, setSnapshot] = useState<ResultSnapshot | null>(null);

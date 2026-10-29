@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { type BookingLabels, defaultBookingLabels } from "./booking-labels";
+import { type BookingLabels, mergeBookingLabels } from "./booking-labels";
 import {
   type BookingClient,
   berlinToday,
@@ -58,7 +58,7 @@ export function BookingModeNotice({
   phoneLabel?: string;
   labels?: Partial<BookingLabels>;
 }) {
-  const copy = { ...defaultBookingLabels, ...labels };
+  const copy = mergeBookingLabels(labels);
   const mode = bookingMode(settings);
   if (mode === "full") return null;
   return (
@@ -101,7 +101,10 @@ export function BookingModeNotice({
 }
 export type EventColors = Record<number, string>;
 export const eventStyle = (color?: string) =>
-  ({ "--sv-event": color, "--sv-tasting": color }) as CSSProperties;
+  ({
+    ...(color === undefined ? {} : { "--sv-event": color }),
+    "--sv-tasting": color ?? "var(--sv-primary)",
+  }) as CSSProperties;
 export function BookingIcon({
   name,
   className = "i",
@@ -280,11 +283,17 @@ export type EventCollection =
     };
 export const eventsFrom = (data: EventCollection): ShopEvent[] =>
   data.events ?? data.tastings ?? [];
-export type CalendarData = EventCollection & {
+export interface CalendarData {
+  events: ShopEvent[];
+  /** @deprecated Use events. Removed in 1.0. */
+  tastings: ShopEvent[];
   windows: Timewindow[];
   settings: ShopSettings;
   locations: Location[];
-};
+}
+/** Calendar input accepts either collection key; events takes precedence. */
+export type CalendarInput = EventCollection &
+  Omit<CalendarData, "events" | "tastings">;
 export function useCalendar({
   client,
   locationId,
@@ -296,9 +305,7 @@ export function useCalendar({
   from?: string;
   to?: string;
 }) {
-  const [data, setData] = useState<
-    (CalendarData & Required<EventCollection>) | null
-  >(null);
+  const [data, setData] = useState<CalendarData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const range = useRef<string | null>(null);
@@ -707,7 +714,7 @@ export function DateSheet({
   const title = useId();
   const max = Math.min(settings.guest_max_seats ?? 8, w.free_spots || 1);
   const [seats, setSeats] = useState(Math.max(1, Math.min(initialSeats, max)));
-  const copy = { ...defaultBookingLabels, ...labels };
+  const copy = mergeBookingLabels(labels);
   const mode = bookingMode(settings);
   const alternative =
     windows.find(

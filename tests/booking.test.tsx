@@ -1084,3 +1084,17 @@ test("booking loading label is overridable during server rendering", () => {
     ),
   ).toContain("Tastings laden");
 });
+
+test("undefined booking loading label keeps the default", () => {
+  expect(
+    renderToString(
+      <EventBooking
+        baseUrl="https://api.example"
+        eventId={1}
+        termsUrl="/terms"
+        privacyUrl="/privacy"
+        labels={{ eventsLoading: undefined }}
+      />,
+    ),
+  ).toContain("Veranstaltungen werden geladen…");
+});

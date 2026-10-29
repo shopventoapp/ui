@@ -15,7 +15,7 @@ import {
   startFlowDraft,
   writeFlowDraft,
 } from "../src/booking-flow";
-import { bookingMoney, type CalendarData, useCalendar } from "../src/calendar";
+import { bookingMoney, type CalendarInput, useCalendar } from "../src/calendar";
 import { createBookingClient, type Timewindow } from "../src/client";
 
 const slot: Timewindow = {
@@ -36,7 +36,7 @@ const slot2: Timewindow = {
   timewindow_id: "second_slot",
   date: "2099-11-01",
 };
-const data: CalendarData = {
+const data = {
   windows: [slot, slot2],
   tastings: [
     {
@@ -57,7 +57,7 @@ const data: CalendarData = {
   locations: [
     { id: 1, location_name: "Example", location_street: "Example Street" },
   ],
-};
+} satisfies CalendarInput;
 const texts = {
   withdrawal: "Fixed date",
   minimum: "Minimum guests",
@@ -897,5 +897,27 @@ test("booking flow overrides every event voucher message with host copy", async 
   );
   expect(
     screen.getByText("Bitte gib die Tasting-Gutscheine ein."),
+  ).toBeTruthy();
+});
+
+test("undefined voucher count label renders the booking flow default", async () => {
+  startFlowDraft("undefined-label", slot.timewindow_id, 2, "v1");
+  render(
+    <BookingFlow
+      {...base}
+      client={createBookingClient({ baseUrl: "https://example.invalid" })}
+      data={{
+        ...data,
+        settings: { ...data.settings, direct_booking_enabled: false },
+      }}
+      draftKey="undefined-label"
+      step={1}
+      labels={{ eventVoucherMissing: undefined }}
+    />,
+  );
+  expect(
+    await screen.findByText(
+      "2 Plätze brauchen noch einen Veranstaltungsgutschein.",
+    ),
   ).toBeTruthy();
 });
