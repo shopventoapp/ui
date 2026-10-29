@@ -10,6 +10,22 @@ All notable changes to this package are documented here. The format follows [Kee
 - Typechecked source and built-package examples, a host-owned session proxy recipe, a public OpenAPI exporter and static link checks.
 - SHA-pinned GitHub Pages workflow for main and version tags.
 
+## [0.3.0] - 2026-10-29
+
+### Added
+
+- Framework-neutral `ShopFlow` for catalogue, category and product views, persistent cart, guest/account checkout, postcode delivery-zone quotes, offered dates, legal acceptance, hosted Stripe Checkout and verified order returns.
+- Configurable legacy storage keys, route adapters, product mapping, feature policies, editorial slots and German message dictionaries.
+- Separate `forms.css` export keeps standalone public forms independent of shop assets.
+- Generic `ReservationForm` and `NewsletterSignup` with runtime public API adapters, Turnstile, opening-hour validation, account prefill and separate double opt-in.
+- Public cart, draft, checkout validation, fulfilment, display and return-consent helpers; migrated consumer regressions and new form/validation tests.
+- Complete cart/checkout, reservation and newsletter guides with typechecked examples and documented public APIs.
+
+### Compatibility
+
+- All 0.2 exports and props remain available. Host storage names must be configured when adopting an existing cart/draft; no stored customer data is migrated or discarded automatically.
+- Routes, customer branding, editorial copy and the same-origin Worker/API proxy remain owned by the host.
+
 ## [0.2.0] - 2026-10-29
 
 ### Added
