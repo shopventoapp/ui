@@ -380,4 +380,17 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     "Bitte wähle Versand oder Abholung.": "Bitte wähle Versand oder Abholung.",
     "Bitte wähle einen Abhol- oder Liefertermin aus.":
       "Bitte wähle einen Abhol- oder Liefertermin aus.",
+    Erzeuger: "Erzeuger",
+    Art: "Art",
+    Herkunft: "Herkunft",
+    Rebsorten: "Rebsorten",
+    Jahrgang: "Jahrgang",
+    Alkohol: "Alkohol",
+    Inhalt: "Inhalt",
+    Zutaten: "Zutaten",
+    Allergene: "Allergene",
+    "Kann Spuren enthalten": "Kann Spuren enthalten",
+    "Bio-Kontrollstelle": "Bio-Kontrollstelle",
+    Lebensmittelunternehmen: "Lebensmittelunternehmen",
+    Abfüller: "Abfüller",
   });

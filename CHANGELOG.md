@@ -14,6 +14,7 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Added
 
+- Shared product mapping retains catalogue declarations, legal notes, per-variant unit prices and tracked physical stock rules.
 - Framework-neutral `ShopFlow` for catalogue, category and product views, persistent cart, guest/account checkout, postcode delivery-zone quotes, offered dates, legal acceptance, hosted Stripe Checkout and verified order returns.
 - Configurable legacy storage keys, route adapters, product mapping, feature policies, editorial slots and German message dictionaries.
 - Separate `forms.css` export keeps standalone public forms independent of shop assets.

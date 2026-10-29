@@ -163,6 +163,8 @@ export function filterShopArticles(
     if (query.get("tasting") === "1" && !a?.tasting_product) return false;
     if (
       query.get("sofort") === "1" &&
+      article.type === "PHYSICAL" &&
+      article.stock_tracked === true &&
       article.availability?.state === "UNAVAILABLE"
     )
       return false;

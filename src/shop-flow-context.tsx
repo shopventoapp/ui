@@ -232,7 +232,9 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
     writeCart: (cart: Parameters<typeof writeCart>[0]) =>
       writeCart(cart, config.storage?.cart, config.storage?.cartEvent),
     categoryKey: config.categoryKey || defaultCategoryKey,
-    productModel: config.productModel || defaultShopProduct,
+    productModel:
+      config.productModel ||
+      ((article: Article) => defaultShopProduct(article, config.labels)),
     sections,
     visibleSections,
     physicalSectionsEnabled: visibleSections.some(
