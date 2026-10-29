@@ -2905,7 +2905,7 @@ function ShopFlowPage({
               {visibleSections.slice(0, 2).map((section, index) => (
                 <LinkButton
                   key={section.key}
-                  href={resolveHref(`/shop/${section.key}`)}
+                  href={`/shop/${section.key}`}
                   secondary={index > 0}
                 >
                   {section.label} {text(" entdecken →")}
@@ -3544,7 +3544,7 @@ function Catalogue({
                   : text("Hier ist gerade nichts online.")
               }
               action={
-                <LinkButton href={resolveHref(`/shop/${category}`)}>
+                <LinkButton href={`/shop/${category}`}>
                   {text("Alle Filter zurücksetzen")}
                 </LinkButton>
               }

@@ -168,3 +168,11 @@ test("host route roots and German labels are independently overridable", () => {
   expect(html).toContain('href="/store"');
   expect(html).not.toContain('href="/shop"');
 });
+
+test("nested host catalogue roots are resolved once in composed action links", () => {
+  const html = renderToStaticMarkup(
+    <ShopFlow accountEnabled={false} routes={{ shop: "/shop/catalogue" }} />,
+  );
+  expect(html).toContain('href="/shop/catalogue/produkte"');
+  expect(html).not.toContain("/shop/catalogue/catalogue");
+});
