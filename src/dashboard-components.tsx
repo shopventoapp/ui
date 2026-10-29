@@ -582,7 +582,7 @@ export function AccountVoucherCard({
       </div>
     </>
   );
-  const className = `voucher ${v.type === "TASTING" ? "k-event k-tasting" : ""} ${!voucherActive(v) ? "k-done" : ""}`;
+  const className = `voucher ${v.type === "TASTING" ? "k-event" : ""} ${!voucherActive(v) ? "k-done" : ""}`;
   return detail ? (
     <div className={className}>{body}</div>
   ) : (

@@ -1126,6 +1126,3 @@ export function AccountReservationDetail({
     </>
   );
 }
-
-/** @deprecated Use AccountEventDetail. Removed in 1.0. */
-export const AccountTastingDetail = AccountEventDetail;

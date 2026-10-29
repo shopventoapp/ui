@@ -115,11 +115,10 @@ export function BookingModeNotice({
 }
 /** CSS colors keyed by public event identifier. */
 export type EventColors = Record<number, string>;
-/** Create inline custom properties for an event color, including the compatibility token. */
+/** Create the inline custom property for an event color. */
 export const eventStyle = (color?: string) =>
   ({
     ...(color === undefined ? {} : { "--sv-event": color }),
-    "--sv-tasting": color ?? "var(--sv-primary)",
   }) as CSSProperties;
 /** Render a decorative booking icon with an optional CSS class. */
 export function BookingIcon({
@@ -348,28 +347,16 @@ export function SeatStepper({
   );
 }
 /** Event collection accepted by the calendar components. */
-export type EventCollection =
-  | {
-      /** Preferred public event collection. */
-      events: ShopEvent[];
-      /** @deprecated Use events. Removed in 1.0. */
-      tastings?: ShopEvent[];
-    }
-  | {
-      /** Preferred public event collection. Optional; omitted unless supplied by the host or backend. */
-      events?: ShopEvent[];
-      /** @deprecated Use events. Removed in 1.0. */
-      tastings: ShopEvent[];
-    };
-/** Read the preferred event collection from calendar input. */
-export const eventsFrom = (data: EventCollection): ShopEvent[] =>
-  data.events ?? data.tastings ?? [];
-/** Loaded calendar data; the compatibility collection is retained for existing consumers. */
+export type EventCollection = {
+  /** Public event collection. */
+  events: ShopEvent[];
+};
+/** Read the event collection from calendar input. */
+export const eventsFrom = (data: EventCollection): ShopEvent[] => data.events;
+/** Loaded calendar data with event variants and availability. */
 export interface CalendarData {
   /** Preferred public event collection. */
   events: ShopEvent[];
-  /** @deprecated Use events. Removed in 1.0. */
-  tastings: ShopEvent[];
   /** Dated availability returned by the API. */
   windows: Timewindow[];
   /** Authoritative public installation flags and booking limits. */
@@ -377,9 +364,8 @@ export interface CalendarData {
   /** Public installation locations. */
   locations: Location[];
 }
-/** Calendar input accepts either collection key; events takes precedence. */
-export type CalendarInput = EventCollection &
-  Omit<CalendarData, "events" | "tastings">;
+/** Event data accepted by calendar components. */
+export type CalendarInput = CalendarData;
 /** Load the events, dated availability, locations and settings for a location and optional date range. */
 export function useCalendar({
   client,
@@ -424,8 +410,6 @@ export function useCalendar({
         if (!controller.signal.aborted)
           setData({
             events,
-            /** @deprecated Use events. Removed in 1.0. */
-            tastings: events,
 
             /** Loaded dated event availability. */
             windows: result.timewindows.sort((a, b) =>
@@ -486,7 +470,6 @@ export function DateTile({
 export function DateList({
   windows,
   events,
-  tastings,
   locations = [],
   seats = 1,
   leadHours = 24,
@@ -518,7 +501,7 @@ export function DateList({
    * @defaultValue true */
   groupMonths?: boolean;
 } & EventCollection) {
-  const eventRows = eventsFrom({ events, tastings } as EventCollection);
+  const eventRows = eventsFrom({ events });
   let month = "";
   return (
     <div className="agenda">
@@ -583,7 +566,6 @@ export function MonthCalendar({
   month,
   windows,
   events,
-  tastings,
   seats = 1,
   leadHours = 24,
   onSelect,
@@ -620,7 +602,7 @@ export function MonthCalendar({
    * @defaultValue {} */
   format?: BookingFormat;
 } & EventCollection) {
-  const eventRows = eventsFrom({ events, tastings } as EventCollection);
+  const eventRows = eventsFrom({ events });
   const first = new Date(`${month}-01T12:00:00Z`);
   const offset = (first.getUTCDay() + 6) % 7;
   const days = new Date(
@@ -1068,8 +1050,3 @@ export function BookingDialog({
     </dialog>
   );
 }
-
-/** @deprecated Use EventColors. Removed in 1.0. */
-export type TastingColors = EventColors;
-/** @deprecated Use eventStyle. Removed in 1.0. */
-export const tastingStyle = eventStyle;

@@ -311,7 +311,7 @@ function fromWire(): ObjectSchema {
       const input = member(operation, "body");
       if (!(input.flags & ts.TypeFlags.Undefined)) body = schema(input);
     } else if (name === "listEvents")
-      response = { type: "array", items: named("ShopTasting") };
+      response = { type: "array", items: named("ShopEvent") };
     else if (name === "listTimewindows")
       response = {
         type: "object",

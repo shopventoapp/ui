@@ -92,7 +92,7 @@ The defaults below are declared on `.sv-redesign` unless a scope is specified. A
 | `--sv-product-cap` | `var(--sv-primary)` (illustration fallback) | Shop illustration cap fill |
 | `--sv-product-fill` | `#3e4d29` (illustration fallback) | Shop product illustration fill |
 
-`eventStyle(color)` sets the event color on a particular item. `colors` on date lists and calendars is keyed by the public event ID. The [migration note](/guides/labels/#migration-from-01) explains compatibility names once.
+`eventStyle(color)` sets the event color on a particular item. `colors` on date lists and calendars is keyed by the public event ID. The [event API guide](/guides/labels/#event-api) lists the supported event names.
 
 ## Button state properties
 

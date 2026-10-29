@@ -53,26 +53,6 @@ const eventIds = [...new Set(timewindows.filter(slot => windowBookable(slot)).ma
 
 `listLocationTimewindows(locationId, { startDate, signal })` makes one `GET /api/shop/tastings/timewindows?location_id=...&start_date=...` request without `tasting_id`. Location IDs must be positive integers; invalid IDs throw before making a request. Options are optional; `startDate` defaults to today in Europe/Berlin and `signal` supports cancellation. The response preserves the backend's `{ timewindows, total }` envelope across all events; apply `windowBookable` for the local 24-hour and capacity checks. `listTimewindows` remains available for a single event.
 
-## Renamed in 0.2.0
-
-The old names remain deprecated aliases until 1.0. Both prop names work; the new
-name takes precedence when both are supplied. Backend paths and wire fields are
-unchanged.
-
-| Previous name | New name |
-| --- | --- |
-| `TastingBooking` | `EventBooking` |
-| `TastingBookingProps` | `EventBookingProps` |
-| `tastingId` | `eventId` |
-| `Tasting` | `ShopEvent` |
-| `useTastings` | `useEvents` |
-| `tastings` (hook result, calendar data and props) | `events` |
-| `client.listTastings`, `client.getTasting` | `client.listEvents`, `client.getEvent` |
-| `AccountTastingDetail` | `AccountEventDetail` |
-| `TastingColors`, `tastingStyle` | `EventColors`, `eventStyle` |
-| `--sv-tasting` | `--sv-event` |
-| `k-tasting`, `t-tasting` | `k-event`, `t-event` |
-
 ## Event labels
 
 German defaults use "Veranstaltung" and "Veranstaltungsgutschein". Pass partial

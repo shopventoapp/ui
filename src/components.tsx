@@ -355,26 +355,15 @@ export interface EventBookingOptions extends ClientOptions {
   onRedirect?: (url: string) => void;
 }
 /** Event booking configuration with a required event identifier. */
-export type EventBookingProps = EventBookingOptions &
-  (
-    | {
-        /** Public event identifier used to select variants and availability. */
-        eventId: number;
-        /** @deprecated Use eventId. Removed in 1.0. */
-        tastingId?: number;
-      }
-    | {
-        /** Public event identifier used to select variants and availability. Optional; omitted unless supplied by the host or backend. */
-        eventId?: number;
-        /** @deprecated Use eventId. Removed in 1.0. */
-        tastingId: number;
-      }
-  );
+export type EventBookingProps = EventBookingOptions & {
+  /** Public event identifier used to select variants and availability. */
+  eventId: number;
+};
 /** Render a compact event booking form with date, seats, vouchers, guest contact, consent and payment redirect.
  * @param props - Props supplied by the host. */
 export function EventBooking(props: EventBookingProps) {
   const labels = mergeBookingLabels(props.labels);
-  const eventId = props.eventId ?? props.tastingId ?? 0;
+  const eventId = props.eventId;
   const callbacks = useRef(props);
   callbacks.current = props;
   const client = useMemo(
@@ -657,8 +646,3 @@ export function BookingResult({
     </section>
   );
 }
-
-/** @deprecated Use EventBookingProps. Removed in 1.0. */
-export type TastingBookingProps = EventBookingProps;
-/** @deprecated Use EventBooking. Removed in 1.0. */
-export const TastingBooking = EventBooking;

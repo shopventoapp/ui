@@ -27,7 +27,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ShopTasting"
+                    "$ref": "#/components/schemas/ShopEvent"
                   }
                 }
               }
@@ -1456,7 +1456,7 @@
   },
   "components": {
     "schemas": {
-      "ShopTasting": {
+      "ShopEvent": {
         "type": "object",
         "properties": {
           "tasting_id": {

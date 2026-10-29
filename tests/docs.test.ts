@@ -148,9 +148,8 @@ test("link checker rejects broken fragments, missing files and unsafe outbound a
   }
 });
 
-test("theme guide covers every package CSS token, with the compatibility token in the migration note", async () => {
+test("theme guide covers every package CSS token", async () => {
   const guide = await Bun.file("docs/guides/theming.md").text();
-  const migration = await Bun.file("docs/guides/labels.md").text();
   const sources = await Promise.all(
     [
       "styles.css",
@@ -162,8 +161,5 @@ test("theme guide covers every package CSS token, with the compatibility token i
   );
   const tokens = new Set(sources.join("\n").match(/--sv-[a-z0-9-]+/g));
   expect(tokens.size).toBeGreaterThan(50);
-  for (const token of tokens)
-    expect(
-      (token === "--sv-tasting" ? migration : guide).includes(`\`${token}\``),
-    ).toBe(true);
+  for (const token of tokens) expect(guide.includes(`\`${token}\``)).toBe(true);
 });

@@ -7,8 +7,8 @@ import {
   profileNewsletterAdapter,
 } from "../src/dashboard-client";
 import {
+  AccountEventDetail,
   AccountOrderDetail,
-  AccountTastingDetail,
 } from "../src/dashboard-details";
 import { normalizeAccountPhone } from "../src/dashboard-settings";
 import {
@@ -314,7 +314,7 @@ describe("account state", () => {
       ],
     });
     const { unmount: unmount1 } = render(
-      <AccountTastingDetail {...detailProps} booking={bNoInvoice} />,
+      <AccountEventDetail {...detailProps} booking={bNoInvoice} />,
     );
     expect(screen.getByText("Bestellung ORD-12345")).toBeDefined();
     expect(screen.getByText("Kartenzahlung")).toBeDefined();
@@ -362,7 +362,7 @@ describe("account state", () => {
       ],
     });
     const { unmount: unmount2 } = render(
-      <AccountTastingDetail {...detailProps} booking={bWithDocs} />,
+      <AccountEventDetail {...detailProps} booking={bWithDocs} />,
     );
     expect(screen.getByText("Bestellung ORD-67890")).toBeDefined();
     expect(screen.getByText("Gutschein VOUCH-ABC")).toBeDefined();

@@ -306,14 +306,9 @@ export function useEvents(client: BookingClient) {
   return {
     /** Loaded public event variants. */
     events,
-    /** @deprecated Use events. Removed in 1.0. */
-    tastings: events,
     /** Whether the read is pending. */
     loading,
     /** Customer-visible error, or null. */
     error,
   };
 }
-
-/** @deprecated Use useEvents. Removed in 1.0. */
-export const useTastings = useEvents;

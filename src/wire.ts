@@ -1,7 +1,7 @@
 // Generated wire contracts. Run bun run generate:client with the final OpenAPI export.
 
-/** Public shop tasting wire contract. Values and optionality come from the backend export. */
-export type ShopTasting = {
+/** Public shop event wire contract. Values and optionality come from the backend export. */
+export type ShopEvent = {
   /** Public event identifier. The backend wire spelling is unchanged. Required by this wire contract. */
   tasting_id: number;
 
@@ -1307,9 +1307,6 @@ export type ShopOrdersShopArticleCategory = {
 
 /** Public shop article type wire contract. Values and optionality come from the backend export. */
 export type ShopArticleType = "PHYSICAL" | "VOUCHER";
-
-/** @deprecated Use ShopEvent from the public package entry point. Removed in 1.0. */
-export type Tasting = ShopTasting;
 
 /** Public location wire contract. Values and optionality come from the backend export. */
 export type Location = ShopFranchiseLocationResponse;

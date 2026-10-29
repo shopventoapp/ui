@@ -377,7 +377,7 @@ export function AccountEntryRow({
     <li>
       <a className="row" href={`${routes.bookings}/${entry.id}`}>
         <span
-          className={`date-tile t-${entry.type === "tastings" ? "event t-tasting" : entry.type === "reservierungen" ? "table" : "order"}`}
+          className={`date-tile t-${entry.type === "tastings" ? "event" : entry.type === "reservierungen" ? "table" : "order"}`}
           aria-hidden="true"
         >
           {entry.type === "bestellungen" ? (

@@ -25,9 +25,9 @@ Dashboard components require host-owned `AccountLabels`, `AccountRoutes` and `Ac
 
 Shop primitives receive their labels directly: search text, add/close actions, quantity labels, total label, tax/shipping copy and declarations. `ShopSummary.isFrom` currently uses the fixed German prefix `ab`. Hosts format prices through `formatPrice`.
 
-## Migration from 0.1
+## Event API
 
-Deprecated aliases remain until 1.0: `TastingBooking` / `TastingBookingProps` become `EventBooking` / `EventBookingProps`; `Tasting` becomes `ShopEvent`; `useTastings` becomes `useEvents`; `AccountTastingDetail` becomes `AccountEventDetail`; `TastingColors` / `tastingStyle` become `EventColors` / `eventStyle`. Replace the old event identifier and collection prop spellings with `eventId` and `events`, client list/detail calls with `listEvents` / `getEvent`, and `--sv-tasting`, `k-tasting` and `t-tasting` with `--sv-event`, `k-event` and `t-event`. New props win when both spellings are supplied. Backend paths and wire field names are unchanged. The generated reference marks aliases as deprecated.
+Use `EventBooking`, `EventBookingProps`, `ShopEvent`, `useEvents`, `AccountEventDetail`, `EventColors` and `eventStyle`. Pass identifiers as `eventId` and collections as `events`. Clients expose `listEvents` and `getEvent`. Theme events through `--sv-event`, `k-event` and `t-event`. Backend paths and JSON field names stay unchanged.
 
 ## Complete shop and public forms
 

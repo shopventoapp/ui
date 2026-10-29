@@ -18,15 +18,27 @@ All notable changes to this package are documented here. The format follows [Kee
 - Framework-neutral `ShopFlow` for catalogue, category and product views, persistent cart, guest/account checkout, postcode delivery-zone quotes, offered dates, legal acceptance, hosted Stripe Checkout and verified order returns.
 - Configurable legacy storage keys, route adapters, product mapping, feature policies, editorial slots and German message dictionaries.
 - Focused `@shopvento/ui/shop-flow` and `@shopvento/ui/forms` entrypoints with shared ESM chunks keep checkout out of marketing-page JavaScript.
-- Separate additive `shop-flow.css` export preserves the byte-identical 0.2 `shop.css`.
+- Separate additive `shop-flow.css` export for complete shop pages.
 - Separate `forms.css` export keeps standalone public forms independent of shop assets.
 - Generic `ReservationForm` and `NewsletterSignup` with runtime public API adapters, Turnstile, opening-hour validation, account prefill and separate double opt-in.
 - Internal cart, draft, checkout validation, fulfilment, display and return-consent logic; migrated consumer regressions and new form/validation tests.
 - Complete cart/checkout, reservation and newsletter guides with typechecked examples and documented public APIs.
 
+### Breaking
+
+- Remove `TastingBooking` / `TastingBookingProps`; use `EventBooking` / `EventBookingProps`.
+- Remove `Tasting` and `ShopTasting`; use `ShopEvent`. Backend JSON fields and endpoint paths stay unchanged.
+- Remove `tastingId`; use the required `eventId` booking prop.
+- Remove `useTastings`; use `useEvents`. Remove the `tastings` hook result, calendar data and calendar/list props; use `events`. `CalendarData` and `CalendarInput` require the event shape.
+- Remove `listTastings` / `getTasting`; use `listEvents` / `getEvent` on booking clients.
+- Remove `AccountTastingDetail`; use `AccountEventDetail`.
+- Remove `TastingColors` / `tastingStyle`; use `EventColors` / `eventStyle`.
+- Remove `--sv-tasting` fallbacks and `k-tasting` / `t-tasting` selectors; use `--sv-event` and `k-event` / `t-event`.
+- Before 1.0, minor releases may break compatibility; deprecated aliases are removed in 0.3.0 rather than retained until 1.0.
+
 ### Compatibility
 
-- All 0.2 exports and props remain available. Host storage names must be configured when adopting an existing cart/draft; no stored customer data is migrated or discarded automatically.
+- Host storage names must be configured when adopting an existing cart/draft; no stored customer data is migrated or discarded automatically.
 - Routes, customer branding, editorial copy and the same-origin Worker/API proxy remain owned by the host.
 
 ## [0.2.0] - 2026-10-29

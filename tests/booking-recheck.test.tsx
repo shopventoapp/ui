@@ -38,7 +38,7 @@ const slot2: Timewindow = {
 };
 const data = {
   windows: [slot, slot2],
-  tastings: [
+  events: [
     {
       tasting_id: 5,
       tasting_name: "Example",
@@ -493,15 +493,15 @@ test("calendar clears a changed range but keeps the same range mounted during re
         return Response.json(data.settings);
       if (url.pathname.endsWith("/locations"))
         return Response.json({ locations: data.locations });
-      return Response.json(data.tastings);
+      return Response.json(data.events);
     },
   });
   function CalendarProbe({ from }: { from: string }) {
     const calendar = useCalendar({ client, locationId: 1, from });
     if (calendar.data) {
-      // Loaded data exposes both required keys to old and new TypeScript hosts.
-      expect(calendar.data.events.length).toBe(calendar.data.tastings.length);
-      expect(calendar.data.events === calendar.data.tastings).toBe(true);
+      // Loaded data exposes the required event collection without aliases.
+      expect(calendar.data.events).toEqual(data.events);
+      expect("tastings" in calendar.data).toBe(false);
     }
     return (
       <>

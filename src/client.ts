@@ -3,7 +3,7 @@ import type {
   BookingResponse,
   GuestBookingRequest,
   Location,
-  Tasting as WireEvent,
+  ShopEvent as WireEvent,
   ShopSettings as WireSettings,
   Timewindow as WireTimewindow,
 } from "./wire";
@@ -17,8 +17,6 @@ export type {
 } from "./wire";
 /** A public event variant using the unchanged backend field names. */
 export type ShopEvent = WireEvent;
-/** @deprecated Use ShopEvent. Removed in 1.0. */
-export type Tasting = ShopEvent;
 /** Public installation flags and optional runtime booking limits. */
 export type ShopSettings = WireSettings & {
   /** Guest max seats in the shop settings contract. Optional; omitted unless supplied by the host or backend. */
@@ -207,10 +205,6 @@ export function createBookingClient(options: ClientOptions) {
     listEvents,
     /** Filter the public list by event identifier; there is no public detail endpoint. */
     getEvent,
-    /** @deprecated Use listEvents. Removed in 1.0. */
-    listTastings: listEvents,
-    /** @deprecated Use getEvent. Removed in 1.0. */
-    getTasting: getEvent,
     /** List slots for one event. Date defaults to today in Europe/Berlin; optional location filters availability. */
     listTimewindows: (id: number, signal?: AbortSignal, locationId?: number) =>
       request<{

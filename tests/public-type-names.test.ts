@@ -7,6 +7,6 @@ test("generated wire types drop the backend module prefix", () => {
       "type A = app__schemas__shop_orders__ShopArticle | app__schemas__shop_articles__ShopArticleVariant; type B = ShopTasting;",
     ),
   ).toBe(
-    "type A = ShopOrdersShopArticle | ShopArticlesShopArticleVariant; type B = ShopTasting;",
+    "type A = ShopOrdersShopArticle | ShopArticlesShopArticleVariant; type B = ShopEvent;",
   );
 });

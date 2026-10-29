@@ -1,9 +1,8 @@
 import { afterEach, expect, test } from "bun:test";
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
+import * as publicApi from "../src";
 import {
-  AccountEventDetail,
-  AccountTastingDetail,
   BookingModeNotice,
   type CalendarData,
   createBookingClient,
@@ -17,13 +16,8 @@ import {
   mergeBookingLabels,
   type ShopEvent,
   type ShopSettings,
-  type Tasting,
-  type TastingBookingProps,
-  type TastingColors,
   type Timewindow,
-  tastingStyle,
   useEvents,
-  useTastings,
 } from "../src";
 
 const event: ShopEvent = {
@@ -32,9 +26,7 @@ const event: ShopEvent = {
   full_name: "Cooking class",
   price: 4000,
 };
-const legacyEvent: Tasting = event;
 const colors: EventColors = { 1: "#123456" };
-const legacyColors: TastingColors = colors;
 const slot: Timewindow = {
   id: "slot",
   timewindow_id: "slot",
@@ -51,26 +43,27 @@ const settings: ShopSettings = {
   countries: [],
   installation_country: "DE",
 };
-// These assignments are checked by tsc as well as the runtime compatibility tests.
-const oldProps: TastingBookingProps = {
+// Checked by TypeScript alongside runtime behavior.
+const props: EventBookingProps = {
   baseUrl: "https://api.example",
-  tastingId: 1,
+  eventId: 1,
   termsUrl: "/terms",
   privacyUrl: "/privacy",
 };
-const newProps: EventBookingProps = { ...oldProps, eventId: 1 };
 afterEach(cleanup);
 
-test("deprecated exports retain the same implementation and compatible types", () => {
-  expect(AccountEventDetail === AccountTastingDetail).toBe(true);
-  expect(useEvents === useTastings).toBe(true);
-  expect(eventStyle === tastingStyle).toBe(true);
-  expect(legacyEvent).toEqual(event);
-  expect(legacyColors).toEqual(colors);
-  expect(newProps.eventId).toBe(oldProps.tastingId);
+test("event booking requires the public event identifier", () => {
+  expect(props.eventId).toBe(event.tasting_id);
+  for (const name of [
+    "TastingBooking",
+    "useTastings",
+    "AccountTastingDetail",
+    "tastingStyle",
+  ])
+    expect(name in publicApi).toBe(false);
 });
 
-test("event client methods and hooks preserve wire paths, cancellation and legacy keys", async () => {
+test("event client methods and hooks preserve wire paths and cancellation", async () => {
   const calls: Array<{ url: string; signal?: AbortSignal | null }> = [];
   const client = createBookingClient({
     baseUrl: "https://api.example",
@@ -79,65 +72,35 @@ test("event client methods and hooks preserve wire paths, cancellation and legac
       return Response.json([event]);
     },
   });
-  expect(client.listEvents === client.listTastings).toBe(true);
-  expect(client.getEvent === client.getTasting).toBe(true);
-  const { getEvent, getTasting } = client;
-  expect(await getEvent(1)).toEqual(await getTasting(1));
+  expect("listTastings" in client).toBe(false);
+  expect("getTasting" in client).toBe(false);
+  const { getEvent } = client;
+  expect(await getEvent(1)).toEqual([event]);
   const hook = renderHook(() => useEvents(client));
   await waitFor(() => expect(hook.result.current.loading).toBe(false));
   expect(hook.result.current.events).toEqual([event]);
-  expect(hook.result.current.events === hook.result.current.tastings).toBe(
-    true,
-  );
+  expect("tastings" in hook.result.current).toBe(false);
   expect(calls.map(({ url }) => url)).toEqual(
-    Array(3).fill("https://api.example/api/shop/tastings/"),
+    Array(2).fill("https://api.example/api/shop/tastings/"),
   );
   const signal = calls.at(-1)?.signal;
   hook.unmount();
   expect(signal?.aborted).toBe(true);
 });
 
-test("calendar props accept both collection names with events taking precedence", () => {
-  const props = { windows: [slot], onSelect: () => {}, colors };
-  expect(renderToStaticMarkup(<DateList {...props} events={[event]} />)).toBe(
-    renderToStaticMarkup(<DateList {...props} tastings={[event]} />),
-  );
-  expect(
-    renderToStaticMarkup(
-      <MonthCalendar {...props} month="2099-10" events={[event]} />,
-    ),
-  ).toBe(
-    renderToStaticMarkup(
-      <MonthCalendar {...props} month="2099-10" tastings={[event]} />,
-    ),
-  );
-  expect(
-    renderToStaticMarkup(
-      <DateList {...props} events={[event]} tastings={[]} />,
-    ),
-  ).toContain("Cooking class");
-});
-
-test("CalendarData exposes required arrays to legacy calendar consumers", () => {
+test("calendar components accept the required events collection", () => {
   const data: CalendarData = {
     events: [event],
-    tastings: [event],
     windows: [slot],
     settings,
     locations: [],
   };
-  // Explicit annotations catch optional-array regressions during typecheck.
-  const events: ShopEvent[] = data.events;
-  const tastings: ShopEvent[] = data.tastings;
-  expect(events).toEqual(tastings);
-  const props = { windows: data.windows, onSelect: () => {} };
+  const props = { ...data, onSelect: () => {}, colors };
+  expect(renderToStaticMarkup(<DateList {...props} />)).toContain(
+    "Cooking class",
+  );
   expect(
-    renderToStaticMarkup(<DateList {...props} tastings={data.tastings} />),
-  ).toContain("Cooking class");
-  expect(
-    renderToStaticMarkup(
-      <MonthCalendar {...props} month="2099-10" tastings={data.tastings} />,
-    ),
+    renderToStaticMarkup(<MonthCalendar {...props} month="2099-10" />),
   ).toContain("Cooking class");
 });
 
@@ -204,29 +167,24 @@ test("date-sheet and booking-mode copy allow host terminology", () => {
   ).toContain(labels.eventVoucherNotice);
 });
 
-test("event and legacy CSS tokens and selectors remain available together", async () => {
-  for (const style of [eventStyle, tastingStyle]) {
-    expect(Object.entries(style())).toEqual([
-      ["--sv-tasting", "var(--sv-primary)"],
-    ]);
-    expect(Object.entries(style("#123456"))).toEqual([
-      ["--sv-event", "#123456"],
-      ["--sv-tasting", "#123456"],
-    ]);
-  }
+test("event styles use only the event token and selectors", async () => {
+  expect(Object.entries(eventStyle())).toEqual([]);
+  expect(Object.entries(eventStyle("#123456"))).toEqual([
+    ["--sv-event", "#123456"],
+  ]);
   const css = await Bun.file(
     new URL("../src/booking-redesign.css", import.meta.url),
   ).text();
-  expect(css.match(/var\(--sv-tasting,/g)).toHaveLength(10);
-  expect(css.match(/var\(--sv-event, var\(--sv-tasting,/g)).toHaveLength(10);
+  expect(css).not.toContain("--sv-tasting");
+  expect(css.match(/var\(--sv-event,/g)).toHaveLength(10);
   const dashboard = await Bun.file(
     new URL("../src/dashboard.css", import.meta.url),
   ).text();
-  for (const [current, legacy] of [
+  for (const [current, removed] of [
     ["k-event", "k-tasting"],
     ["t-event", "t-tasting"],
   ]) {
     expect(dashboard).toContain(`.${current}`);
-    expect(dashboard).toContain(`.${legacy}`);
+    expect(dashboard).not.toContain(`.${removed}`);
   }
 });

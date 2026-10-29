@@ -681,8 +681,7 @@
   box-shadow: var(--sv-shadow);
   isolation: isolate;
 }
-.sv-account .voucher.k-event,
-.sv-account .voucher.k-tasting {
+.sv-account .voucher.k-event {
   background: var(--sv-voucher-2-bg);
 }
 .sv-account .voucher.k-gift {
@@ -939,13 +938,11 @@
   background: var(--sv-accent-soft);
   color: var(--sv-accent);
 }
-.sv-account .row .date-tile.t-event,
-.sv-account .row .date-tile.t-tasting {
+.sv-account .row .date-tile.t-event {
   background: var(--sv-primary);
   color: var(--sv-on-primary);
 }
-.sv-account .row .date-tile.t-event .m,
-.sv-account .row .date-tile.t-tasting .m {
+.sv-account .row .date-tile.t-event .m {
   color: inherit;
   opacity: 0.8;
 }

@@ -57,9 +57,7 @@ export function documentWireTypes(source: string): string {
     if (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) {
       add(
         node,
-        node.name.text === "Tasting"
-          ? "@deprecated Use ShopEvent from the public package entry point. Removed in 1.0."
-          : `Public ${words(node.name.text)} wire contract. Values and optionality come from the backend export.`,
+        `Public ${words(node.name.text)} wire contract. Values and optionality come from the backend export.`,
       );
     }
     if (ts.isPropertySignature(node)) {

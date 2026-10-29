@@ -2,7 +2,7 @@
 
 React components for storefronts built on the Shopvento API: catalogue, cart, checkout, table reservations, newsletter signup, event booking with vouchers, customer accounts (sign-in, registration, dashboard with bookings, orders, vouchers and reservations) and shop building blocks (product cards, prices, dialogs, summaries). The components are plain React with one CSS file per area, no router and no styling runtime. Prices, availability, voucher balances and booking rules stay authoritative in the backend.
 
-Version 0.3 adds the complete catalogue, cart, guest/account checkout and order-return flow, plus table reservations and newsletter signup. All 0.2 exports and props remain available. The host owns routing, editorial content, branding and its same-origin proxy.
+Version 0.3 adds the complete catalogue, cart, guest/account checkout and order-return flow, plus table reservations and newsletter signup. Version 0.3 removes the deprecated aliases; see the changelog for breaking changes. The host owns routing, editorial content, branding and its same-origin proxy.
 
 Full English documentation: [docs.shopvento.de](https://docs.shopvento.de), including guides, the generated component/type reference and the public Shop API reference.
 
@@ -68,26 +68,6 @@ export function Login() {
 The [shop flow guide](docs/guides/shop.md), [reservations guide](docs/guides/reservations.md) and [newsletter guide](docs/guides/newsletter.md) explain host composition, legacy storage keys, validation and payment returns. New integrations can start with `ShopFlow` from `@shopvento/ui/shop-flow`; import standalone forms from `@shopvento/ui/forms` to keep checkout out of marketing-page JavaScript. Root exports remain available. Existing hosts must configure their original cart, draft, pending-order and event names through `storage`.
 
 The [integration guide](docs/integration.md) describes every component, the booking flow, the account dashboard, the shop primitives and the backend contract in detail.
-
-## Renamed in 0.2.0
-
-The old names remain deprecated aliases until 1.0. Both prop names work; the new
-name takes precedence when both are supplied. Backend paths and wire fields are
-unchanged.
-
-| Previous name | New name |
-| --- | --- |
-| `TastingBooking` | `EventBooking` |
-| `TastingBookingProps` | `EventBookingProps` |
-| `tastingId` | `eventId` |
-| `Tasting` | `ShopEvent` |
-| `useTastings` | `useEvents` |
-| `tastings` (hook result, calendar data and props) | `events` |
-| `client.listTastings`, `client.getTasting` | `client.listEvents`, `client.getEvent` |
-| `AccountTastingDetail` | `AccountEventDetail` |
-| `TastingColors`, `tastingStyle` | `EventColors`, `eventStyle` |
-| `--sv-tasting` | `--sv-event` |
-| `k-tasting`, `t-tasting` | `k-event`, `t-event` |
 
 ## Theming
 

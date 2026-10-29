@@ -15,21 +15,16 @@ import {
   bookingErrorMessage,
   bookingFieldErrors,
   createBookingClient,
-  type Tasting,
+  type ShopEvent,
   type Timewindow,
   windowBookable,
   windowTooSoon,
 } from "../src/client";
-import {
-  BookingResult,
-  DateTimePicker,
-  EventBooking,
-  TastingBooking,
-} from "../src/components";
+import { BookingResult, DateTimePicker, EventBooking } from "../src/components";
 import { useBookingDraft, useSubmitBooking } from "../src/hooks";
 import { Turnstile } from "../src/turnstile";
 
-const variant: Tasting = {
+const variant: ShopEvent = {
   tasting_id: 1,
   tasting_name: "Wein und Käse",
   price: 7500,
@@ -59,7 +54,7 @@ const response = {
 };
 function fixture(
   options: {
-    variants?: Tasting[];
+    variants?: ShopEvent[];
     checkout?: string | null;
     slot?: Timewindow;
     windows?: Timewindow[];
@@ -117,9 +112,9 @@ async function account(options: Parameters<typeof fixture>[0] = {}) {
   const { client, fetcher } = fixture(options);
   const redirect = mock();
   render(
-    <TastingBooking
+    <EventBooking
       baseUrl="https://api.example"
-      tastingId={1}
+      eventId={1}
       mode="account"
       client={client}
       termsUrl="/terms"
@@ -272,9 +267,9 @@ describe("booking flow", () => {
   ])("guest flags block the form: %j", async (flags) => {
     const { client } = fixture(flags);
     render(
-      <TastingBooking
+      <EventBooking
         baseUrl="https://api.example"
-        tastingId={1}
+        eventId={1}
         client={client}
         termsUrl="/terms"
         privacyUrl="/privacy"
@@ -302,9 +297,9 @@ describe("booking flow", () => {
     };
     Object.assign(window, { turnstile: provider });
     render(
-      <TastingBooking
+      <EventBooking
         baseUrl="https://api.example"
-        tastingId={1}
+        eventId={1}
         client={client}
         termsUrl="/terms"
         privacyUrl="/privacy"
@@ -418,9 +413,9 @@ describe("draft and returns", () => {
   test("server rendering requires no browser globals", () => {
     expect(
       renderToString(
-        <TastingBooking
+        <EventBooking
           baseUrl="https://api.example"
-          tastingId={1}
+          eventId={1}
           termsUrl="/terms"
           privacyUrl="/privacy"
         />,
@@ -499,9 +494,9 @@ describe("review regressions", () => {
       ],
     });
     render(
-      <TastingBooking
+      <EventBooking
         baseUrl="https://api.example"
-        tastingId={1}
+        eventId={1}
         locationId={3}
         mode="account"
         client={client}
@@ -586,9 +581,9 @@ describe("review regressions", () => {
     cleanup();
     const { client } = fixture();
     render(
-      <TastingBooking
+      <EventBooking
         baseUrl="https://api.example"
-        tastingId={1}
+        eventId={1}
         mode="account"
         client={client}
         termsUrl="/terms"
@@ -637,7 +632,7 @@ describe("review regressions", () => {
       bookingErrorMessage(new BookingApiError(422, [{ loc: ["body"] }])),
     ).toBe("Bitte prüfe Deine Eingaben und versuche es erneut.");
   });
-  test("destructured getTasting supports asynchronous refreshed auth", async () => {
+  test("destructured getEvent supports asynchronous refreshed auth", async () => {
     const fetcher = mock(
       async (_url: RequestInfo | URL, init?: RequestInit) => {
         expect(
@@ -646,12 +641,12 @@ describe("review regressions", () => {
         return new Response(JSON.stringify([variant]));
       },
     );
-    const { getTasting } = createBookingClient({
+    const { getEvent } = createBookingClient({
       baseUrl: "https://api.example",
       fetch: fetcher,
       getAccessToken: async () => "refreshed",
     });
-    expect(await getTasting(1)).toEqual([variant]);
+    expect(await getEvent(1)).toEqual([variant]);
   });
 });
 
@@ -659,13 +654,13 @@ test("callback identity changes preserve a loaded form and use refreshed authent
   const { fetcher } = fixture();
   const props = {
     baseUrl: "https://api.example",
-    tastingId: 1,
+    eventId: 1,
     mode: "account" as const,
     termsUrl: "/terms",
     privacyUrl: "/privacy",
   };
   const view = render(
-    <TastingBooking
+    <EventBooking
       {...props}
       fetch={(...args) => fetcher(...args)}
       getAccessToken={() => "old"}
@@ -679,7 +674,7 @@ test("callback identity changes preserve a loaded form and use refreshed authent
   fireEvent.click(screen.getByRole("checkbox"));
   const count = fetcher.mock.calls.length;
   view.rerender(
-    <TastingBooking
+    <EventBooking
       {...props}
       fetch={(...args) => fetcher(...args)}
       getAccessToken={async () => "fresh"}
@@ -1008,7 +1003,7 @@ describe("final guest contract regressions", () => {
   );
 });
 
-test("old and new booking names render the same loaded form and preserve drafts", async () => {
+test("event booking rerenders preserve the loaded form and stored drafts", async () => {
   const { client, fetcher } = fixture();
   const props = {
     baseUrl: "https://api.example",
@@ -1017,11 +1012,11 @@ test("old and new booking names render the same loaded form and preserve drafts"
     termsUrl: "/terms",
     privacyUrl: "/privacy",
   };
-  const view = render(<TastingBooking {...props} tastingId={1} />);
+  const view = render(<EventBooking {...props} eventId={1} />);
   const picker = await screen.findByLabelText("Termin");
   fireEvent.change(picker, { target: { value: slot.timewindow_id } });
   const before = view.container.innerHTML;
-  view.rerender(<EventBooking {...props} eventId={1} tastingId={999} />);
+  view.rerender(<EventBooking {...props} eventId={1} />);
   expect(view.container.innerHTML).toBe(before);
   expect(fetcher.mock.calls).toHaveLength(4);
   expect(
@@ -1048,7 +1043,7 @@ test("old and new booking names render the same loaded form and preserve drafts"
 
 test.each([
   [
-    { variants: [] as Tasting[] },
+    { variants: [] as ShopEvent[] },
     "eventUnavailable",
     "Dieses Tasting ist nicht verfügbar.",
   ],

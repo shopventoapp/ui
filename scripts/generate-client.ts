@@ -36,7 +36,6 @@ const document = (await Bun.file(resolve(source)).json()) as {
 };
 const schemas = document.components?.schemas ?? {};
 const names = {
-  Tasting: "ShopTasting",
   Location: "ShopFranchiseLocationResponse",
   Timewindow: "ShopTimewindowResponse",
   ShopSettings: "PublicShopSettings",
@@ -52,7 +51,7 @@ const names = {
   AccountEmailChangeConfirmRequest: "EmailChangeConfirmRequest",
   AccountAuthResponse: "AuthResponse",
 };
-const required = new Set<string>(Object.values(names));
+const required = new Set<string>(["ShopTasting", ...Object.values(names)]);
 function type(schema: Schema): string {
   if (schema.$ref) {
     const name = schema.$ref.split("/").at(-1);
