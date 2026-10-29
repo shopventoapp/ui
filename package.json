@@ -1,0 +1,81 @@
+{
+  "name": "@shopvento/ui",
+  "version": "0.1.0",
+  "description": "React booking, voucher, customer account and shop components for the Shopvento storefront API",
+  "license": "MIT",
+  "author": "digital cuisine GmbH & Co. KG",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shopventoapp/ui.git"
+  },
+  "homepage": "https://shopvento.de/entwickler",
+  "bugs": {
+    "url": "https://github.com/shopventoapp/ui/issues"
+  },
+  "keywords": [
+    "shopvento",
+    "react",
+    "booking",
+    "vouchers",
+    "customer-account",
+    "storefront",
+    "ecommerce",
+    "components"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json",
+    "./styles.css": "./dist/styles.css",
+    "./shop.css": "./dist/shop.css"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --external react --external react-dom --clean && bun run scripts/copy-css.ts",
+    "lint": "biome check src tests scripts && tsc --noEmit",
+    "test": "bun test",
+    "pack": "bun run build && bun pm pack --destination artifacts",
+    "generate:client": "bun run scripts/generate-client.ts",
+    "typecheck": "tsc --noEmit",
+    "generate:shop-client": "bun run scripts/generate-shop-client.ts",
+    "format:generated": "biome format --write"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0",
+    "react-dom": "^18.2.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "qrcode-generator": "^2.0.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@happy-dom/global-registrator": "^20.0.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/bun": "latest",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.0"
+  }
+}

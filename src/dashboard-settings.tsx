@@ -1,0 +1,921 @@
+"use client";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
+import {
+  AccountApiError,
+  accountBirthDateError,
+  accountErrorMessage,
+  accountFieldErrors,
+  accountPasswordRules,
+} from "./account-client";
+import {
+  accountCountryOption,
+  BirthDateInput,
+  birthDateFromISO,
+  birthDateToISO,
+  CountrySelect,
+} from "./account-fields";
+import { BookingIcon } from "./calendar";
+import type { NewsletterAdapter, ShippingAddress } from "./dashboard-client";
+import type { DashboardProps } from "./dashboard-components";
+import {
+  AccountCard,
+  AccountHead,
+  AccountSheet,
+  AccountState,
+  useAccountResource,
+} from "./dashboard-ui";
+
+const get = (data: FormData, key: string) => String(data.get(key) ?? "").trim();
+export function normalizeAccountPhone(value: string, prefix: string) {
+  if (!value.trim()) return "";
+  if (/[^\d\s()+\-/]/.test(value)) return null;
+  const digits = value.replace(/\D/g, "");
+  const result = value.trim().startsWith("+")
+    ? `+${digits}`
+    : digits.startsWith("00")
+      ? `+${digits.slice(2)}`
+      : `${prefix}${digits.replace(/^0+/, "")}`;
+  return /^\+[1-9]\d{6,14}$/.test(result) ? result : null;
+}
+function Field({
+  name,
+  label,
+  value = "",
+  type = "text",
+  required = false,
+  error,
+  autoComplete,
+}: {
+  name: string;
+  label: string;
+  value?: string | null;
+  type?: string;
+  required?: boolean;
+  error?: string;
+  autoComplete?: string;
+}) {
+  const id = useId();
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        className="input"
+        name={name}
+        defaultValue={value ?? ""}
+        type={type}
+        required={required}
+        autoComplete={autoComplete}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+      />
+      {error && (
+        <span id={`${id}-error`} className="error-text">
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+function useSave() {
+  const form = useRef<HTMLFormElement>(null);
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [message, setMessage] = useState(""),
+    [fields, setFields] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (Object.keys(fields).length)
+      form.current
+        ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+        ?.focus();
+  }, [fields]);
+  return {
+    form,
+    busy,
+    error,
+    message,
+    fields,
+    setFields,
+    setError,
+    run: async (
+      fn: () => Promise<unknown>,
+      success = "Gespeichert.",
+      errorMessage = accountErrorMessage,
+    ) => {
+      setBusy(true);
+      setError("");
+      setMessage("");
+      setFields({});
+      try {
+        await fn();
+        setMessage(success);
+        return true;
+      } catch (e) {
+        setFields(accountFieldErrors(e));
+        setError(errorMessage(e));
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+  };
+}
+function SaveStatus({ save }: { save: ReturnType<typeof useSave> }) {
+  return (
+    <>
+      {save.error && <p role="alert">{save.error}</p>}
+      <p role="status">{save.message}</p>
+    </>
+  );
+}
+function Personal({
+  minimumAge,
+  onChanged,
+  ...props
+}: DashboardProps & { minimumAge: number; onChanged: () => void }) {
+  const { profile, client, labels } = props;
+  const save = useSave();
+  const [prefix, setPrefix] = useState("+49"),
+    [phone, setPhone] = useState(profile.phone ?? "");
+  const [birth, setBirth] = useState(birthDateFromISO(profile.birth_date));
+  const id = useId();
+  const normalizedPhone = normalizeAccountPhone(phone, prefix);
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const errors: Record<string, string> = {};
+    const isoBirth = birthDateToISO(birth);
+    const birthError =
+      isoBirth === null
+        ? "Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein."
+        : accountBirthDateError(isoBirth, minimumAge);
+    if (birthError) errors.birth_date = birthError;
+    const normalized = normalizeAccountPhone(phone, prefix);
+    if (normalized === null)
+      errors.phone = "Bitte gib eine gültige Telefonnummer ein.";
+    for (const key of ["first_name", "last_name"])
+      if (!get(data, key)) errors[key] = "Bitte füll dieses Feld aus.";
+    save.setFields(errors);
+    if (Object.keys(errors).length) {
+      save.setError("Bitte prüfe Deine Eingaben.");
+      setTimeout(
+        () => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+        0,
+      );
+      return;
+    }
+    if (
+      await save.run(() =>
+        client.updateProfile({
+          first_name: get(data, "first_name"),
+          last_name: get(data, "last_name"),
+          birth_date: isoBirth || null,
+          phone: normalized || null,
+        }),
+      )
+    )
+      onChanged();
+  };
+  return (
+    <form
+      ref={save.form}
+      className="card card-pad form"
+      noValidate
+      onSubmit={submit}
+    >
+      <div className="form-grid two">
+        <Field
+          name="first_name"
+          label="Vorname"
+          value={profile.first_name}
+          autoComplete="given-name"
+          error={save.fields.first_name}
+        />
+        <Field
+          name="last_name"
+          label="Nachname"
+          value={profile.last_name}
+          autoComplete="family-name"
+          error={save.fields.last_name}
+        />
+        <div className="field">
+          <label htmlFor={`${id}-birth-input`}>Geburtsdatum (optional)</label>
+          <BirthDateInput
+            id={`${id}-birth-input`}
+            className="input"
+            name="birth_date"
+            value={birth}
+            onValueChange={setBirth}
+            aria-invalid={!!save.fields.birth_date}
+            aria-describedby={`${id}-birth-format ${id}-birth`}
+          />
+          <span id={`${id}-birth-format`} className="hint">
+            Format: TT.MM.JJJJ.
+          </span>
+          <span
+            id={`${id}-birth`}
+            className={save.fields.birth_date ? "error-text" : "hint"}
+          >
+            {save.fields.birth_date ??
+              labels.birthDateHint ??
+              "Dein Geburtsdatum ist optional. Wenn Du es angibst, muss es das konfigurierte Mindestalter erfüllen."}
+          </span>
+        </div>
+        <div className="field">
+          <label htmlFor={`${id}-phone`}>Telefon (optional)</label>
+          <div className="phone-group">
+            <select
+              className="select"
+              aria-label="Ländervorwahl"
+              value={prefix}
+              onChange={(e) => setPrefix(e.target.value)}
+            >
+              {["+49", "+43", "+41", "+31"].map((v) => (
+                <option key={v}>{v}</option>
+              ))}
+            </select>
+            <input
+              id={`${id}-phone`}
+              className="input"
+              type="tel"
+              autoComplete="tel-national"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              aria-invalid={!!save.fields.phone}
+              aria-describedby={`${id}-preview`}
+            />
+          </div>
+          <span id={`${id}-preview`} className="hint">
+            {save.fields.phone ??
+              (normalizedPhone === ""
+                ? ""
+                : `Wird gespeichert als ${normalizedPhone ?? "bitte prüfen"}`)}
+          </span>
+        </div>
+      </div>
+      <SaveStatus save={save} />
+      <button className="btn btn-primary" disabled={save.busy} type="submit">
+        Speichern
+      </button>
+    </form>
+  );
+}
+function AddressForm({
+  address,
+  client,
+  onDone,
+  onClose,
+  countries,
+}: {
+  address?: ShippingAddress;
+  client: DashboardProps["client"];
+  onDone: () => void;
+  onClose: () => void;
+  countries: { value: string; label: string }[];
+}) {
+  const save = useSave();
+  const countryId = useId();
+  return (
+    <AccountSheet
+      title={address ? "Lieferadresse ändern" : "Neue Lieferadresse"}
+      onClose={onClose}
+    >
+      <form
+        ref={save.form}
+        className="form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const d = new FormData(e.currentTarget);
+          void save.run(async () => {
+            const body = {
+              name: get(d, "name"),
+              company_name: get(d, "company_name"),
+              address1: get(d, "address1"),
+              address2: get(d, "address2"),
+              postal_code: get(d, "postal_code"),
+              city: get(d, "city"),
+              country: get(d, "country"),
+              phone: get(d, "phone") || null,
+              email: address?.email ?? null,
+            };
+            if (address) await client.updateAddress(address.id, body);
+            else await client.createAddress(body);
+            onDone();
+          });
+        }}
+      >
+        <div className="form-grid two">
+          <Field
+            name="name"
+            label="Vor- und Nachname"
+            value={address?.name}
+            required
+            autoComplete="name"
+          />
+          <Field
+            name="company_name"
+            label="Firma (optional)"
+            value={address?.company_name}
+            autoComplete="organization"
+          />
+          <Field
+            name="address1"
+            label="Straße und Hausnummer"
+            value={address?.address1}
+            error={save.fields.address1}
+            required
+            autoComplete="address-line1"
+          />
+          <Field
+            name="address2"
+            label="Adresszusatz (optional)"
+            value={address?.address2}
+            autoComplete="address-line2"
+          />
+          <Field
+            name="postal_code"
+            label="PLZ"
+            value={address?.postal_code}
+            error={save.fields.postal_code}
+            required
+            autoComplete="postal-code"
+          />
+          <Field
+            name="city"
+            label="Ort"
+            value={address?.city}
+            error={save.fields.city}
+            required
+            autoComplete="address-level2"
+          />
+          <div className="field">
+            <label htmlFor={countryId}>Land</label>
+            <CountrySelect
+              id={countryId}
+              className="select"
+              name="country"
+              countries={countries}
+              error={save.fields.country}
+              defaultValue={address?.country}
+            />
+          </div>
+          <Field
+            name="phone"
+            label="Telefon für die Zustellung (optional)"
+            type="tel"
+            value={address?.phone}
+            autoComplete="tel"
+          />
+        </div>
+        <SaveStatus save={save} />
+        <button type="submit" disabled={save.busy} className="btn btn-primary">
+          Adresse speichern
+        </button>
+      </form>
+    </AccountSheet>
+  );
+}
+function Addresses({
+  countries,
+  onChanged,
+  ...props
+}: DashboardProps & {
+  countries: { value: string; label: string }[];
+  onChanged: () => void;
+}) {
+  const { client, profile } = props;
+  const countryId = useId();
+  const addresses = useAccountResource((s) => client.addresses(s), [client]);
+  const [editing, setEditing] = useState<ShippingAddress | "new" | null>(null),
+    [deleting, setDeleting] = useState<ShippingAddress | null>(null);
+  const save = useSave();
+  return (
+    <div className="stack">
+      <form
+        ref={save.form}
+        className="card card-pad form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const d = new FormData(e.currentTarget);
+          void save.run(async () => {
+            await client.updateProfile({
+              companyname: get(d, "companyname"),
+              address1: get(d, "address1"),
+              address2: get(d, "address2"),
+              postal_code: get(d, "postal_code"),
+              city: get(d, "city"),
+              country: get(d, "country"),
+            });
+            onChanged();
+          });
+        }}
+      >
+        <h2 className="eyebrow">Rechnungsadresse</h2>
+        <div className="form-grid two">
+          <Field
+            name="companyname"
+            label="Firma (optional)"
+            value={profile.companyname}
+            autoComplete="organization"
+          />
+          <Field
+            name="address1"
+            label="Straße und Hausnummer"
+            value={profile.address1}
+            error={save.fields.address1}
+            required
+            autoComplete="address-line1"
+          />
+          <Field
+            name="address2"
+            label="Adresszusatz (optional)"
+            value={profile.address2}
+            autoComplete="address-line2"
+          />
+          <Field
+            name="postal_code"
+            label="PLZ"
+            value={profile.postal_code}
+            error={save.fields.postal_code}
+            required
+            autoComplete="postal-code"
+          />
+          <Field
+            name="city"
+            label="Ort"
+            value={profile.city}
+            error={save.fields.city}
+            required
+            autoComplete="address-level2"
+          />
+          <div className="field">
+            <label htmlFor={countryId}>Land</label>
+            <CountrySelect
+              id={countryId}
+              className="select"
+              name="country"
+              countries={countries}
+              error={save.fields.country}
+              defaultValue={profile.country}
+            />
+          </div>
+        </div>
+        <SaveStatus save={save} />
+        <button className="btn btn-primary" disabled={save.busy} type="submit">
+          Speichern
+        </button>
+      </form>
+      <div className="section-title">
+        <h2>Lieferadressen</h2>
+      </div>
+      {(addresses.loading || addresses.error) && (
+        <AccountState
+          loading={addresses.loading}
+          error={addresses.error}
+          retry={addresses.reload}
+        />
+      )}
+      <div className="voucher-grid">
+        {addresses.data?.map((a) => (
+          <section key={a.id} className="card address-card">
+            <address>
+              {a.name}
+              <br />
+              {a.company_name}
+              <br />
+              {a.address1}
+              <br />
+              {a.address2}
+              <br />
+              {a.postal_code} {a.city}
+              <br />
+              {accountCountryOption(countries, a.country)?.label ?? a.country}
+            </address>
+            <div className="btn-row">
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => setEditing(a)}
+              >
+                Ändern
+              </button>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => setDeleting(a)}
+              >
+                Löschen
+              </button>
+            </div>
+          </section>
+        ))}
+      </div>
+      {addresses.data?.length === 0 && (
+        <p>Noch keine Lieferadresse. Wir nutzen Deine Rechnungsadresse.</p>
+      )}
+      <button className="btn" type="button" onClick={() => setEditing("new")}>
+        Neue Lieferadresse
+      </button>
+      {editing && (
+        <AddressForm
+          address={editing === "new" ? undefined : editing}
+          client={client}
+          countries={countries}
+          onClose={() => setEditing(null)}
+          onDone={() => {
+            setEditing(null);
+            addresses.reload();
+          }}
+        />
+      )}
+      {deleting && (
+        <AccountSheet
+          title="Adresse wirklich löschen?"
+          onClose={() => setDeleting(null)}
+        >
+          <p>{deleting.name}</p>
+          <SaveStatus save={save} />
+          <button
+            type="button"
+            className="btn"
+            disabled={save.busy}
+            onClick={() =>
+              void save.run(async () => {
+                await client.deleteAddress(deleting.id);
+                setDeleting(null);
+                addresses.reload();
+              })
+            }
+          >
+            Ja, löschen
+          </button>
+        </AccountSheet>
+      )}
+    </div>
+  );
+}
+function Security({ client, profile, routes }: DashboardProps) {
+  const email = useSave(),
+    password = useSave();
+  const [pending, setPending] = useState(""),
+    [old, setOld] = useState(""),
+    [next, setNext] = useState(""),
+    [repeat, setRepeat] = useState("");
+  const rules = accountPasswordRules(next);
+  return (
+    <div className="stack">
+      <form
+        className="card card-pad form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const d = new FormData(e.currentTarget);
+          const address = get(d, "new_email");
+          if (address.toLowerCase() === (profile.email ?? "").toLowerCase()) {
+            email.setError("Das ist schon Deine aktuelle E-Mail-Adresse.");
+            return;
+          }
+          void email.run(async () => {
+            await client.updateEmail({ new_email: address });
+            setPending(address);
+          }, "Bestätigungslink verschickt.");
+        }}
+      >
+        <h2 className="eyebrow">E-Mail-Adresse</h2>
+        <p>{profile.email}</p>
+        {pending && (
+          <p className="notice">
+            Bitte bestätige {pending}. Bis Du den Link öffnest, bleibt{" "}
+            {profile.email} aktiv.
+          </p>
+        )}
+        <Field
+          name="new_email"
+          label="Neue E-Mail-Adresse"
+          type="email"
+          required
+          autoComplete="email"
+          error={email.fields.new_email}
+        />
+        <SaveStatus save={email} />
+        <button type="submit" className="btn btn-outline" disabled={email.busy}>
+          Bestätigungslink senden
+        </button>
+      </form>
+      {profile.has_password ? (
+        <form
+          className="card card-pad form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (
+              !rules.length ||
+              !rules.letter ||
+              !rules.nonLetter ||
+              next === old ||
+              next !== repeat
+            ) {
+              password.setError(
+                "Bitte beachte die Passwortregeln und bestätige Dein neues Passwort.",
+              );
+              return;
+            }
+            void password.run(async () => {
+              await client.updatePassword({
+                old_password: old,
+                password: next,
+              });
+              setOld("");
+              setNext("");
+              setRepeat("");
+            }, "Passwort geändert.");
+          }}
+        >
+          <h2 className="eyebrow">Passwort</h2>
+          <label className="field">
+            Aktuelles Passwort
+            <input
+              className="input"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={old}
+              onChange={(e) => setOld(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            Neues Passwort
+            <input
+              className="input"
+              type="password"
+              required
+              autoComplete="new-password"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            Neues Passwort wiederholen
+            <input
+              className="input"
+              type="password"
+              required
+              autoComplete="new-password"
+              value={repeat}
+              onChange={(e) => setRepeat(e.target.value)}
+            />
+          </label>
+          <ul className="small">
+            <li>
+              {rules.length ? "✓" : "○"} Mindestens 8 Zeichen, höchstens 72
+              UTF-8-Bytes
+            </li>
+            <li>
+              {rules.letter && rules.nonLetter ? "✓" : "○"} Ein Buchstabe und
+              eine Zahl oder ein Sonderzeichen
+            </li>
+            <li>
+              {next && next !== old ? "✓" : "○"} Anders als Dein aktuelles
+              Passwort
+            </li>
+          </ul>
+          <SaveStatus save={password} />
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={password.busy}
+          >
+            Passwort ändern
+          </button>
+        </form>
+      ) : (
+        <AccountCard title="Passwort">
+          <p>
+            Du hast noch kein Passwort. Du kannst Dir einen Link zum Festlegen
+            schicken lassen.
+          </p>
+          <a className="btn" href={routes.passwordSet}>
+            Passwort festlegen
+          </a>
+        </AccountCard>
+      )}
+    </div>
+  );
+}
+function Newsletter({
+  adapter,
+  copy,
+}: {
+  adapter: NewsletterAdapter;
+  copy: string;
+}) {
+  const resource = useAccountResource(() => adapter.status(), [adapter]);
+  const save = useSave();
+  const pending = resource.data === "pending";
+  const run = (action: () => Promise<void>, success: string) =>
+    save.run(
+      async () => {
+        await action();
+        resource.reload();
+      },
+      success,
+      (error) =>
+        error instanceof AccountApiError && error.status === 429
+          ? "Bitte warte fünf Minuten nach der letzten E-Mail, bevor Du einen neuen Bestätigungslink anforderst."
+          : accountErrorMessage(error),
+    );
+  return (
+    <AccountCard title="Newsletter">
+      {(resource.loading || resource.error) && (
+        <AccountState
+          loading={resource.loading}
+          error={resource.error}
+          retry={resource.reload}
+        />
+      )}
+      <label className="switch-row">
+        Newsletter
+        <input
+          type="checkbox"
+          role="switch"
+          aria-checked={resource.data === true}
+          checked={resource.data === true}
+          disabled={
+            resource.loading || !!resource.error || save.busy || pending
+          }
+          onChange={(e) => {
+            const value = e.target.checked;
+            void run(
+              () => (value ? adapter.subscribe() : adapter.unsubscribe()),
+              value
+                ? "Bitte bestätige Deine Anmeldung über den Link in unserer E-Mail."
+                : "Du bist abgemeldet.",
+            );
+          }}
+        />
+      </label>
+      {pending && (
+        <div>
+          <p>
+            Bitte bestätige Deine Anmeldung über den Link in unserer E-Mail.
+          </p>
+          <p className="tiny muted">
+            Der Link ist 24 Stunden gültig. Du kannst alle fünf Minuten eine
+            neue E-Mail anfordern. Ein neuer Link macht den bisherigen ungültig.
+          </p>
+          <div className="btn-row">
+            <button
+              className="btn"
+              type="button"
+              disabled={save.busy}
+              onClick={() =>
+                void run(
+                  () => adapter.subscribe(),
+                  "Wir haben Dir eine neue Bestätigungs-E-Mail geschickt.",
+                )
+              }
+            >
+              Bestätigungs-E-Mail erneut senden
+            </button>
+            <button
+              className="btn"
+              type="button"
+              disabled={save.busy}
+              onClick={() =>
+                void run(
+                  () => adapter.unsubscribe(),
+                  "Deine Anmeldung wurde abgebrochen.",
+                )
+              }
+            >
+              Anmeldung abbrechen
+            </button>
+          </div>
+        </div>
+      )}
+      <p>{copy}</p>
+      <p className="tiny muted">
+        Bestätigungen, Rechnungen und Hinweise zu Deinen Bestellungen schicken
+        wir immer, die gehören zum Vertrag.
+      </p>
+      <SaveStatus save={save} />
+    </AccountCard>
+  );
+}
+export function AccountSettings({
+  minimumAge,
+  countries,
+  newsletter,
+  onChanged,
+  onLogout,
+  ...props
+}: DashboardProps & {
+  minimumAge: number;
+  countries: { value: string; label: string }[];
+  newsletter: NewsletterAdapter;
+  onChanged: () => void;
+  onLogout: () => void;
+}) {
+  const [section, setSection] = useState("");
+  const sections = [
+    ["persoenlich", "Persönliche Daten", "Name, Geburtsdatum, Telefon"],
+    ["adressen", "Adressen", "Rechnungsadresse und Lieferadressen"],
+    ["anmeldung", "Anmeldung & Sicherheit", "E-Mail-Adresse und Passwort"],
+    ["newsletter", "Newsletter", "Was wir Dir per E-Mail schicken"],
+  ];
+  return (
+    <>
+      <AccountHead
+        title={
+          section
+            ? (sections.find((s) => s[0] === section)?.[1] ?? "Konto")
+            : "Konto"
+        }
+        accent={section ? undefined : "& Einstellungen"}
+        lead={
+          section
+            ? undefined
+            : "Persönliche Daten, Adressen, Anmeldung und was wir Dir schicken dürfen."
+        }
+      />
+      {section && (
+        <button
+          className="back btn-link"
+          type="button"
+          onClick={() => setSection("")}
+        >
+          ‹ Konto
+        </button>
+      )}
+      <div className={`konto-grid ${section ? "has-section" : ""}`}>
+        <nav className="card settings-nav" aria-label="Kontoeinstellungen">
+          <ul className="settings-list">
+            {sections.map(([key, title, sub]) => (
+              <li key={key}>
+                <button
+                  type="button"
+                  aria-current={section === key ? "page" : undefined}
+                  onClick={() => setSection(key)}
+                >
+                  <span className="s-ico" aria-hidden="true">
+                    <BookingIcon
+                      name={
+                        key === "persoenlich"
+                          ? "users"
+                          : key === "adressen"
+                            ? "pin"
+                            : key === "anmeldung"
+                              ? "id"
+                              : "info"
+                      }
+                    />
+                  </span>
+                  <span>
+                    <span className="s-title">{title}</span>
+                    <br />
+                    <span className="s-sub">{sub}</span>
+                  </span>
+                  <span className="settings-chevron" aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+              </li>
+            ))}
+            <li>
+              <button type="button" onClick={onLogout}>
+                Abmelden
+              </button>
+            </li>
+          </ul>
+        </nav>
+        <div className="stack">
+          {section === "persoenlich" ? (
+            <Personal
+              {...props}
+              minimumAge={minimumAge}
+              onChanged={onChanged}
+            />
+          ) : section === "adressen" ? (
+            <Addresses {...props} countries={countries} onChanged={onChanged} />
+          ) : section === "anmeldung" ? (
+            <Security {...props} />
+          ) : section === "newsletter" ? (
+            <Newsletter adapter={newsletter} copy={props.labels.newsletter} />
+          ) : (
+            <AccountCard title="Kontoübersicht">
+              <p>
+                {props.profile.first_name} {props.profile.last_name}
+              </p>
+              <p>{props.profile.email}</p>
+              <p>
+                {props.profile.birth_date
+                  ? "Geburtsdatum hinterlegt"
+                  : "Geburtsdatum noch nicht hinterlegt"}
+              </p>
+              <p>Wähl einen Bereich, um Deine Daten zu ändern.</p>
+            </AccountCard>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

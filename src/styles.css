@@ -1,0 +1,359 @@
+.sv-booking {
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--sv-padding, 1.25rem);
+  color: var(--sv-text, #241a20);
+  background: var(--sv-background, #fff);
+  font-family: var(--sv-font, system-ui, sans-serif);
+  line-height: 1.5;
+  border: 1px solid var(--sv-border, #c9bdc3);
+  border-radius: var(--sv-radius, 0.5rem);
+}
+.sv-booking *,
+.sv-booking *::before,
+.sv-booking *::after {
+  box-sizing: border-box;
+}
+.sv-booking h2,
+.sv-booking h3,
+.sv-booking p {
+  margin: 0 0 var(--sv-space, 1rem);
+}
+.sv-booking fieldset {
+  min-width: 0;
+  margin: 0 0 var(--sv-space, 1rem);
+  padding: var(--sv-space, 1rem);
+  border: 1px solid var(--sv-border, #c9bdc3);
+  border-radius: var(--sv-radius, 0.5rem);
+}
+.sv-booking legend {
+  padding-inline: 0.25em;
+  font-weight: 600;
+}
+.sv-booking label {
+  display: block;
+  margin-block: 0 var(--sv-space, 1rem);
+}
+.sv-booking input:not([type="checkbox"]),
+.sv-booking select {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 0.35rem;
+  padding: 0.65rem;
+  font: inherit;
+  color: var(--sv-text, #241a20);
+  background: var(--sv-background, #fff);
+  border: 1px solid var(--sv-border, #c9bdc3);
+  border-radius: var(--sv-radius, 0.5rem);
+}
+.sv-booking button {
+  min-height: 2.75rem;
+  padding: 0.7rem 1.25rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--sv-on-primary, #fff);
+  background: var(--sv-primary, #752844);
+  border: 1px solid var(--sv-primary, #752844);
+  border-radius: var(--sv-radius, 0.5rem);
+  cursor: pointer;
+}
+.sv-booking button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.sv-booking :focus-visible {
+  outline: 3px solid var(--sv-focus, #155fc0);
+  outline-offset: 3px;
+}
+.sv-booking a {
+  color: var(--sv-primary, #752844);
+  text-decoration: underline;
+}
+.sv-booking .sv-consent {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+.sv-booking input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--sv-primary, #752844);
+}
+.sv-booking .sv-summary {
+  padding: var(--sv-space, 1rem);
+  margin-bottom: var(--sv-space, 1rem);
+  background: var(--sv-surface, #f7f3f5);
+  border-radius: var(--sv-radius, 0.5rem);
+}
+.sv-booking .sv-error,
+.sv-booking .sv-field-error {
+  color: var(--sv-error, #a51d32);
+}
+
+.sv-booking input[aria-invalid="true"] {
+  border-color: var(--sv-error, #a51d32);
+}
+
+/* Account components inherit their brand exclusively through the --sv-* tokens. */
+.sv-account {
+  box-sizing: border-box;
+  color: var(--sv-text, #241a20);
+  background: var(--sv-background, #fff);
+  font-family: var(--sv-font, system-ui, sans-serif);
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+.sv-account *,
+.sv-account *::before,
+.sv-account *::after {
+  box-sizing: border-box;
+}
+.sv-account form,
+form.sv-account {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.sv-account p {
+  margin: 0 0 0.75rem;
+}
+.sv-account fieldset {
+  margin: 0;
+  padding: 1.25rem;
+  min-width: 0;
+  border: 1px solid var(--sv-border, #c9bdc3);
+  border-radius: var(--sv-radius-lg, var(--sv-radius, 0.5rem));
+  background: var(--sv-surface, #f7f3f5);
+}
+.sv-account legend,
+.sv-account button,
+.sv-account-field > label {
+  font-family: var(--sv-font-label, var(--sv-font, system-ui, sans-serif));
+  font-size: var(--sv-label-size, 0.875rem);
+  letter-spacing: var(--sv-label-spacing, normal);
+  text-transform: var(--sv-label-case, none);
+}
+.sv-account legend {
+  padding: 0 0.4rem;
+}
+.sv-account-field {
+  margin-bottom: 1rem;
+  min-width: 0;
+}
+.sv-account-field:last-child {
+  margin-bottom: 0;
+}
+.sv-account-field > label {
+  display: block;
+  margin-bottom: 0.4rem;
+}
+.sv-account input:not([type="checkbox"]) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  color: var(--sv-text, #241a20);
+  background: var(--sv-background, #fff);
+  border: 1px solid var(--sv-input-border, var(--sv-border, #c9bdc3));
+  border-radius: var(--sv-radius, 0.5rem);
+}
+.sv-account input[aria-invalid="true"] {
+  border-color: var(--sv-error, #a51d32);
+}
+.sv-account .sv-account-hint {
+  margin: 0.4rem 0 0;
+  font-size: 1rem;
+  color: var(--sv-text-2, var(--sv-text, #241a20));
+}
+.sv-account .sv-account-field-error {
+  margin: 0.4rem 0 0;
+  font-size: 1rem;
+  color: var(--sv-error, #a51d32);
+}
+.sv-account .sv-account-error {
+  padding: 1rem;
+  color: var(--sv-error, #a51d32);
+  background: var(--sv-error-soft, var(--sv-surface, #f7f3f5));
+  border: 1px solid var(--sv-error, #a51d32);
+  border-radius: var(--sv-radius, 0.5rem);
+}
+.sv-account .sv-account-notice {
+  padding: 1.5rem;
+  background: var(--sv-success-soft, var(--sv-surface, #f7f3f5));
+  color: var(--sv-success, var(--sv-text, #241a20));
+  border-radius: var(--sv-radius-lg, var(--sv-radius, 0.5rem));
+}
+.sv-account .sv-account-notice strong {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+.sv-account button {
+  min-height: 48px;
+  padding: 0.9rem 1.25rem;
+  color: var(--sv-on-primary, #fff);
+  background: var(--sv-primary, #752844);
+  border: 1px solid var(--sv-primary, #752844);
+  border-radius: var(--sv-radius, 0.5rem);
+  cursor: pointer;
+}
+.sv-account button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.sv-account a {
+  color: var(--sv-accent-strong, var(--sv-primary, #752844));
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+.sv-account :focus-visible {
+  outline: 2px solid var(--sv-focus, #155fc0);
+  outline-offset: 3px;
+}
+.sv-account-check {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  min-height: 44px;
+}
+.sv-account input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0.25rem 0 0;
+  accent-color: var(--sv-primary, #752844);
+}
+.sv-account-rules {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  font-size: 1rem;
+  color: var(--sv-text-2, var(--sv-text, #241a20));
+}
+.sv-account-rules [data-met="true"] {
+  color: var(--sv-success, var(--sv-text, #241a20));
+}
+.sv-account-grid {
+  margin-bottom: 1rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.sv-account-grid > .sv-account-field {
+  margin-bottom: 0;
+}
+.sv-account .sv-account-secondary {
+  padding-top: 1rem;
+  border-top: 1px solid var(--sv-border, #c9bdc3);
+}
+.sv-account-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .sv-account-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sv-account-entry {
+  margin-block: 1rem;
+}
+.sv-account-entry-frame {
+  border: 1px solid var(--sv-border, #c9bdc3);
+  padding: 1.25rem;
+  border-radius: 0.35rem;
+}
+.sv-account-entry-actions {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+.sv-account-entry-frame button {
+  width: 100%;
+}
+button.sv-account-guest {
+  background: transparent;
+  border: 0;
+  color: var(--sv-primary, #752844);
+  text-decoration: underline;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.75rem 0;
+  min-height: 44px;
+}
+.sv-account-entry-dialog {
+  box-sizing: border-box;
+  width: min(640px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  border: 1px solid var(--sv-border, #c9bdc3);
+  background: var(--sv-background, #fff);
+  padding: 1.25rem;
+  border-radius: 0.35rem;
+}
+.sv-account-entry-dialog::backdrop {
+  background: #241a2077;
+}
+.sv-account-entry-dialog .sv-account-close {
+  display: block;
+  margin-left: auto;
+  margin-bottom: 1rem;
+}
+.sv-account.sv-account-entry-frame button {
+  color: var(--sv-on-primary, #fff);
+}
+.sv-account-entry-dialog {
+  margin: auto;
+}
+.sv-account-entry-dialog h2 {
+  font-size: 1.6rem;
+  margin: 0 0 1rem;
+}
+
+/* Google identity branding is intentionally independent of storefront tokens. */
+@font-face {
+  font-family: "Shopvento Google Sans";
+  src: url("./google-sans.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+button.sv-google-sign-in {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 12px !important;
+  background: #fff !important;
+  color: #1f1f1f !important;
+  border: 1px solid #747775 !important;
+  border-radius: 4px !important;
+  font:
+    500 14px / 20px "Shopvento Google Sans",
+    Arial,
+    sans-serif !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  cursor: pointer;
+}
+button.sv-google-sign-in > svg {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+}
+.sv-account-entry-frame button {
+  height: 50px;
+  min-height: 50px;
+  padding-block: 12px;
+}
