@@ -4,38 +4,70 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { AccountApiError, accountErrorMessage } from "./account-client";
 import { BookingIcon, bookingDate, bookingMoney } from "./calendar";
 import type { AccountEntry } from "./dashboard-state";
+/** Host-owned account nouns and optional age/birth date hints. */
 export interface AccountLabels {
+  /** Event in the account labels contract. */
   event: string;
+  /** Preferred public event collection. */
   events: string;
+  /** Event voucher in the account labels contract. */
   eventVoucher: string;
+  /** Event voucher singular in the account labels contract. Optional; omitted unless supplied by the host or backend. */
   eventVoucherSingular?: string;
+  /** Host-mapped product presentation data. */
   product: string;
+  /** Products in the account labels contract. */
   products: string;
+  /** Pickup in the account labels contract. */
   pickup: string;
+  /** Voucher use in the account labels contract. */
   voucherUse: string;
+  /** Newsletter adapter or host newsletter terminology. */
   newsletter: string;
+  /** Age hint in the account labels contract. Optional; omitted unless supplied by the host or backend. */
   ageHint?: string;
+  /** Birth date hint in the account labels contract. Optional; omitted unless supplied by the host or backend. */
   birthDateHint?: string;
 }
+/** Host routes used by dashboard navigation and detail links. */
 export interface AccountRoutes {
+  /** Use the overview legal-notes presentation. */
   overview: string;
+  /** Bookings in the account routes contract. */
   bookings: string;
+  /** Vouchers in the account routes contract. */
   vouchers: string;
+  /** Authoritative public installation flags and booking limits. */
   settings: string;
+  /** Preferred public event collection. */
   events: string;
+  /** Shop in the account routes contract. */
   shop: string;
+  /** Reserve in the account routes contract. */
   reserve: string;
+  /** Password set in the account routes contract. */
   passwordSet: string;
 }
+/** Host-owned contact and location information displayed in account help. */
 export interface AccountHelp {
+  /** Host contact phone number or customer international phone field. */
   phone: string;
+  /** Customer-visible phone link label. */
   phoneLabel: string;
+  /** Email in the account help contract. */
   email: string;
+  /** Address in the account help contract. */
   address: string;
+  /** Host directions link. */
   routeUrl: string;
+  /** Hours in the account help contract. Optional; omitted unless supplied by the host or backend. */
   hours?: string;
 }
+/** Format an account date for German display. */
 export const accountDate = (date: string) => bookingDate(date.slice(0, 10));
+/** Load a cancellable account resource when its host dependencies change.
+ * @param load - Cancellable async resource loader.
+ * @param dependencies - Host dependency values that reload the resource. Defaults to []. */
 export function useAccountResource<T>(
   load: (signal: AbortSignal) => Promise<T>,
   dependencies: unknown[] = [],
@@ -76,17 +108,31 @@ export function useAccountResource<T>(
       });
     return () => c.abort();
   }, [...dependencies, revision]);
-  return { data, error, loading, reload: () => setRevision((n) => n + 1) };
+  return {
+    /** Loaded authoritative data, or null while unavailable. */
+    data,
+    /** Customer-visible error, or null. */
+    error,
+    /** Whether the read is pending. */
+    loading,
+    /** Reload the resource from its authoritative API. */
+    reload: () => setRevision((n) => n + 1),
+  };
 }
+/** Render loading, error, retry or empty account state. */
 export function AccountState({
   loading,
   error,
   retry,
   empty,
 }: {
+  /** Whether an asynchronous read is pending. Optional; omitted unless supplied by the host or backend. */
   loading?: boolean;
+  /** Customer-visible error or error presentation flag. Optional; omitted unless supplied by the host or backend. */
   error?: string | null;
+  /** Retry a failed read. Optional; omitted unless supplied by the host or backend. */
   retry?: () => void;
+  /** Customer-visible empty state message. Optional; omitted unless supplied by the host or backend. */
   empty?: string;
 }) {
   return (
@@ -109,6 +155,7 @@ export function AccountState({
     </div>
   );
 }
+/** Render a dashboard page title with optional lead and back navigation. */
 export function AccountHead({
   title,
   accent,
@@ -116,10 +163,16 @@ export function AccountHead({
   back,
   eyebrow = "Mein Konto",
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Optional accented heading text. Optional; omitted unless supplied by the host or backend. */
   accent?: string;
+  /** Optional introduction. Optional; omitted unless supplied by the host or backend. */
   lead?: string;
+  /** Back-link label and URL pair. Optional; omitted unless supplied by the host or backend. */
   back?: [string, string];
+  /** Short host-supplied heading context.
+   * @defaultValue "Mein Konto" */
   eyebrow?: string;
 }) {
   const ref = useRef<HTMLHeadingElement>(null);
@@ -148,11 +201,14 @@ export function AccountHead({
     </header>
   );
 }
+/** Group account content under a title. */
 export function AccountCard({
   title,
   children,
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Host-supplied child content. */
   children: ReactNode;
 }) {
   return (
@@ -162,7 +218,13 @@ export function AccountCard({
     </section>
   );
 }
-export function AccountHelpCard({ help }: { help: AccountHelp }) {
+/** Render the installation contact and directions. */
+export function AccountHelpCard({
+  help,
+}: {
+  /** Host contact, opening hours and directions. */
+  help: AccountHelp;
+}) {
   return (
     <AccountCard title="Hilfe & Kontakt">
       <p className="small muted">
@@ -174,7 +236,16 @@ export function AccountHelpCard({ help }: { help: AccountHelp }) {
     </AccountCard>
   );
 }
-export function AccountQr({ code, label }: { code: string; label: string }) {
+/** Encode the supplied ticket, pickup or voucher code locally as an accessible QR graphic. */
+export function AccountQr({
+  code,
+  label,
+}: {
+  /** Ticket, pickup or voucher code encoded locally. */
+  code: string;
+  /** Accessible customer-visible label. */
+  label: string;
+}) {
   const qr = qrcode(0, "M");
   qr.addData(code);
   qr.make();
@@ -196,13 +267,17 @@ export function AccountQr({ code, label }: { code: string; label: string }) {
     </svg>
   );
 }
+/** Render a native modal account sheet with focus containment and restoration. */
 export function AccountSheet({
   title,
   children,
   onClose,
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Host-supplied child content. */
   children: ReactNode;
+  /** Close the modal in host state. */
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -251,7 +326,13 @@ export function AccountSheet({
     </dialog>
   );
 }
-export function AccountCountdown({ target }: { target: number }) {
+/** Display a live countdown until the supplied timestamp. */
+export function AccountCountdown({
+  target,
+}: {
+  /** Countdown target in Unix milliseconds. */
+  target: number;
+}) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
@@ -273,13 +354,17 @@ export function AccountCountdown({ target }: { target: number }) {
     </div>
   );
 }
+/** Render a normalized account activity row with host labels and routes. */
 export function AccountEntryRow({
   entry,
   routes,
   labels,
 }: {
+  /** Normalized account activity to display. */
   entry: AccountEntry;
+  /** Host-owned account routes. */
   routes: AccountRoutes;
+  /** Host-owned copy overrides or account terminology. */
   labels: AccountLabels;
 }) {
   const label =

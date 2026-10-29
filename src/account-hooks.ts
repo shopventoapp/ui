@@ -50,11 +50,17 @@ export function useAccountSession(client: AccountClient) {
     }
   }, [client]);
   return {
+    /** Authoritative customer profile, or null. */
     profile,
+    /** Whether an authoritative profile is loaded. */
     authenticated: profile !== null,
+    /** Whether the read is pending. */
     loading,
+    /** Customer-visible error, or null. */
     error,
+    /** Reload the resource from its authoritative API. */
     reload,
+    /** Invalidate the current host session. */
     logout,
   };
 }

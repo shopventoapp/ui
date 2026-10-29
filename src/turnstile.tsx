@@ -2,17 +2,25 @@
 import { useEffect, useRef, useState } from "react";
 
 interface TurnstileApi {
+  /** Render in the turnstile api contract. */
   render(
     element: HTMLElement,
     options: {
+      /** Sitekey in the turnstile api contract. */
       sitekey: string;
+      /** Callback in the turnstile api contract. */
       callback: (token: string) => void;
+      /** Expired-callback in the turnstile api contract. */
       "expired-callback": () => void;
+      /** Error-callback in the turnstile api contract. */
       "error-callback": () => void;
+      /** Timeout-callback in the turnstile api contract. */
       "timeout-callback": () => void;
+      /** Size in the turnstile api contract. */
       size: string;
     },
   ): string;
+  /** Remove in the turnstile api contract. */
   remove(id: string): void;
 }
 function api() {
@@ -37,11 +45,14 @@ function load() {
     });
   return loading;
 }
+/** Load the explicit-render Turnstile widget and emit a short-lived token; clear expired tokens and remove the widget on unmount. */
 export function Turnstile({
   siteKey,
   onToken,
 }: {
+  /** Public Turnstile site key; never pass the private secret. */
   siteKey: string;
+  /** Receive the current short-lived challenge token, or an empty string after expiry or error. */
   onToken: (token: string) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);

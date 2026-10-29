@@ -18,6 +18,11 @@ import {
   eventsFrom,
 } from "./calendar";
 
+/** Create a local iCalendar file with Europe/Berlin timezone rules; no external calendar service is used.
+ * @param w - W supplied by the host.
+ * @param title - Customer-visible heading or title supplied by the host.
+ * @param reference - Opaque backend order or checkout reference.
+ * @param location - Selected installation location. */
 export function bookingCalendarFile(
   w: ResultWindow,
   title: string,
@@ -83,6 +88,7 @@ export function bookingCalendarFile(
     .map(fold)
     .join("\r\n");
 }
+/** Render the validated locally stored result, clear completed drafts and offer a calendar file. */
 export function BookingOutcome({
   cancelled = false,
   draftKey,
@@ -95,15 +101,27 @@ export function BookingOutcome({
   data,
   format = {},
 }: {
+  /** Render the cancelled flow instead of the validated local success result.
+   * @defaultValue false */
   cancelled?: boolean;
+  /** Installation- and location-scoped sessionStorage key. */
   draftKey: string;
+  /** Host booking route used for retry navigation. */
   bookingUrl: string;
+  /** Host calendar route. */
   calendarUrl: string;
+  /** Opaque backend order or checkout reference. Optional; omitted unless supplied by the host or backend. */
   reference?: string | null;
+  /** Host directions link. Optional; omitted unless supplied by the host or backend. */
   routeUrl?: string;
+  /** Host registration route. Optional; omitted unless supplied by the host or backend. */
   registerUrl?: string;
+  /** Host registration invitation displayed after booking. Optional; omitted unless supplied by the host or backend. */
   registerHint?: string;
+  /** Fresh events, windows, settings and locations supplied by the host. Optional; omitted unless supplied by the host or backend. */
   data?: CalendarInput | null;
+  /** Optional locale and currency formatting settings.
+   * @defaultValue {} */
   format?: BookingFormat;
 }) {
   const [snapshot, setSnapshot] = useState<ResultSnapshot | null>(null);

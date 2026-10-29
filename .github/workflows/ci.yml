@@ -20,4 +20,7 @@ jobs:
       - run: bun run typecheck
       - run: bun test
       - run: bun run build
+      - run: bun run typecheck:examples:built
+      - run: bun run docs:build
+      - run: bun run docs:check
       - run: npm pack --dry-run

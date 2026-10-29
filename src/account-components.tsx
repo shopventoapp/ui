@@ -19,7 +19,10 @@ import {
 } from "./account-client";
 
 interface FormProps {
+  /** Stable client instance used for API requests. */
   client: AccountClient;
+  /** Host sign-in route.
+   * @defaultValue "/konto/anmelden" */
   loginUrl?: string;
 }
 function Field({
@@ -28,9 +31,13 @@ function Field({
   hint,
   ...input
 }: InputHTMLAttributes<HTMLInputElement> & {
+  /** Selected icon or backend name. */
   name: string;
+  /** Accessible customer-visible label. */
   label: string;
+  /** Customer-visible error or error presentation flag. Optional; omitted unless supplied by the host or backend. */
   error?: string;
+  /** Optional customer-visible helper text. Optional; omitted unless supplied by the host or backend. */
   hint?: string;
 }) {
   const id = useId();
@@ -67,7 +74,12 @@ function Field({
     </div>
   );
 }
-function Notice({ children }: { children: ReactNode }) {
+function Notice({
+  children,
+}: {
+  /** Host-supplied child content. */
+  children: ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.focus();
@@ -165,11 +177,14 @@ function useFormAction(
 const value = (data: FormData, name: string) => String(data.get(name) ?? "");
 const passwordValid = (password: string) =>
   Object.values(accountPasswordRules(password)).every(Boolean);
+/** Display password requirements, including Unicode length and the UTF-8 byte limit. */
 export function PasswordChecklist({
   password,
   id,
 }: {
+  /** Password being checked; never persist this value. */
   password: string;
+  /** Opaque backend identifier or accessible element ID. Optional; omitted unless supplied by the host or backend. */
   id?: string;
 }) {
   const rules = accountPasswordRules(password);
@@ -208,6 +223,7 @@ export function PasswordChecklist({
     </ul>
   );
 }
+/** Render same-origin customer sign-in, keeping incorrect credentials inline. */
 export function LoginForm({
   client,
   registerUrl = "/konto/registrieren",
@@ -216,10 +232,17 @@ export function LoginForm({
   notice,
   onRegister,
 }: FormProps & {
+  /** Open host registration in place of following the registration URL. Optional; omitted unless supplied by the host or backend. */
   onRegister?: () => void;
+  /** Host registration route.
+   * @defaultValue "/konto/registrieren" */
   registerUrl?: string;
+  /** Host password reset request route.
+   * @defaultValue "/konto/passwort-vergessen" */
   passwordResetUrl?: string;
+  /** Handle successful authentication; the host owns navigation. Optional; omitted unless supplied by the host or backend. */
   onSuccess?: (response: AccountLoginResponse) => void | Promise<void>;
+  /** Optional customer-visible notice. Optional; omitted unless supplied by the host or backend. */
   notice?: string;
 }) {
   const form = useFormAction(false, true);
@@ -292,6 +315,7 @@ export function LoginForm({
     </form>
   );
 }
+/** Render registration with required terms/privacy consent and optional separate newsletter consent. */
 export function RegisterForm({
   client,
   termsUrl,
@@ -299,8 +323,12 @@ export function RegisterForm({
   loginUrl = "/konto/anmelden",
   initialEmail = "",
 }: FormProps & {
+  /** Host terms and conditions URL. */
   termsUrl: string;
+  /** Host privacy policy URL. */
   privacyUrl: string;
+  /** Optional email prefill.
+   * @defaultValue "" */
   initialEmail?: string;
 }) {
   const form = useFormAction();
@@ -459,6 +487,7 @@ export function RegisterForm({
     </form>
   );
 }
+/** Request a password-reset email without revealing whether the account exists. */
 export function PasswordResetRequest({
   client,
   loginUrl = "/konto/anmelden",
@@ -514,15 +543,22 @@ export function PasswordResetRequest({
   );
 }
 interface TokenProps extends FormProps {
+  /** One-time token retained only in component memory; null enables recovery navigation. */
   token: string | null;
+  /** Host password reset request route. Optional; omitted unless supplied by the host or backend. */
   passwordResetUrl?: string;
 }
+/** Set a password using a token retained only in component memory. */
 export function PasswordSetForm({
   client,
   token,
   accountUrl = "/konto",
   passwordResetUrl = "/konto/passwort-vergessen",
-}: TokenProps & { accountUrl?: string }) {
+}: TokenProps & {
+  /** Host authenticated account landing route.
+   * @defaultValue "/konto" */
+  accountUrl?: string;
+}) {
   const form = useFormAction(true, false, "passwordSet");
   const [password, setPassword] = useState("");
   const [done, setDone] = useState(false);
@@ -610,7 +646,11 @@ function EmailConfirmation({
   token,
   loginUrl = "/konto/anmelden",
   change = false,
-}: TokenProps & { change?: boolean }) {
+}: TokenProps & {
+  /** Change in the email confirmation contract.
+   * @defaultValue false */
+  change?: boolean;
+}) {
   const form = useFormAction(true, false, change ? "emailChange" : "verify");
   const [done, setDone] = useState(false);
   return (
@@ -669,9 +709,13 @@ function EmailConfirmation({
     </div>
   );
 }
+/** Confirm an email token only after an explicit button press.
+ * @param props - Props supplied by the host. */
 export function EmailVerify(props: TokenProps) {
   return <EmailConfirmation {...props} />;
 }
+/** Confirm an email change only after an explicit button press.
+ * @param props - Props supplied by the host. */
 export function EmailChangeConfirm(props: TokenProps) {
   return <EmailConfirmation {...props} change />;
 }

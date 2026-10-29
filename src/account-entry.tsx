@@ -9,6 +9,8 @@ import { googleMark } from "./google-brand";
 export function GoogleSignIn({
   returnPath = "/konto",
 }: {
+  /** Safe same-origin path to visit after account authentication.
+   * @defaultValue "/konto" */
   returnPath?: string;
 }) {
   const iconId = useId();
@@ -70,11 +72,19 @@ export function AccountAccess({
   termsUrl = "/agb",
   privacyUrl = "/datenschutz",
 }: {
+  /** Stable client instance used for API requests. */
   client: AccountClient;
+  /** Safe same-origin path to visit after account authentication. */
   returnPath: string;
+  /** Refresh the host session after successful authentication. */
   onAuthenticated: () => void;
+  /** Continue in the host guest flow when supplied. Optional; omitted unless supplied by the host or backend. */
   onGuest?: () => void;
+  /** Host terms and conditions URL.
+   * @defaultValue "/agb" */
   termsUrl?: string;
+  /** Host privacy policy URL.
+   * @defaultValue "/datenschutz" */
   privacyUrl?: string;
 }) {
   const [mode, setMode] = useState<"login" | "register" | null>(null);

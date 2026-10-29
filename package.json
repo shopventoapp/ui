@@ -51,13 +51,17 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --external react --external react-dom --clean && bun run scripts/copy-css.ts",
-    "lint": "biome check src tests scripts && tsc --noEmit",
+    "lint": "biome check src tests scripts examples && tsc --noEmit",
     "test": "bun test",
     "pack": "bun run build && bun pm pack --destination artifacts",
     "generate:client": "bun run scripts/generate-client.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p examples/tsconfig.json",
     "generate:shop-client": "bun run scripts/generate-shop-client.ts",
-    "format:generated": "biome format --write"
+    "format:generated": "biome format --write",
+    "typecheck:examples:built": "tsc -p examples/tsconfig.built.json",
+    "docs:build": "bun run scripts/build-docs.ts",
+    "docs:check": "bun run scripts/check-docs-links.ts",
+    "export:openapi": "bun run scripts/export-public-openapi.ts"
   },
   "peerDependencies": {
     "react": "^18.2.0 || ^19.0.0",
@@ -67,15 +71,19 @@
     "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "12.1.0",
     "@biomejs/biome": "2.5.15",
     "@happy-dom/global-registrator": "^20.0.0",
     "@testing-library/react": "^16.3.0",
     "@types/bun": "latest",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "marked": "18.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "redoc": "3.0.1",
     "tsup": "^8.5.0",
+    "typedoc": "0.28.20",
     "typescript": "^5.9.0"
   }
 }

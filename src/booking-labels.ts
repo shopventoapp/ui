@@ -1,14 +1,23 @@
 /** Override event-specific German copy with the host's own terminology. */
 export interface BookingLabels {
+  /** Events loading in the booking labels contract. */
   eventsLoading: string;
+  /** Event unavailable in the booking labels contract. */
   eventUnavailable: string;
+  /** Guest disabled in the booking labels contract. */
   guestDisabled: string;
+  /** Event voucher required in the booking labels contract. */
   eventVoucherRequired: string;
+  /** Event voucher missing in the booking labels contract. */
   eventVoucherMissing: (count: number) => string;
+  /** Event voucher description in the booking labels contract. */
   eventVoucherDescription: string;
+  /** Event voucher notice in the booking labels contract. */
   eventVoucherNotice: string;
+  /** Event details in the booking labels contract. */
   eventDetails: string;
 }
+/** Complete German booking copy defaults. Pass a partial labels object to replace individual event messages. */
 export const defaultBookingLabels: BookingLabels = {
   eventsLoading: "Veranstaltungen werden geladen…",
   eventUnavailable: "Diese Veranstaltung ist nicht verfügbar.",

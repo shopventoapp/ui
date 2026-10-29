@@ -109,3 +109,8 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+
+## Documentation renderer
+
+The static documentation site bundles Redoc CE 3.0.1 (MIT), including its standalone dependency notices, and a locally hosted Redocly attribution logo. The build preserves the distribution license comments and copies its MIT license to `site/assets/redoc.LICENSE.txt`. The only bundle modification replaces the fixed remote logo URL with the local logo asset; telemetry is disabled at initialization. Redoc is a development dependency and is not included in the published component package.

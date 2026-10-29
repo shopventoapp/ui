@@ -4,6 +4,8 @@ React components for storefronts built on the Shopvento API: event booking with 
 
 Version 0.2 covers booking, vouchers, the customer account and shop presentation primitives. A complete shop flow (cart and checkout) is planned for a later release.
 
+Full English documentation: [docs.shopvento.de](https://docs.shopvento.de), including guides, the generated component/type reference and the public Shop API reference.
+
 ## Requirements
 
 - A Shopvento instance. Every component talks to its storefront API (`/api/shop/*`).
@@ -105,6 +107,17 @@ The full variable list with defaults is in the [integration guide](docs/integrat
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). In short: `bun install`, then `bun run lint`, `bun run typecheck`, `bun test` and `bun run build`.
+
+## Documentation development
+
+`bun run docs:build` builds the static site in `site/`, including the TypeDoc reference and locally bundled Redoc API viewer. `bun run docs:check` validates internal pages, fragments and assets and requires safe attributes on external links. `bun run typecheck` includes the runnable examples; `bun run typecheck:examples:built` checks them against the built package declarations after `bun run build`.
+
+- `scripts/wire-documentation.ts`: keep public wire type and field documentation when either client generator runs.
+- `scripts/build-docs.ts`: build the guides from `docs/guides/`, embed source examples, generate TypeDoc, validate the OpenAPI document and bundle the API viewer.
+- `scripts/check-docs-links.ts`: check generated HTML links, fragments, local assets and outbound-link attributes; accepts an optional site directory.
+- `scripts/export-public-openapi.ts`: `bun run export:openapi /absolute/path/backend-openapi.json [output.json]` keeps only the exact public client paths/methods and their reachable components, neutralizes backend schema names and replaces deployment metadata. If the backend export is unavailable, `bun run export:openapi --from-wire` reconstructs the limited contract from the committed TypeScript wire types and public call sites. The resulting API source note explicitly states the missing backend-only constraints.
+
+The GitHub Pages workflow builds on main and version tags. Server-proxy fixtures in `tests/fixtures/docs-proxy.ts` run automatically through the test suite using native server Web APIs. Repository Pages source, custom domain and DNS are configured separately; the build emits `CNAME` for `docs.shopvento.de`.
 
 ## Licence
 

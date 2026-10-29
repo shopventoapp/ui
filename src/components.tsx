@@ -43,6 +43,7 @@ function slotLabel(slot: Timewindow) {
   }).format(new Date(`${slot.date}T12:00:00`));
   return `${date}, ${slot.start_time.slice(0, 5)} Uhr`;
 }
+/** Select an eligible timewindow, respecting capacity, deadlines and the 24-hour lead time. */
 export function DateTimePicker({
   windows,
   value,
@@ -51,11 +52,19 @@ export function DateTimePicker({
   now = Date.now(),
   locations = [],
 }: {
+  /** Dated availability returned by the API. */
   windows: Timewindow[];
+  /** Current controlled value. */
   value: string;
+  /** Receive the updated controlled value. */
   onChange: (value: string) => void;
+  /** Booked places, or requested seat count depending on the signature. */
   seats: number;
+  /** Current instant as milliseconds since the Unix epoch. Defaults to Date.now().
+   * @defaultValue Date.now() */
   now?: number;
+  /** Public installation locations.
+   * @defaultValue [] */
   locations?: Location[];
 }) {
   const id = useId();
@@ -99,6 +108,7 @@ export function DateTimePicker({
     </div>
   );
 }
+/** Edit the seat list and assign variants or a voucher to each seat. */
 export function SeatSelector({
   seats,
   variants,
@@ -106,10 +116,16 @@ export function SeatSelector({
   directBookingEnabled,
   maxSeats = Math.max(20, seats.length),
 }: {
+  /** Booked places, or requested seat count depending on the signature. */
   seats: Seat[];
+  /** Public event variants with backend prices. */
   variants: ShopEvent[];
+  /** Receive the updated controlled value. */
   onChange: (seats: Seat[]) => void;
+  /** Whether the installation allows bookings without a voucher for every seat. */
   directBookingEnabled: boolean;
+  /** Maximum number of selectable seats.
+   * @defaultValue Math.max(20, seats.length) */
   maxSeats?: number;
 }) {
   const id = useId();
@@ -188,13 +204,18 @@ export function SeatSelector({
     </fieldset>
   );
 }
+/** Edit guest contact details and show field-level validation errors. */
 export function GuestFields({
   contact,
   onChange,
   errors = {},
 }: {
+  /** Guest contact fields. */
   contact: GuestContact;
+  /** Field validation messages.
+   * @defaultValue {} */
   errors?: GuestFieldErrors;
+  /** Receive the updated controlled value. */
   onChange: (value: GuestContact) => void;
 }) {
   const id = useId();
@@ -261,15 +282,20 @@ export function GuestFields({
     </fieldset>
   );
 }
+/** Display the selected date, seats and undiscounted variant prices before backend validation. */
 export function BookingSummary({
   draft,
   variants,
   window,
   location,
 }: {
+  /** Draft in the booking summary contract. */
   draft: BookingDraft;
+  /** Public event variants with backend prices. */
   variants: ShopEvent[];
+  /** Selected dated timewindow. Optional; omitted unless supplied by the host or backend. */
   window?: Timewindow;
+  /** Selected installation location. Optional; omitted unless supplied by the host or backend. */
   location?: Location;
 }) {
   const prices = draft.seats.map(
@@ -305,32 +331,47 @@ export function BookingSummary({
     </section>
   );
 }
+/** Host configuration for the compact booking form. */
 export interface EventBookingOptions extends ClientOptions {
+  /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
+  /** Positive installation location identifier used to filter availability. Optional; omitted unless supplied by the host or backend. */
   locationId?: number;
+  /** Allowed HTTPS checkout hostnames. Defaults to checkout.stripe.com. Optional; omitted unless supplied by the host or backend. */
   checkoutHosts?: readonly string[];
+  /** Override the disabled guest booking notice; takes precedence over labels. Optional; omitted unless supplied by the host or backend. */
   guestDisabledMessage?: string;
+  /** Host terms and conditions URL. */
   termsUrl: string;
+  /** Host privacy policy URL. */
   privacyUrl: string;
+  /** Public Turnstile site key required for guest submission. Optional; omitted unless supplied by the host or backend. */
   turnstileSiteKey?: string;
   /** Guest is the default. Account consumers supply authentication through ClientOptions. */
   mode?: "guest" | "account";
+  /** Stable client instance used for API requests. Optional; omitted unless supplied by the host or backend. */
   client?: BookingClient;
+  /** Navigate to a validated checkout URL; defaults to window.location.assign. Optional; omitted unless supplied by the host or backend. */
   onRedirect?: (url: string) => void;
 }
+/** Event booking configuration with a required event identifier. */
 export type EventBookingProps = EventBookingOptions &
   (
     | {
+        /** Public event identifier used to select variants and availability. */
         eventId: number;
         /** @deprecated Use eventId. Removed in 1.0. */
         tastingId?: number;
       }
     | {
+        /** Public event identifier used to select variants and availability. Optional; omitted unless supplied by the host or backend. */
         eventId?: number;
         /** @deprecated Use eventId. Removed in 1.0. */
         tastingId: number;
       }
   );
+/** Render a compact event booking form with date, seats, vouchers, guest contact, consent and payment redirect.
+ * @param props - Props supplied by the host. */
 export function EventBooking(props: EventBookingProps) {
   const labels = mergeBookingLabels(props.labels);
   const eventId = props.eventId ?? props.tastingId ?? 0;
@@ -576,13 +617,18 @@ export function EventBooking(props: EventBookingProps) {
     </form>
   );
 }
+/** Display a checkout return reference. A success URL is not proof of payment. */
 export function BookingResult({
   url = "",
   outcome,
   retryUrl,
 }: {
+  /** Return-page URL used only for the optional reference, not payment verification.
+   * @defaultValue "" */
   url?: string;
+  /** Whether the backend returned to the success or cancel route. */
   outcome: "success" | "cancel";
+  /** Optional host route for retry navigation. Optional; omitted unless supplied by the host or backend. */
   retryUrl?: string;
 }) {
   let reference: string | null = null;

@@ -1,0 +1,6730 @@
+{
+  "openapi": "3.1.0",
+  "x-contract-source": "bundled-wire",
+  "info": {
+    "title": "Shopvento Shop API",
+    "version": "0.2.0",
+    "description": "Public client surface derived from the bundled TypeScript wire contracts. The backend export was unavailable. Fields and optionality are preserved; backend-only formats, constraints, errors and authorization requirements cannot be inferred. Use the installation's contract for production validation. OAuth status and redirect shapes come from the component call sites. Cart and checkout clients exist; complete cart and checkout UI flows are not in this package."
+  },
+  "servers": [
+    {
+      "url": "https://{installation}.shopvento.app",
+      "variables": {
+        "installation": {
+          "default": "your-installation"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/api/shop/tastings/": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopTasting"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "listEvents",
+        "summary": "list Events",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/api/shop/tastings/timewindows": {
+      "get": {
+        "parameters": [
+          {
+            "name": "tasting_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "timewindows",
+                    "total"
+                  ],
+                  "properties": {
+                    "timewindows": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Timewindow"
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "listTimewindows",
+        "summary": "list Timewindows",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/api/shop/tastings/locations": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "locations",
+                    "total"
+                  ],
+                  "properties": {
+                    "locations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Location"
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "listLocations",
+        "summary": "list Locations",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/api/shop/tastings/bookings": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopBookingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "submitBooking",
+        "summary": "submit Booking",
+        "tags": [
+          "Bookings"
+        ]
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopBookingOrderResponse"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "bookings",
+        "summary": "bookings",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/tastings/bookings/guest": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopGuestBookingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "submitGuestBooking",
+        "summary": "submit Guest Booking",
+        "tags": [
+          "Bookings"
+        ]
+      }
+    },
+    "/api/shop/vouchers/{code}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoucherCheck"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "checkVoucher",
+        "summary": "check Voucher",
+        "tags": [
+          "Vouchers"
+        ]
+      }
+    },
+    "/api/shop/orders/": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopOrder"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "orders",
+        "summary": "orders",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/tastings/bookings/{booking_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingOrderResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "booking",
+        "summary": "booking",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/tastings/bookings/{booking_id}/move": {
+      "post": {
+        "parameters": [
+          {
+            "name": "booking_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopBookingMoveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "moveBooking",
+        "summary": "move Booking",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/table-reservations": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerTableReservationResponse"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "reservations",
+        "summary": "reservations",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/table-reservations/{reservation_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "reservation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerTableReservationResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "reservation",
+        "summary": "reservation",
+        "tags": [
+          "Customer account"
+        ]
+      },
+      "patch": {
+        "parameters": [
+          {
+            "name": "reservation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerTableReservationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerTableReservationResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "updateReservation",
+        "summary": "update Reservation",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/table-reservations/{reservation_id}/cancel": {
+      "post": {
+        "parameters": [
+          {
+            "name": "reservation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerTableReservationResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "cancelReservation",
+        "summary": "cancel Reservation",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/vouchers/customer": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopVoucherModel"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "vouchers",
+        "summary": "vouchers",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/vouchers/customer/{voucher_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "voucher_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopVoucherModel"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "voucher",
+        "summary": "voucher",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/vouchers/customer/{voucher_id}/history": {
+      "get": {
+        "parameters": [
+          {
+            "name": "voucher_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopVoucherHistoryEntry"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "voucherHistory",
+        "summary": "voucher History",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/orders/{order_id}/withdrawal-items": {
+      "get": {
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WithdrawalItemOption"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "withdrawalItems",
+        "summary": "withdrawal Items",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/orders/{order_id}/cancellation-request": {
+      "post": {
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WithdrawalSelectionRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancellationRequestResult"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "withdraw",
+        "summary": "withdraw",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/user/profile": {
+      "put": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopUserProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopUserProfile"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "updateProfile",
+        "summary": "update Profile",
+        "tags": [
+          "Customer account"
+        ]
+      },
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopUserProfile"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "profile",
+        "summary": "profile",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/user/newsletter/unsubscribe": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "newsletterUnsubscribe",
+        "summary": "newsletter Unsubscribe",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/user/shipping-addresses": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopUserShippingAddress"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "addresses",
+        "summary": "addresses",
+        "tags": [
+          "Customer account"
+        ]
+      },
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopUserShippingAddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopUserShippingAddress"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "createAddress",
+        "summary": "create Address",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/user/shipping-addresses/{shipping_address_id}": {
+      "put": {
+        "parameters": [
+          {
+            "name": "shipping_address_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopUserShippingAddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopUserShippingAddress"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "updateAddress",
+        "summary": "update Address",
+        "tags": [
+          "Customer account"
+        ]
+      },
+      "delete": {
+        "parameters": [
+          {
+            "name": "shipping_address_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "deleteAddress",
+        "summary": "delete Address",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/user/password-update": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "updatePassword",
+        "summary": "update Password",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/user/update-email": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "updateEmail",
+        "summary": "update Email",
+        "tags": [
+          "Customer account"
+        ]
+      }
+    },
+    "/api/shop/user/login": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "login",
+        "summary": "login",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/user/register": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopUserProfileCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "register",
+        "summary": "register",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/user/password-reset": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "passwordReset",
+        "summary": "password Reset",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/user/password-reset/confirm": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "passwordSet",
+        "summary": "password Set",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/user/verify-email": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailVerificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "emailVerify",
+        "summary": "email Verify",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/user/confirm-email-change": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "emailChangeConfirm",
+        "summary": "email Change Confirm",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/user/logout": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "logout",
+        "summary": "logout",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/settings": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopSettings"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "settings",
+        "summary": "settings",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/api/shop/user/google-auth/status": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "enabled"
+                  ],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "googleAuthStatus",
+        "summary": "google Auth Status",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/user/google-auth": {
+      "get": {
+        "parameters": [
+          {
+            "name": "success_redirect_url",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "failure_redirect_url",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "googleAuth",
+        "summary": "google Auth",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/shop/articles/catalogue": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopCatalogueResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "catalogue",
+        "summary": "catalogue",
+        "tags": [
+          "Shop"
+        ]
+      }
+    },
+    "/api/shop/articles/": {
+      "get": {
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopArticleGetAllResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "shopVouchers",
+        "summary": "shop Vouchers",
+        "tags": [
+          "Shop"
+        ]
+      }
+    },
+    "/api/shop/articles/{article_slug}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "article_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopArticleWithCategory"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "article",
+        "summary": "article",
+        "tags": [
+          "Shop"
+        ]
+      }
+    },
+    "/api/shop/cart/": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "quote",
+        "summary": "quote",
+        "tags": [
+          "Shop"
+        ]
+      }
+    },
+    "/api/shop/checkout/create-checkout-session": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponse"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "checkout",
+        "summary": "checkout",
+        "tags": [
+          "Shop"
+        ]
+      }
+    },
+    "/api/shop/orders/{order_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOrder"
+                }
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "order",
+        "summary": "order",
+        "tags": [
+          "Shop"
+        ]
+      }
+    },
+    "/api/shop/checkout/confirm-checkout": {
+      "post": {
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutCompletedRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Response from the installation."
+          }
+        },
+        "operationId": "confirm",
+        "summary": "confirm",
+        "tags": [
+          "Shop"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ShopTasting": {
+        "type": "object",
+        "properties": {
+          "tasting_id": {
+            "type": "number"
+          },
+          "tasting_name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "variant_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "variant_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "full_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tasting_id",
+          "tasting_name",
+          "price",
+          "full_name"
+        ]
+      },
+      "Timewindow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "timewindow_id": {
+            "type": "string"
+          },
+          "tasting_id": {
+            "type": "number"
+          },
+          "franchise_location_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "string"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "event_name": {
+            "type": "string"
+          },
+          "max_participants": {
+            "type": "number"
+          },
+          "free_spots": {
+            "type": "number"
+          },
+          "timewindow_series_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "availabilityStatus": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "available"
+              },
+              {
+                "type": "string",
+                "const": "limited"
+              },
+              {
+                "type": "string",
+                "const": "not_available"
+              }
+            ]
+          },
+          "booking_deadline": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "timewindow_id",
+          "tasting_id",
+          "date",
+          "start_time",
+          "event_name",
+          "max_participants"
+        ]
+      },
+      "Location": {
+        "type": "object",
+        "properties": {
+          "online_party_min": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "online_party_max": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "location_name": {
+            "type": "string"
+          },
+          "location_street": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "total_seats": {
+            "type": "number"
+          },
+          "table_reservations_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "location_name",
+          "id"
+        ]
+      },
+      "ShopBookingRequest": {
+        "type": "object",
+        "properties": {
+          "withdrawal_acknowledged": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "withdrawal_text_version": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "timewindow_id": {
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "seats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingSeatLine"
+            }
+          }
+        },
+        "required": [
+          "timewindow_id",
+          "seats"
+        ]
+      },
+      "ShopBookingSeatLine": {
+        "type": "object",
+        "properties": {
+          "voucher_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "variant_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "ShopBookingResponse": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "checkout_url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "order_id",
+          "order_number",
+          "success",
+          "status"
+        ]
+      },
+      "ShopBookingOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order_number": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "customer_status": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "CANCELLED"
+              },
+              {
+                "type": "string",
+                "const": "CONFIRMED"
+              },
+              {
+                "type": "string",
+                "const": "VISITED"
+              },
+              {
+                "type": "string",
+                "const": "PAST"
+              },
+              {
+                "type": "string",
+                "const": "PAYMENT_PENDING"
+              },
+              {
+                "type": "string",
+                "const": "PAYMENT_FAILED"
+              }
+            ]
+          },
+          "customer_status_label": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "tickets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingTicket"
+            }
+          },
+          "reschedulable_until": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "reschedule_count": {
+            "type": "number"
+          },
+          "has_been_moved": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopOrderPayment"
+            }
+          },
+          "has_invoice": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "invoice_link": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "invoice_date": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "credit_notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopOrderCreditNote"
+            }
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "tasting_id": {
+            "type": "number"
+          },
+          "franchise_location": {
+            "$ref": "#/components/schemas/ShopBookingLocation"
+          },
+          "date": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "string"
+          },
+          "end_time": {
+            "type": "string"
+          },
+          "event_name": {
+            "type": "string"
+          },
+          "participants": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "order_id",
+          "tasting_id",
+          "franchise_location",
+          "date",
+          "start_time",
+          "end_time",
+          "event_name"
+        ]
+      },
+      "ShopBookingTicket": {
+        "type": "object",
+        "properties": {
+          "check_in_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "seats": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "seats"
+        ]
+      },
+      "ShopOrderPayment": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "VOUCHER"
+              },
+              {
+                "type": "string",
+                "const": "STRIPE"
+              },
+              {
+                "type": "string",
+                "const": "OTHER"
+              }
+            ]
+          },
+          "voucher_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "payment_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "PAID"
+              },
+              {
+                "type": "string",
+                "const": "UNPAID"
+              },
+              {
+                "type": "string",
+                "const": "NO_PAYMENT_REQUIRED"
+              },
+              {
+                "type": "string",
+                "const": "REFUND_PENDING"
+              },
+              {
+                "type": "string",
+                "const": "REFUND_SUCCEEDED"
+              },
+              {
+                "type": "string",
+                "const": "REFUND_FAILED"
+              },
+              {
+                "type": "string",
+                "const": "REFUND_CANCELED"
+              },
+              {
+                "type": "string",
+                "const": "REFUND_REQUIRES_ACTION"
+              }
+            ]
+          },
+          "refunded_amount": {
+            "type": "number"
+          },
+          "promo_discount": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "amount_subtotal": {
+            "type": "number"
+          },
+          "amount_discount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "payment_status",
+          "id",
+          "amount",
+          "amount_subtotal",
+          "amount_discount"
+        ]
+      },
+      "ShopOrderCreditNote": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "credit_note_number": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at"
+        ]
+      },
+      "ShopBookingLocation": {
+        "type": "object",
+        "properties": {
+          "online_party_min": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "online_party_max": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "location_name": {
+            "type": "string"
+          },
+          "location_street": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "total_seats": {
+            "type": "number"
+          },
+          "table_reservations_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "location_name"
+        ]
+      },
+      "ShopGuestBookingRequest": {
+        "type": "object",
+        "properties": {
+          "withdrawal_acknowledged": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "withdrawal_text_version": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "timewindow_id": {
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "seats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingSeatLine"
+            }
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "terms_privacy_accepted": {
+            "type": "boolean"
+          },
+          "turnstile_token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "timewindow_id",
+          "seats",
+          "first_name",
+          "last_name",
+          "email",
+          "terms_privacy_accepted",
+          "turnstile_token"
+        ]
+      },
+      "VoucherCheck": {
+        "type": "object",
+        "properties": {
+          "voucher_code": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "remaining_value": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number"
+          },
+          "redeemed": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "redeemable_tasting_ids": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "redeemable_location_ids": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "redeemable_for_text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "voucher_code"
+        ]
+      },
+      "ShopOrder": {
+        "type": "object",
+        "properties": {
+          "order_source": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "SHOP_CHECKOUT"
+              },
+              {
+                "type": "string",
+                "const": "SHOP_BOOKING"
+              },
+              {
+                "type": "string",
+                "const": "BACKOFFICE_VOUCHER_REDEMPTION"
+              },
+              {
+                "type": "string",
+                "const": "B2B_PORTAL"
+              },
+              {
+                "type": "string",
+                "const": "LEGACY_PIXEND"
+              },
+              {
+                "type": "string",
+                "const": "LEGACY_WOOCOMMERCE"
+              }
+            ]
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "invoice_date": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "withdrawal": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopOrderWithdrawal"
+              }
+            ]
+          },
+          "voucher_only": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "order_number": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "PENDING"
+              },
+              {
+                "type": "string",
+                "const": "PAID"
+              },
+              {
+                "type": "string",
+                "const": "CANCELLED"
+              },
+              {
+                "type": "string",
+                "const": "INCOMPLETE"
+              },
+              {
+                "type": "string",
+                "const": "PROCESSING"
+              },
+              {
+                "type": "string",
+                "const": "COMPLETED"
+              },
+              {
+                "type": "string",
+                "const": "FAILED"
+              },
+              {
+                "type": "string",
+                "const": "REFUNDED"
+              },
+              {
+                "type": "string",
+                "const": "REFUNDED_EXTERNALLY"
+              },
+              {
+                "type": "string",
+                "const": "DISPUTED"
+              },
+              {
+                "type": "string",
+                "const": "DISPUTED_LOST"
+              },
+              {
+                "type": "string",
+                "const": "PARTIALLY_CANCELLED"
+              },
+              {
+                "type": "string",
+                "const": "RETURNED"
+              },
+              {
+                "type": "string",
+                "const": "PARTIALLY_RETURNED"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopOrderItem"
+            }
+          },
+          "fulfillments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopOrderFulfillment"
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopOrderPayment"
+            }
+          },
+          "has_invoice": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "credit_notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopOrderCreditNote"
+            }
+          },
+          "shipping_refunded_amount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "order_number",
+          "created_at",
+          "status",
+          "items",
+          "fulfillments",
+          "payments"
+        ]
+      },
+      "ShopOrderWithdrawal": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "ACCEPTED"
+              },
+              {
+                "type": "string",
+                "const": "DECLINED"
+              },
+              {
+                "type": "string",
+                "const": "AVAILABLE"
+              },
+              {
+                "type": "string",
+                "const": "REQUESTED"
+              },
+              {
+                "type": "string",
+                "const": "ACCEPTED_REFUNDED"
+              },
+              {
+                "type": "string",
+                "const": "DECIDED"
+              },
+              {
+                "type": "string",
+                "const": "EXPIRED"
+              },
+              {
+                "type": "string",
+                "const": "UNAVAILABLE"
+              }
+            ]
+          },
+          "deadline_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "request": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopWithdrawalRequest"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "ShopWithdrawalRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "NOT_FOUND"
+              },
+              {
+                "type": "string",
+                "const": "PENDING_REVIEW"
+              },
+              {
+                "type": "string",
+                "const": "WAITING"
+              },
+              {
+                "type": "string",
+                "const": "ACCEPTED"
+              },
+              {
+                "type": "string",
+                "const": "DECLINED"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "ShopOrderItem": {
+        "type": "object",
+        "properties": {
+          "line_note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "withdrawal_excluded_reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "withdrawal_lapses_when_unsealed": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "returned_quantity": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "gross_price_per_item": {
+            "type": "number"
+          },
+          "voucher_kind": {
+            "type": "string"
+          },
+          "discount_amount": {
+            "type": "number"
+          },
+          "supplier_franchise_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "supply_location_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "net_price_per_item": {
+            "type": "number"
+          },
+          "vat_rate_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "vat_rate": {
+            "type": "number"
+          },
+          "article": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopOrdersShopArticle"
+              }
+            ]
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopOrdersShopArticleVariant"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "quantity",
+          "gross_price_per_item",
+          "net_price_per_item",
+          "vat_rate"
+        ]
+      },
+      "ShopOrdersShopArticle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ShopOrdersShopArticleCategory"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "PHYSICAL"
+              },
+              {
+                "type": "string",
+                "const": "VOUCHER"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "category",
+          "type"
+        ]
+      },
+      "ShopOrdersShopArticleCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "ShopOrdersShopArticleVariant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "ShopOrderFulfillment": {
+        "type": "object",
+        "properties": {
+          "scheduled_date": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_age_check": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "age_check": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "age_check_required": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "pickup_ready_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_deadline_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "DIGITAL"
+              },
+              {
+                "type": "string",
+                "const": "PICKUP"
+              },
+              {
+                "type": "string",
+                "const": "SHIPPING"
+              },
+              {
+                "type": "string",
+                "const": "DELIVERY"
+              }
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "price": {
+            "type": "number"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "PENDING"
+              },
+              {
+                "type": "string",
+                "const": "CANCELLED"
+              },
+              {
+                "type": "string",
+                "const": "PROCESSING"
+              },
+              {
+                "type": "string",
+                "const": "FAILED"
+              },
+              {
+                "type": "string",
+                "const": "SHIPPING_IN_PROGRESS"
+              },
+              {
+                "type": "string",
+                "const": "SHIPPING_COMPLETED"
+              },
+              {
+                "type": "string",
+                "const": "PICKUP_READY"
+              },
+              {
+                "type": "string",
+                "const": "PICKUP_COMPLETED"
+              },
+              {
+                "type": "string",
+                "const": "DIGITAL_COMPLETED"
+              }
+            ]
+          },
+          "pickup_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_address": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_location_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "shipping_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_company_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_address1": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_address2": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_email": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_address_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_carrier_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_tracking_number": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_tracking_link": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_location": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BackofficeFranchiseLocation"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "code",
+          "name",
+          "price",
+          "status"
+        ]
+      },
+      "BackofficeFranchiseLocation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "location_name": {
+            "type": "string"
+          },
+          "location_street": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "location_name"
+        ]
+      },
+      "ShopBookingMoveRequest": {
+        "type": "object",
+        "properties": {
+          "timewindow_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "timewindow_id"
+        ]
+      },
+      "CustomerTableReservationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "franchise_location_id": {
+            "type": "number"
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "num_guests": {
+            "type": "number"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "franchise_location_id",
+          "location_name",
+          "date",
+          "time",
+          "num_guests",
+          "notes",
+          "status",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "CustomerTableReservationUpdate": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "num_guests": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "ShopVoucherModel": {
+        "type": "object",
+        "properties": {
+          "withdrawal_acknowledgement_required": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "withdrawal_text_version": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "withdrawal_acknowledgement_text": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "VALUE"
+              },
+              {
+                "type": "string",
+                "const": "TASTING"
+              }
+            ]
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "NONE"
+              },
+              {
+                "type": "string",
+                "const": "SINGLE_PURPOSE"
+              },
+              {
+                "type": "string",
+                "const": "MULTI_PURPOSE"
+              }
+            ]
+          },
+          "vat_rate": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "redeemable_for_text": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "redeemable_tasting_ids": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            ]
+          },
+          "redeemable_location_ids": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            ]
+          },
+          "voucher_code": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "remaining_value": {
+            "type": "number"
+          },
+          "redeemed": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "article": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopVoucherArticle"
+              }
+            ]
+          }
+        },
+        "required": [
+          "voucher_code",
+          "value",
+          "remaining_value",
+          "redeemed",
+          "created_at"
+        ]
+      },
+      "ShopVoucherArticle": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "NONE"
+              },
+              {
+                "type": "string",
+                "const": "SINGLE_PURPOSE"
+              },
+              {
+                "type": "string",
+                "const": "MULTI_PURPOSE"
+              }
+            ]
+          },
+          "redeemable_for_text": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "previous_price": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "tasting_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopVoucherArticleVariant"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "price"
+        ]
+      },
+      "ShopVoucherArticleVariant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "previous_price": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price"
+        ]
+      },
+      "ShopVoucherHistoryEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "LOG"
+              },
+              {
+                "type": "string",
+                "const": "STORE"
+              },
+              {
+                "type": "string",
+                "const": "ONLINE"
+              }
+            ]
+          },
+          "action": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "number"
+          },
+          "remaining_before": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "remaining_after": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "franchise_location_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "action",
+          "created_at",
+          "amount_cents"
+        ]
+      },
+      "WithdrawalItemOption": {
+        "type": "object",
+        "properties": {
+          "opened": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "withdrawal_note": {
+            "type": "string"
+          },
+          "withdrawal_lapses_when_unsealed": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "return_window_days": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "return_deadline": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "request_kind": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "STATUTORY_WITHDRAWAL"
+              },
+              {
+                "type": "string",
+                "const": "VOLUNTARY_RETURN"
+              }
+            ]
+          },
+          "is_voucher": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "order_item_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "VOUCHER_REDEEMED"
+              },
+              {
+                "type": "string",
+                "const": "WINDOW_EXPIRED"
+              },
+              {
+                "type": "string",
+                "const": "BOOKING_ORDER"
+              },
+              {
+                "type": "string",
+                "const": "PERISHABLE"
+              },
+              {
+                "type": "string",
+                "const": "UNSEALED"
+              }
+            ]
+          }
+        },
+        "required": [
+          "order_item_id",
+          "title",
+          "quantity"
+        ]
+      },
+      "WithdrawalSelectionRequest": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/WithdrawalItemSelection"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "WithdrawalItemSelection": {
+        "type": "object",
+        "properties": {
+          "opened": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "order_item_id": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "order_item_id",
+          "quantity"
+        ]
+      },
+      "CancellationRequestResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "NOT_FOUND"
+              },
+              {
+                "type": "string",
+                "const": "PENDING_REVIEW"
+              },
+              {
+                "type": "string",
+                "const": "WAITING"
+              },
+              {
+                "type": "string",
+                "const": "ACCEPTED"
+              },
+              {
+                "type": "string",
+                "const": "DECLINED"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "VOUCHER_REDEEMED"
+              },
+              {
+                "type": "string",
+                "const": "WINDOW_EXPIRED"
+              },
+              {
+                "type": "string",
+                "const": "BOOKING_ORDER"
+              },
+              {
+                "type": "string",
+                "const": "PERISHABLE"
+              },
+              {
+                "type": "string",
+                "const": "UNSEALED"
+              },
+              {
+                "type": "string",
+                "const": "PARTIAL"
+              }
+            ]
+          },
+          "excluded_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WithdrawalExcludedItem"
+            }
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "WithdrawalExcludedItem": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "VOUCHER_REDEEMED"
+              },
+              {
+                "type": "string",
+                "const": "WINDOW_EXPIRED"
+              },
+              {
+                "type": "string",
+                "const": "BOOKING_ORDER"
+              },
+              {
+                "type": "string",
+                "const": "PERISHABLE"
+              },
+              {
+                "type": "string",
+                "const": "UNSEALED"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "reason"
+        ]
+      },
+      "ShopUserProfileUpdate": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "companyname": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "address1": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "address2": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "newsletter_consent": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "marketing_consent": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          }
+        }
+      },
+      "ShopUserProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "companyname": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "address1": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "address2": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "newsletter_consent": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "newsletter_requested_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "newsletter_confirmed_at": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "marketing_consent": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "is_email_verified": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "has_password": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "ShopUserShippingAddress": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "address1": {
+            "type": "string"
+          },
+          "address2": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "postal_code": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "address1",
+          "postal_code",
+          "city",
+          "country"
+        ]
+      },
+      "ShopUserShippingAddressRequest": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "address1": {
+            "type": "string"
+          },
+          "address2": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "postal_code": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "country",
+          "name",
+          "address1",
+          "postal_code",
+          "city"
+        ]
+      },
+      "PasswordUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "old_password": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "old_password",
+          "password"
+        ]
+      },
+      "EmailChangeRequest": {
+        "type": "object",
+        "properties": {
+          "new_email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "new_email"
+        ]
+      },
+      "UserLoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "customer": {
+            "$ref": "#/components/schemas/ShopUserProfile"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token",
+          "customer",
+          "message"
+        ]
+      },
+      "ShopUserProfileCreateRequest": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "address1": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "newsletter_consent": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "marketing_consent": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "address2": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "first_name",
+          "last_name"
+        ]
+      },
+      "PasswordResetRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "PasswordResetConfirmRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "new_password"
+        ]
+      },
+      "EmailVerificationRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "EmailChangeConfirmRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "ShopSettings": {
+        "type": "object",
+        "properties": {
+          "guest_shop_checkout_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "shop_checkout_review_required": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "shop_shipping_country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shop_low_stock_threshold": {
+            "type": "number"
+          },
+          "pickup_auto_cancel_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "pickup_hold_days": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pickup_grace_days": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "sealed_goods_exclusion_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "countries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CountryOption"
+            }
+          },
+          "installation_country": {
+            "type": "string"
+          },
+          "min_customer_age": {
+            "type": "number"
+          },
+          "guest_max_seats": {
+            "type": "number"
+          },
+          "online_lead_hours": {
+            "type": "number"
+          },
+          "direct_booking_enabled": {
+            "type": "boolean"
+          },
+          "guest_booking_enabled": {
+            "type": "boolean"
+          },
+          "turnstile_site_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "countries",
+          "installation_country",
+          "direct_booking_enabled",
+          "guest_booking_enabled"
+        ]
+      },
+      "CountryOption": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ]
+      },
+      "ShopCatalogueResponse": {
+        "type": "object",
+        "properties": {
+          "articles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopArticleWithCategory"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "vouchers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopArticleWithCategory"
+            }
+          },
+          "voucher_total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "articles",
+          "total"
+        ]
+      },
+      "ShopArticleWithCategory": {
+        "type": "object",
+        "properties": {
+          "customer_defined_price": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "minimum_price_cents": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "attributes": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProductAttributes"
+              }
+            ]
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnitPrice"
+              }
+            ]
+          },
+          "is_adult_only": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "pickup_only": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "stock_tracked": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "withdrawal_excluded_reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "withdrawal_lapses_when_unsealed": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "price": {
+            "type": "number"
+          },
+          "previous_price": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "quantity_information": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "availability": {
+            "$ref": "#/components/schemas/Availability"
+          },
+          "tasting_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "PHYSICAL"
+              },
+              {
+                "type": "string",
+                "const": "VOUCHER"
+              }
+            ]
+          },
+          "voucher_kind": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "NONE"
+              },
+              {
+                "type": "string",
+                "const": "SINGLE_PURPOSE"
+              },
+              {
+                "type": "string",
+                "const": "MULTI_PURPOSE"
+              }
+            ]
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "const": "NONE"
+              },
+              {
+                "type": "string",
+                "const": "SINGLE_PURPOSE"
+              },
+              {
+                "type": "string",
+                "const": "MULTI_PURPOSE"
+              }
+            ]
+          },
+          "redeemable_for_text": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "redemption_scope": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VoucherRedemptionScope"
+              }
+            ]
+          },
+          "voucher_pdf": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VoucherPDFValues"
+              }
+            ]
+          },
+          "vat_rate": {
+            "$ref": "#/components/schemas/VATRate"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopArticlesShopArticleVariant"
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopArticleImage"
+            }
+          },
+          "franchise_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "order": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "fulfillment_options": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FulfillmentOption"
+                }
+              }
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/ShopArticlesShopArticleCategory"
+          },
+          "withdrawal_note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "slug",
+          "price",
+          "vat_rate",
+          "variants",
+          "images",
+          "category",
+          "withdrawal_note"
+        ]
+      },
+      "ProductAttributes": {
+        "type": "object",
+        "properties": {
+          "producer": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "product_type": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "wine_type": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "grapes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "vintage": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "alcohol_pct": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "volume_l": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "net_weight_g": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "allergens": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "traces": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "nutrition": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            ]
+          },
+          "organic_body": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "food_business_operator": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "bottler": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "vegan": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "tasting_product": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          }
+        }
+      },
+      "UnitPrice": {
+        "type": "object",
+        "properties": {
+          "amount_cents": {
+            "type": "number"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "l"
+              },
+              {
+                "type": "string",
+                "const": "kg"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount_cents",
+          "unit"
+        ]
+      },
+      "Availability": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "AVAILABLE"
+              },
+              {
+                "type": "string",
+                "const": "UNAVAILABLE"
+              },
+              {
+                "type": "string",
+                "const": "LOW"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "VoucherRedemptionScope": {
+        "type": "object",
+        "properties": {
+          "supply_types": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "TASTING"
+                    },
+                    {
+                      "type": "string",
+                      "const": "GASTRO"
+                    },
+                    {
+                      "type": "string",
+                      "const": "GOODS"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "tasting_ids": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            ]
+          },
+          "franchise_location_ids": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            ]
+          },
+          "category_ids": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "article_ids": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "VoucherPDFValues": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string"
+          },
+          "small_print": {
+            "type": "string"
+          },
+          "validity_text": {
+            "type": "string"
+          },
+          "validity_years": {
+            "type": "number"
+          }
+        }
+      },
+      "VATRate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "bezeichnung": {
+            "type": "string"
+          },
+          "satz": {
+            "type": "number"
+          },
+          "aktiv": {
+            "type": "boolean"
+          },
+          "stripe_tax_rate_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "bezeichnung",
+          "satz",
+          "aktiv"
+        ]
+      },
+      "ShopArticlesShopArticleVariant": {
+        "type": "object",
+        "properties": {
+          "is_adult_only": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnitPrice"
+              }
+            ]
+          },
+          "previous_price": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "quantity_information": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price"
+        ]
+      },
+      "ShopArticleImage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "image": {
+            "$ref": "#/components/schemas/Image"
+          },
+          "is_preview": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "image",
+          "is_preview"
+        ]
+      },
+      "Image": {
+        "type": "object",
+        "properties": {
+          "image_url": {
+            "type": "string"
+          },
+          "alt_text": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "image_url"
+        ]
+      },
+      "FulfillmentOption": {
+        "type": "object",
+        "properties": {
+          "delivery_zones": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DeliveryZone"
+                }
+              }
+            ]
+          },
+          "closed_days": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FulfillmentClosedDays"
+              }
+            ]
+          },
+          "schedule": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FulfillmentSchedule"
+              }
+            ]
+          },
+          "eligible_dates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "delivery_postcode_error": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "price_is_from": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          },
+          "delivery_postcodes": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "free_shipping_from": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "age_check": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "price": {
+            "type": "number"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "DIGITAL"
+              },
+              {
+                "type": "string",
+                "const": "PICKUP"
+              },
+              {
+                "type": "string",
+                "const": "SHIPPING"
+              },
+              {
+                "type": "string",
+                "const": "DELIVERY"
+              }
+            ]
+          },
+          "order": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pickup_address": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FulfillmentOptionPickupAddress"
+              }
+            ]
+          },
+          "pickup_location": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FulfillmentOptionPickupFranchiseLocation"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "price",
+          "type"
+        ]
+      },
+      "DeliveryZone": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "postcodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "price": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "postcodes",
+          "price"
+        ]
+      },
+      "FulfillmentClosedDays": {
+        "type": "object",
+        "properties": {
+          "holiday_state": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "yearly_ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearlyClosedRange"
+            }
+          }
+        }
+      },
+      "YearlyClosedRange": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string"
+          },
+          "end": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ]
+      },
+      "FulfillmentSchedule": {
+        "type": "object",
+        "properties": {
+          "allowed_weekdays": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "minimum_lead_hours": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "allowed_weekdays",
+          "minimum_lead_hours"
+        ]
+      },
+      "FulfillmentOptionPickupAddress": {
+        "type": "object",
+        "properties": {
+          "pickup_address": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pickup_location_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "FulfillmentOptionPickupFranchiseLocation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "location_name": {
+            "type": "string"
+          },
+          "location_street": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_postal_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "location_city": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "location_name"
+        ]
+      },
+      "ShopArticlesShopArticleCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "is_public": {
+            "type": "boolean"
+          },
+          "is_voucher": {
+            "type": "boolean"
+          },
+          "franchise_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "order": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "title",
+          "is_public",
+          "is_voucher"
+        ]
+      },
+      "ShopArticleGetAllResponse": {
+        "type": "object",
+        "properties": {
+          "articles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopArticleWithCategory"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "articles",
+          "total"
+        ]
+      },
+      "CartRequest": {
+        "type": "object",
+        "properties": {
+          "shipping_postcode": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartItemRequest"
+            }
+          },
+          "fulfillment_option_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "voucher_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "discount_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CartItemRequest": {
+        "type": "object",
+        "properties": {
+          "customer_price": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "line_note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "quantity"
+        ]
+      },
+      "CartResponse": {
+        "type": "object",
+        "properties": {
+          "free_shipping_remaining": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "fulfillment_notice": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartItem"
+            }
+          },
+          "available_fulfillment_options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FulfillmentOption"
+            }
+          },
+          "selected_fulfillment_option": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FulfillmentOption"
+              }
+            ]
+          },
+          "shipping_cost": {
+            "type": "number"
+          },
+          "tax_breakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartTaxBreakdownEntry"
+            }
+          },
+          "vouchers_discounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartVoucher"
+            }
+          },
+          "voucher_discount_amount": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "subtotal_price": {
+            "type": "number"
+          },
+          "total_price": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "subtotal_price",
+          "total_price"
+        ]
+      },
+      "CartItem": {
+        "type": "object",
+        "properties": {
+          "line_note": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "article": {
+            "$ref": "#/components/schemas/ShopArticleWithCategory"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopArticlesShopArticleVariant"
+              }
+            ]
+          },
+          "price": {
+            "type": "number"
+          },
+          "price_per_item": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "quantity",
+          "article",
+          "price",
+          "price_per_item"
+        ]
+      },
+      "CartTaxBreakdownEntry": {
+        "type": "object",
+        "properties": {
+          "vat_rate": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          },
+          "gross": {
+            "type": "number"
+          },
+          "net": {
+            "type": "number"
+          },
+          "tax": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "vat_rate",
+          "label",
+          "gross",
+          "net",
+          "tax"
+        ]
+      },
+      "CartVoucher": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "discount_amount": {
+            "type": "number"
+          },
+          "is_valid": {
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "eligible_amount": {
+            "type": "number"
+          },
+          "covered_line_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "discount_amount",
+          "is_valid"
+        ]
+      },
+      "CheckoutRequest": {
+        "type": "object",
+        "properties": {
+          "shipping_postcode": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shipping_country": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartItemRequest"
+            }
+          },
+          "fulfillment_option_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "voucher_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "discount_code": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "fulfillment_date": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "turnstile_token": {
+            "type": "string"
+          },
+          "shipping_address_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "contact": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CheckoutContact"
+              }
+            ]
+          },
+          "shipping_address": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CheckoutAddress"
+              }
+            ]
+          },
+          "terms_accepted": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "const": false
+              },
+              {
+                "type": "boolean",
+                "const": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CheckoutContact": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "first_name",
+          "last_name",
+          "email"
+        ]
+      },
+      "CheckoutAddress": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "address1": {
+            "type": "string"
+          },
+          "address2": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "postal_code": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "address1",
+          "postal_code",
+          "city"
+        ]
+      },
+      "CheckoutResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "checkout_url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "order_access_token": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "order_url": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "message",
+          "checkout_url",
+          "status"
+        ]
+      },
+      "CheckoutCompletedRequest": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ]
+      }
+    }
+  }
+}

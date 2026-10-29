@@ -1,21 +1,33 @@
 import type { Location, Timewindow } from "./client";
+/** Date and time fields retained for a local result and calendar file. */
 export type ResultWindow = Pick<
   Timewindow,
   "timewindow_id" | "date" | "start_time" | "end_time"
 >;
+/** Location fields retained for a local booking result. */
 export type ResultLocation = Pick<
   Location,
   "location_name" | "location_street"
 >;
+/** Limited local booking result used for return pages, with a 24-hour lifetime. */
 export interface ResultSnapshot {
+  /** Selected dated timewindow. */
   window: ResultWindow;
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Selected installation location. Optional; omitted unless supplied by the host or backend. */
   location?: ResultLocation;
+  /** Order number in the result snapshot contract. */
   order_number: string;
+  /** Number of booked places. */
   seatCount: number;
+  /** Guest email in the result snapshot contract. Optional; omitted unless supplied by the host or backend. */
   guestEmail?: string;
+  /** Last update as Unix milliseconds. */
   updated: number;
 }
+/** Check the allowed syntax and length of an opaque booking reference.
+ * @param reference - Opaque backend order or checkout reference. */
 export function validBookingReference(
   reference?: string | null,
 ): reference is string {
@@ -24,6 +36,9 @@ export function validBookingReference(
     /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(reference)
   );
 }
+/** Read a non-expired result only when its stored reference matches the supplied reference.
+ * @param key - Key supplied by the host.
+ * @param reference - Opaque backend order or checkout reference. */
 export function readBookingResult(
   key: string,
   reference?: string | null,
@@ -88,6 +103,9 @@ export function readBookingResult(
     return null;
   }
 }
+/** Write the limited result snapshot without contact, notes or voucher codes.
+ * @param key - Key supplied by the host.
+ * @param snapshot - Snapshot supplied by the host. */
 export function writeBookingResult(key: string, snapshot: ResultSnapshot) {
   try {
     sessionStorage.setItem(

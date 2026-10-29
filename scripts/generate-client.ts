@@ -1,6 +1,7 @@
 /** Regenerate the narrow wire contract from the final backend OpenAPI export. */
 import { resolve } from "node:path";
 import { publicTypeNames } from "./public-type-names";
+import { documentWireTypes } from "./wire-documentation";
 
 const source = Bun.argv[2];
 if (!source)
@@ -143,7 +144,10 @@ for (const name of required) {
 }
 for (const [alias, name] of Object.entries(names))
   output += `export type ${alias} = ${name};\n`;
-await Bun.write("src/wire.ts", publicTypeNames(output + operationOutput));
+await Bun.write(
+  "src/wire.ts",
+  documentWireTypes(publicTypeNames(output + operationOutput)),
+);
 const formatted = Bun.spawn(["bun", "run", "format:generated", "src/wire.ts"], {
   stdout: "inherit",
   stderr: "inherit",

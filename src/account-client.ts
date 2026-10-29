@@ -10,17 +10,25 @@ export type AccountLoginResponse = Omit<
   AccountOperations["login"]["response"],
   "access_token"
 >;
+/** Public account field errors contract used by the storefront clients. */
 export type AccountFieldErrors = Record<string, string>;
+/** Default German message shown when an authenticated account request expires. */
 export const SESSION_EXPIRED_MESSAGE =
   "Deine Sitzung ist abgelaufen. Bitte melde Dich erneut an.";
+/** An unsuccessful account API response, retaining its status and parsed detail. */
 export class AccountApiError extends Error {
   constructor(
+    /** HTTP response status code. */
     public status: number,
+
+    /** Parsed backend error detail, retained for customer-safe error handling. */
     public detail: unknown,
   ) {
     super("Account request failed");
   }
 }
+/** Extract field-level account validation messages.
+ * @param error - Customer-visible error or error presentation flag. */
 export function accountFieldErrors(error: unknown): AccountFieldErrors {
   if (
     !(error instanceof AccountApiError) ||
@@ -46,6 +54,10 @@ export function accountFieldErrors(error: unknown): AccountFieldErrors {
     }),
   );
 }
+/** Turn an account failure into customer-safe German copy for the current form context.
+ * @param error - Customer-visible error or error presentation flag.
+ * @param token - One-time token retained only in component memory; null enables recovery navigation. Defaults to false.
+ * @param context - Context supplied by the host. */
 export function accountErrorMessage(
   error: unknown,
   token = false,
@@ -88,11 +100,14 @@ export function accountErrorMessage(
     return "Bitte prüfe Deine Eingaben und versuche es erneut.";
   return "Das hat gerade nicht geklappt. Bitte versuche es erneut.";
 }
+/** Public account fetch contract used by the storefront clients. */
 export type AccountFetch = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ) => Promise<Response>;
+/** Host transport and expired-session behavior for same-origin account calls. */
 export interface AccountClientOptions {
+  /** Optional host fetch implementation. Optional; omitted unless supplied by the host or backend. */
   fetch?: AccountFetch;
   /** Called for expired requests; incorrect login credentials are handled by LoginForm. */
   onUnauthorized?: () => void;
@@ -135,24 +150,30 @@ export function createAccountClient(options: AccountClientOptions = {}) {
   }
   return {
     // Upstream AuthResponse requires access_token, but the same-origin edge strips it.
+    /** Sign in through the host proxy; browser JSON must omit upstream access tokens. */
     login: (body: AccountOperations["login"]["body"]) =>
       request<"login">(
         "/api/shop/user/login",
         "POST",
         body,
       ) as Promise<AccountLoginResponse>,
+    /** Request registration without revealing account existence. */
     register: (body: AccountOperations["register"]["body"]) =>
       request<"register">("/api/shop/user/register", "POST", body),
+    /** Request a reset email without revealing account existence. */
     requestPasswordReset: (body: AccountOperations["passwordReset"]["body"]) =>
       request<"passwordReset">("/api/shop/user/password-reset", "POST", body),
+    /** Set the account password from a one-time token. */
     setPassword: (body: AccountOperations["passwordSet"]["body"]) =>
       request<"passwordSet">(
         "/api/shop/user/password-reset/confirm",
         "POST",
         body,
       ),
+    /** Confirm a one-time email verification token. */
     verifyEmail: (body: AccountOperations["emailVerify"]["body"]) =>
       request<"emailVerify">("/api/shop/user/verify-email", "POST", body),
+    /** Confirm a one-time email change token. */
     confirmEmailChange: (
       body: AccountOperations["emailChangeConfirm"]["body"],
     ) =>
@@ -161,6 +182,7 @@ export function createAccountClient(options: AccountClientOptions = {}) {
         "POST",
         body,
       ),
+    /** Load the authoritative authenticated profile. Optional signal cancels the read. */
     getProfile: async (signal?: AbortSignal) => {
       const profile = await request<"profile">(
         "/api/shop/user/profile",
@@ -172,11 +194,14 @@ export function createAccountClient(options: AccountClientOptions = {}) {
         throw new Error("Invalid account profile");
       return profile;
     },
+    /** Invalidate the current host session. */
     logout: () => request<"logout">("/api/shop/user/logout", "POST", undefined),
+    /** Read public installation settings. Optional signal cancels the request. */
     getSettings: (signal?: AbortSignal) =>
       request<"settings">("/api/shop/settings", "GET", undefined, signal),
   };
 }
+/** Public account client contract used by the storefront clients. */
 export type AccountClient = ReturnType<typeof createAccountClient>;
 
 /** Require a relative same-origin path, including after URL normalization. */
@@ -224,6 +249,8 @@ export function safeAccountReturnPath(
     return null;
   }
 }
+/** Decode and validate a host-owned document return-path cookie.
+ * @param cookieValue - Cookie value supplied by the host. */
 export function accountDocumentReturnPath(
   cookieValue: string | null | undefined,
 ): string | null {
@@ -243,11 +270,18 @@ export function accountDocumentReturnPath(
 export function accountPasswordRules(password: string) {
   const bytes = new TextEncoder().encode(password).length;
   return {
+    /** Length returned by accountPasswordRules. */
     length: Array.from(password).length >= 8 && bytes <= 72,
+    /** Letter returned by accountPasswordRules. */
     letter: /\p{L}/u.test(password),
+    /** Non letter returned by accountPasswordRules. */
     nonLetter: /[^\p{L}]/u.test(password),
   };
 }
+/** Validate a German date input and the runtime minimum age against the Berlin calendar date.
+ * @param value - Current controlled value.
+ * @param minimumAge - Runtime minimum age supplied by the host.
+ * @param today - ISO calendar date used for age validation; defaults to today in Europe/Berlin. Defaults to new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin", }).format(new Date()). */
 export function accountBirthDateError(
   value: string,
   minimumAge: number,

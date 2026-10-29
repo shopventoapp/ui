@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "paths": { "@shopvento/ui": ["../dist/index.d.ts"] } },
+  "include": ["./**/*.ts", "./**/*.tsx"]
+}

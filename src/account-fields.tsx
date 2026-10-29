@@ -8,7 +8,13 @@ import {
   useState,
 } from "react";
 
-export type CountryOption = { value: string; label: string };
+/** A country selector value and customer-visible label. */
+export type CountryOption = {
+  /** Current controlled value. */
+  value: string;
+  /** Accessible customer-visible label. */
+  label: string;
+};
 
 const countryAliases: Record<string, string> = {
   "china, festland": "CN",
@@ -79,8 +85,11 @@ export function CountrySelect({
   error,
   ...props
 }: Omit<SelectHTMLAttributes<HTMLSelectElement>, "defaultValue"> & {
+  /** Host-configured country values and labels. */
   countries: readonly CountryOption[];
+  /** Initial uncontrolled field value. Optional; omitted unless supplied by the host or backend. */
   defaultValue?: string | null;
+  /** Customer-visible error or error presentation flag. Optional; omitted unless supplied by the host or backend. */
   error?: string;
 }) {
   const id = useId();
@@ -127,6 +136,8 @@ export function CountrySelect({
   );
 }
 
+/** Format typed digits as a German day.month.year date.
+ * @param value - Current controlled value. */
 export function maskBirthDate(value: string) {
   const trimmed = value.trim();
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
@@ -143,6 +154,8 @@ export function maskBirthDate(value: string) {
     (digits.length >= 4 ? `.${digits.slice(4)}` : "")
   );
 }
+/** Convert an ISO date into a German date input value.
+ * @param value - Current controlled value. */
 export function birthDateFromISO(value?: string | null) {
   return value
     ? `${value.slice(8, 10)}.${value.slice(5, 7)}.${value.slice(0, 4)}`
@@ -155,6 +168,7 @@ export function birthDateToISO(value: string): string | null {
   return `${value.slice(6)}-${value.slice(3, 5)}-${value.slice(0, 2)}`;
 }
 
+/** Render a controlled German-format birth date field. */
 export function BirthDateInput({
   value,
   onValueChange,
@@ -163,7 +177,9 @@ export function BirthDateInput({
   InputHTMLAttributes<HTMLInputElement>,
   "value" | "onChange" | "type"
 > & {
+  /** Current controlled value. */
   value: string;
+  /** Receive the updated formatted date value. */
   onValueChange: (value: string) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);

@@ -25,14 +25,22 @@ import {
   accountDate,
   useAccountResource,
 } from "./dashboard-ui";
+/** Shared authenticated profile, transport, labels, routes and help used by dashboard components. */
 export interface DashboardProps {
+  /** Stable client instance used for API requests. */
   client: DashboardClient;
+  /** Authoritative authenticated profile; null represents a guest. */
   profile: AccountProfile;
+  /** Host-owned copy overrides or account terminology. */
   labels: AccountLabels;
+  /** Host-owned account routes. */
   routes: AccountRoutes;
+  /** Host contact, opening hours and directions. */
   help: AccountHelp;
+  /** Resolve an optional event image URL by identifier. Optional; omitted unless supplied by the host or backend. */
   eventImage?: (id: number) => string | undefined;
 }
+/** Render account navigation, counts, help and host-owned logout around dashboard content. */
 export function AccountLayout({
   profile,
   routes,
@@ -42,12 +50,20 @@ export function AccountLayout({
   help,
   counts = {},
 }: {
+  /** Authoritative authenticated profile; null represents a guest. */
   profile: AccountProfile;
+  /** Host-owned account routes. */
   routes: AccountRoutes;
+  /** Active account navigation section. */
   active: "overview" | "bookings" | "vouchers" | "settings";
+  /** Host-supplied child content. */
   children: ReactNode;
+  /** Perform the host logout action. */
   onLogout: () => void;
+  /** Host contact, opening hours and directions. */
   help: AccountHelp;
+  /** Optional host-provided navigation counts.
+   * @defaultValue {} */
   counts?: Partial<Record<string, number>>;
 }) {
   const nav = [
@@ -113,6 +129,8 @@ export function AccountLayout({
     </div>
   );
 }
+/** Load dashboard orders, bookings and reservations together.
+ * @param client - Stable client instance used for API requests. */
 export function useDashboardData(client: DashboardClient) {
   const orders = useAccountResource((s) => client.orders(s), [client]);
   const bookings = useAccountResource((s) => client.bookings(s), [client]);
@@ -122,10 +140,15 @@ export function useDashboardData(client: DashboardClient) {
   );
   const vouchers = useAccountResource((s) => client.vouchers(s), [client]);
   return {
+    /** List customer orders. Optional signal cancels the read. */
     orders,
+    /** List customer event bookings. Optional signal cancels the read. */
     bookings,
+    /** List customer table reservations. */
     reservations,
+    /** List customer-owned vouchers. */
     vouchers,
+    /** Entries returned by useDashboardData. */
     entries: accountEntries(
       orders.data ?? [],
       bookings.data ?? [],
@@ -136,7 +159,15 @@ export function useDashboardData(client: DashboardClient) {
 function ModuleState({
   resource,
 }: {
-  resource: { loading: boolean; error: string | null; reload: () => void };
+  /** Resource in the module state contract. */
+  resource: {
+    /** Whether an asynchronous read is pending. */
+    loading: boolean;
+    /** Customer-visible error or error presentation flag. */
+    error: string | null;
+    /** Reload in the module state contract. */
+    reload: () => void;
+  };
 }) {
   return resource.loading || resource.error ? (
     <AccountState
@@ -146,6 +177,8 @@ function ModuleState({
     />
   ) : null;
 }
+/** Render prioritized upcoming account activity with host labels and routes.
+ * @param props - Props supplied by the host. */
 export function AccountOverview(props: DashboardProps) {
   const { client, profile, labels, routes, help, eventImage } = props;
   const data = useDashboardData(client);
@@ -385,6 +418,8 @@ export function AccountOverview(props: DashboardProps) {
     </>
   );
 }
+/** Render bookings, orders and reservations with date and type filters.
+ * @param props - Props supplied by the host. */
 export function AccountBookings(props: DashboardProps) {
   const { client, labels, routes } = props;
   const data = useDashboardData(client);
@@ -499,15 +534,21 @@ export function AccountBookings(props: DashboardProps) {
     </>
   );
 }
+/** Render one customer voucher using host terminology and routes. */
 export function AccountVoucherCard({
   voucher: v,
   labels,
   routes,
   detail = false,
 }: {
+  /** Authoritative customer voucher. */
   voucher: AccountVoucher;
+  /** Host-owned copy overrides or account terminology. */
   labels: AccountLabels;
+  /** Host-owned account routes. */
   routes: AccountRoutes;
+  /** Use the detailed voucher presentation.
+   * @defaultValue false */
   detail?: boolean;
 }) {
   const body = (
@@ -550,6 +591,7 @@ export function AccountVoucherCard({
     </a>
   );
 }
+/** Render the authenticated customer voucher list. */
 export function AccountVouchers({ client, labels, routes }: DashboardProps) {
   const resource = useAccountResource((s) => client.vouchers(s), [client]);
   const active = (resource.data ?? []).filter(voucherActive),
@@ -645,13 +687,17 @@ export function AccountVouchers({ client, labels, routes }: DashboardProps) {
     </>
   );
 }
+/** Load and render a customer voucher and its usage history by opaque identifier. */
 export function AccountVoucherDetail({
   id,
   client,
   labels,
   routes,
   help,
-}: DashboardProps & { id: string }) {
+}: DashboardProps & {
+  /** Opaque backend identifier or accessible element ID. */
+  id: string;
+}) {
   const resource = useAccountResource(
     (s) => client.voucher(id, s),
     [client, id],

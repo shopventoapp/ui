@@ -20,10 +20,14 @@ import {
   windowStarted,
   windowTooSoon,
 } from "./client";
+/** Formatting options for booking money and dates. */
 export interface BookingFormat {
+  /** Date/number locale. Defaults to de-DE. Optional; omitted unless supplied by the host or backend. */
   locale?: string;
+  /** Currency code. Defaults to EUR. Optional; omitted unless supplied by the host or backend. */
   currency?: string;
 }
+/** Format an integer-cent amount with the supplied locale and currency. */
 export const bookingMoney = (
   cents: number,
   { locale = "de-DE", currency = "EUR" }: BookingFormat = {},
@@ -31,6 +35,7 @@ export const bookingMoney = (
   new Intl.NumberFormat(locale, { style: "currency", currency }).format(
     cents / 100,
   );
+/** Format an ISO calendar date in the requested locale. */
 export const bookingDate = (date: string, short = false, locale = "de-DE") =>
   new Intl.DateTimeFormat(locale, {
     weekday: short ? "short" : "long",
@@ -39,23 +44,32 @@ export const bookingDate = (date: string, short = false, locale = "de-DE") =>
     ...(short ? {} : { year: "numeric" as const }),
     timeZone: "UTC",
   }).format(new Date(`${date}T12:00:00Z`));
+/** Format the start and end time of a slot. */
 export const bookingTime = (w: Pick<Timewindow, "start_time" | "end_time">) =>
   `${w.start_time.slice(0, 5)}${w.end_time ? ` bis ${w.end_time.slice(0, 5)}` : ""} Uhr`;
+/** Effective online booking mode derived from the installation flags. */
 export type BookingMode = "full" | "account" | "voucher" | "paused";
+/** Resolve guest, account-only, voucher-only or paused mode from the installation flags.
+ * @param settings - Authoritative public installation flags and booking limits. */
 export function bookingMode(settings?: ShopSettings): BookingMode {
   if (!settings) return "paused";
   if (!settings.direct_booking_enabled) return "voucher";
   return settings.guest_booking_enabled ? "full" : "account";
 }
+/** Explain the effective booking mode with optional contact information and copy overrides. */
 export function BookingModeNotice({
   settings,
   phone,
   phoneLabel,
   labels,
 }: {
+  /** Authoritative public installation flags and booking limits. */
   settings: ShopSettings;
+  /** Host contact phone number or customer international phone field. Optional; omitted unless supplied by the host or backend. */
   phone?: string;
+  /** Customer-visible phone link label. Optional; omitted unless supplied by the host or backend. */
   phoneLabel?: string;
+  /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
 }) {
   const copy = mergeBookingLabels(labels);
@@ -99,16 +113,20 @@ export function BookingModeNotice({
     </div>
   );
 }
+/** CSS colors keyed by public event identifier. */
 export type EventColors = Record<number, string>;
+/** Create inline custom properties for an event color, including the compatibility token. */
 export const eventStyle = (color?: string) =>
   ({
     ...(color === undefined ? {} : { "--sv-event": color }),
     "--sv-tasting": color ?? "var(--sv-primary)",
   }) as CSSProperties;
+/** Render a decorative booking icon with an optional CSS class. */
 export function BookingIcon({
   name,
   className = "i",
 }: {
+  /** Selected icon or backend name. */
   name:
     | "calendar"
     | "gift"
@@ -126,6 +144,8 @@ export function BookingIcon({
     | "plus"
     | "minus"
     | "close";
+  /** Additional host CSS class.
+   * @defaultValue "i" */
   className?: string;
 }) {
   const paths = {
@@ -163,6 +183,11 @@ export function BookingIcon({
     </svg>
   );
 }
+/** Classify a timewindow using capacity, lead time and backend booking deadlines.
+ * @param w - W supplied by the host.
+ * @param seats - Booked places, or requested seat count depending on the signature. Defaults to 1.
+ * @param leadHours - Minimum Berlin wall-clock lead time in hours. Defaults to 24. Defaults to 24.
+ * @param now - Current instant as milliseconds since the Unix epoch. Defaults to Date.now(). Defaults to Date.now(). */
 export function availability(
   w: Timewindow,
   seats = 1,
@@ -170,40 +195,82 @@ export function availability(
   now = Date.now(),
 ) {
   if (windowStarted(w, now))
-    return { state: "past", icon: "◷", text: "Vorbei", bookable: false };
+    return {
+      /** Availability state used for visual treatment. */
+      state: "past",
+      /** Availability icon name. */
+      icon: "◷",
+      /** Customer-visible German availability message. */
+      text: "Vorbei",
+      /** Whether this slot can be selected for the requested seats. */
+      bookable: false,
+    };
   if (!w.free_spots || w.availabilityStatus === "not_available")
-    return { state: "full", icon: "⊘", text: "Ausgebucht", bookable: false };
+    return {
+      /** Availability state used for visual treatment. */
+      state: "full",
+      /** Availability icon name. */
+      icon: "⊘",
+      /** Customer-visible German availability message. */
+      text: "Ausgebucht",
+      /** Whether this slot can be selected for the requested seats. */
+      bookable: false,
+    };
   if (windowTooSoon(w, now, leadHours) || deadlinePassed(w, now))
     return {
+      /** Availability state used for visual treatment. */
       state: "closed",
+
+      /** Availability icon name. */
       icon: "☎",
+
+      /** Customer-visible German availability message. */
       text: "Nur telefonisch",
+
+      /** Whether this slot can be selected for the requested seats. */
       bookable: false,
     };
   if (w.free_spots < seats)
     return {
+      /** Availability state used for visual treatment. */
       state: "short",
+
+      /** Availability icon name. */
       icon: "♙",
+
+      /** Customer-visible German availability message. */
       text: `Nur ${w.free_spots} ${w.free_spots === 1 ? "Platz" : "Plätze"} frei`,
+
+      /** Whether this slot can be selected for the requested seats. */
       bookable: false,
     };
   return {
+    /** State returned by availability. */
     state: w.free_spots <= 4 ? "few" : "free",
+    /** Icon returned by availability. */
     icon: w.free_spots <= 4 ? "⌛" : "✓",
+    /** Text returned by availability. */
     text:
       w.free_spots <= 4
         ? `Nur noch ${w.free_spots} ${w.free_spots === 1 ? "Platz" : "Plätze"}`
         : "Plätze frei",
+    /** Bookable returned by availability. */
     bookable: true,
   };
 }
+/** Display a window availability label for the requested number of seats. */
 export function AvailabilityBadge({
   window: w,
   seats = 1,
   leadHours = 24,
 }: {
+  /** Selected dated timewindow. */
   window: Timewindow;
+  /** Booked places, or requested seat count depending on the signature.
+   * @defaultValue 1 */
   seats?: number;
+  /** Minimum Berlin wall-clock lead time in hours. Defaults to 24.
+   * @defaultValue 24 */
   leadHours?: number;
 }) {
   const a = availability(w, seats, leadHours);
@@ -226,6 +293,7 @@ export function AvailabilityBadge({
     </span>
   );
 }
+/** Render a controlled seat counter bounded by the supplied minimum and maximum. */
 export function SeatStepper({
   value,
   onChange,
@@ -234,11 +302,20 @@ export function SeatStepper({
   label = "Plätze",
   hint,
 }: {
+  /** Current controlled value. */
   value: number;
+  /** Receive the updated controlled value. */
   onChange: (n: number) => void;
+  /** Inclusive minimum selectable value.
+   * @defaultValue 1 */
   min?: number;
+  /** Inclusive maximum selectable value.
+   * @defaultValue 8 */
   max?: number;
+  /** Accessible customer-visible label.
+   * @defaultValue "Plätze" */
   label?: string;
+  /** Optional customer-visible helper text. Optional; omitted unless supplied by the host or backend. */
   hint?: string;
 }) {
   const id = useId();
@@ -270,39 +347,54 @@ export function SeatStepper({
     </div>
   );
 }
+/** Event collection accepted by the calendar components. */
 export type EventCollection =
   | {
+      /** Preferred public event collection. */
       events: ShopEvent[];
       /** @deprecated Use events. Removed in 1.0. */
       tastings?: ShopEvent[];
     }
   | {
+      /** Preferred public event collection. Optional; omitted unless supplied by the host or backend. */
       events?: ShopEvent[];
       /** @deprecated Use events. Removed in 1.0. */
       tastings: ShopEvent[];
     };
+/** Read the preferred event collection from calendar input. */
 export const eventsFrom = (data: EventCollection): ShopEvent[] =>
   data.events ?? data.tastings ?? [];
+/** Loaded calendar data; the compatibility collection is retained for existing consumers. */
 export interface CalendarData {
+  /** Preferred public event collection. */
   events: ShopEvent[];
   /** @deprecated Use events. Removed in 1.0. */
   tastings: ShopEvent[];
+  /** Dated availability returned by the API. */
   windows: Timewindow[];
+  /** Authoritative public installation flags and booking limits. */
   settings: ShopSettings;
+  /** Public installation locations. */
   locations: Location[];
 }
 /** Calendar input accepts either collection key; events takes precedence. */
 export type CalendarInput = EventCollection &
   Omit<CalendarData, "events" | "tastings">;
+/** Load the events, dated availability, locations and settings for a location and optional date range. */
 export function useCalendar({
   client,
   locationId,
   from = berlinToday(),
   to,
 }: {
+  /** Stable client instance used for API requests. */
   client: BookingClient;
+  /** Positive installation location identifier used to filter availability. */
   locationId: number;
+  /** First ISO date to load. Defaults to today in Europe/Berlin.
+   * @defaultValue berlinToday() */
   from?: string;
+  /** Optional last ISO date to load. Optional; omitted unless supplied by the host or backend. */
   to?: string;
 }) {
   const [data, setData] = useState<CalendarData | null>(null);
@@ -334,12 +426,16 @@ export function useCalendar({
             events,
             /** @deprecated Use events. Removed in 1.0. */
             tastings: events,
+
+            /** Loaded dated event availability. */
             windows: result.timewindows.sort((a, b) =>
               `${a.date} ${a.start_time}`.localeCompare(
                 `${b.date} ${b.start_time}`,
               ),
             ),
             settings,
+
+            /** Public installation locations. */
             locations: locations.locations,
           });
       })
@@ -349,19 +445,28 @@ export function useCalendar({
     return () => controller.abort();
   }, [client, locationId, from, to, revision]);
   return {
+    /** Loaded authoritative data, or null while unavailable. */
     data,
+    /** Customer-visible error, or null. */
     error,
+    /** Whether the read is pending. */
     loading: !data && !error,
+    /** Reload the resource from its authoritative API. */
     reload: () => setRevision((n) => n + 1),
   };
 }
+/** Display a dated slot using an optional event color and locale. */
 export function DateTile({
   window: w,
   color,
   locale = "de-DE",
 }: {
+  /** Selected dated timewindow. */
   window: Timewindow;
+  /** Optional CSS color for the event. Optional; omitted unless supplied by the host or backend. */
   color?: string;
+  /** Date/number locale. Defaults to de-DE.
+   * @defaultValue "de-DE" */
   locale?: string;
 }) {
   const d = new Date(`${w.date}T12:00:00Z`);
@@ -377,6 +482,7 @@ export function DateTile({
     </span>
   );
 }
+/** Render bookable dates with optional month grouping, event colors and host selection callback. */
 export function DateList({
   windows,
   events,
@@ -389,13 +495,27 @@ export function DateList({
   format = {},
   groupMonths = true,
 }: {
+  /** Dated availability returned by the API. */
   windows: Timewindow[];
+  /** Public installation locations.
+   * @defaultValue [] */
   locations?: Location[];
+  /** Booked places, or requested seat count depending on the signature.
+   * @defaultValue 1 */
   seats?: number;
+  /** Minimum Berlin wall-clock lead time in hours. Defaults to 24.
+   * @defaultValue 24 */
   leadHours?: number;
+  /** Receive the selected dated timewindow. */
   onSelect: (w: Timewindow) => void;
+  /** Optional CSS colors keyed by event identifier.
+   * @defaultValue {} */
   colors?: EventColors;
+  /** Optional locale and currency formatting settings.
+   * @defaultValue {} */
   format?: BookingFormat;
+  /** Group the date list by calendar month.
+   * @defaultValue true */
   groupMonths?: boolean;
 } & EventCollection) {
   const eventRows = eventsFrom({ events, tastings } as EventCollection);
@@ -458,6 +578,7 @@ export function DateList({
     </div>
   );
 }
+/** Render a month grid and delegate date selection and month navigation to the host. */
 export function MonthCalendar({
   month,
   windows,
@@ -472,15 +593,31 @@ export function MonthCalendar({
   colors = {},
   format = {},
 }: {
+  /** Visible month in YYYY-MM format. */
   month: string;
+  /** Dated availability returned by the API. */
   windows: Timewindow[];
+  /** Booked places, or requested seat count depending on the signature.
+   * @defaultValue 1 */
   seats?: number;
+  /** Minimum Berlin wall-clock lead time in hours. Defaults to 24.
+   * @defaultValue 24 */
   leadHours?: number;
+  /** Receive the selected dated timewindow. */
   onSelect: (w: Timewindow) => void;
+  /** Use the compact month layout.
+   * @defaultValue false */
   compact?: boolean;
+  /** Receive the requested ISO year-month for host navigation. Optional; omitted unless supplied by the host or backend. */
   onMonthChange?: (month: string) => void;
+  /** Public installation locations.
+   * @defaultValue [] */
   locations?: Location[];
+  /** Optional CSS colors keyed by event identifier.
+   * @defaultValue {} */
   colors?: EventColors;
+  /** Optional locale and currency formatting settings.
+   * @defaultValue {} */
   format?: BookingFormat;
 } & EventCollection) {
   const eventRows = eventsFrom({ events, tastings } as EventCollection);
@@ -675,6 +812,7 @@ export function MonthCalendar({
     </>
   );
 }
+/** Render a selected date in a modal sheet with seats, availability and booking-mode guidance. */
 export function DateSheet({
   window: w,
   variants,
@@ -693,21 +831,40 @@ export function DateSheet({
   color,
   format = {},
 }: {
+  /** Selected dated timewindow. */
   window: Timewindow;
+  /** Public event variants with backend prices. */
   variants: ShopEvent[];
+  /** Selected installation location. Optional; omitted unless supplied by the host or backend. */
   location?: Location;
+  /** Authoritative public installation flags and booking limits. */
   settings: ShopSettings;
+  /** Initial selected seat count.
+   * @defaultValue 2 */
   initialSeats?: number;
+  /** Close the modal in host state. */
   onClose: () => void;
+  /** Receive the selected window and seat count to continue booking. */
   onContinue: (w: Timewindow, seats: number) => void;
+  /** Optional host event details URL. Optional; omitted unless supplied by the host or backend. */
   detailUrl?: string;
+  /** Host contact phone number or customer international phone field. Optional; omitted unless supplied by the host or backend. */
   phone?: string;
+  /** Customer-visible phone link label. Optional; omitted unless supplied by the host or backend. */
   phoneLabel?: string;
+  /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
+  /** Optional next available timewindow. Optional; omitted unless supplied by the host or backend. */
   nextWindow?: Timewindow;
+  /** Receive the selected dated timewindow. Optional; omitted unless supplied by the host or backend. */
   onSelect?: (window: Timewindow) => void;
+  /** Dated availability returned by the API.
+   * @defaultValue [] */
   windows?: Timewindow[];
+  /** Optional CSS color for the event. Optional; omitted unless supplied by the host or backend. */
   color?: string;
+  /** Optional locale and currency formatting settings.
+   * @defaultValue {} */
   format?: BookingFormat;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -872,8 +1029,11 @@ export function BookingDialog({
   onClose,
   children,
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Close the modal in host state. */
   onClose: () => void;
+  /** Host-supplied child content. */
   children: import("react").ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);

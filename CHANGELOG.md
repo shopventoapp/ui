@@ -4,6 +4,12 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- English static documentation with integration guides, TypeDoc component/type reference and a locally bundled read-only Shop API reference.
+- Typechecked source and built-package examples, a host-owned session proxy recipe, a public OpenAPI exporter and static link checks.
+- SHA-pinned GitHub Pages workflow for main and version tags.
+
 ## [0.2.0] - 2026-10-29
 
 ### Added

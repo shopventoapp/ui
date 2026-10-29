@@ -33,6 +33,8 @@ import {
   accountDate,
   useAccountResource,
 } from "./dashboard-ui";
+/** Download a customer booking as a local calendar file with a three-hour reminder.
+ * @param booking - Authoritative customer booking. */
 export function downloadAccountCalendar(
   booking: Pick<
     AccountBooking,
@@ -67,7 +69,12 @@ const withdrawalReasons: Record<string, string> = {
   WINDOW_EXPIRED: "Widerrufsfrist abgelaufen",
   BOOKING_ORDER: "Termingebundene Buchung",
 };
-function Payments({ payments }: { payments: AccountOrder["payments"] }) {
+function Payments({
+  payments,
+}: {
+  /** Payments in the payments contract. */
+  payments: AccountOrder["payments"];
+}) {
   return (
     <dl className="kv">
       {payments.map((p) => (
@@ -101,6 +108,7 @@ function Payments({ payments }: { payments: AccountOrder["payments"] }) {
     </dl>
   );
 }
+/** Render a booking detail, ticket download and eligible one-time rescheduling. */
 export function AccountEventDetail({
   booking: b,
   windows = [],
@@ -108,9 +116,15 @@ export function AccountEventDetail({
   onChanged,
   ...props
 }: DashboardProps & {
+  /** Authoritative customer booking. */
   booking: AccountBooking;
+  /** Dated availability returned by the API.
+   * @defaultValue [] */
   windows?: Timewindow[];
+  /** Public installation locations.
+   * @defaultValue [] */
   locations?: Location[];
+  /** Refresh authoritative host data after a successful mutation. */
   onChanged: () => void;
 }) {
   const { client, labels, routes, help, eventImage } = props;
@@ -372,10 +386,15 @@ function WithdrawalSheet({
   onClose,
   client,
 }: {
+  /** Authoritative account order. */
   order: AccountOrder;
+  /** Options in the withdrawal sheet contract. */
   options: WithdrawalOption[];
+  /** On done in the withdrawal sheet contract. */
   onDone: () => void;
+  /** Close the modal in host state. */
   onClose: () => void;
+  /** Stable client instance used for API requests. */
   client: DashboardProps["client"];
 }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({}),
@@ -492,11 +511,17 @@ function WithdrawalSheet({
     </AccountSheet>
   );
 }
+/** Render an order detail and backend-authoritative eligible withdrawal quantities. */
 export function AccountOrderDetail({
   order: o,
   onChanged,
   ...props
-}: DashboardProps & { order: AccountOrder; onChanged: () => void }) {
+}: DashboardProps & {
+  /** Authoritative account order. */
+  order: AccountOrder;
+  /** Refresh authoritative host data after a successful mutation. */
+  onChanged: () => void;
+}) {
   const { client, labels, routes, help } = props;
   const options = useAccountResource(
     (s) => client.withdrawalItems(o.id, s),
@@ -770,23 +795,35 @@ export function AccountOrderDetail({
     </>
   );
 }
+/** Host reservation constraints, available times and change policy. */
 export interface ReservationRules {
+  /** Minimum reservation party size. */
   minGuests: number;
+  /** Maximum reservation party size. */
   maxGuests: number;
+  /** Return allowed reservation start times for an ISO date. */
   times: (date: string) => string[];
+  /** Use free input when explicitly set to free. Optional; omitted unless supplied by the host or backend. */
   timeInput?: "free";
+  /** Host image URL. Optional; omitted unless supplied by the host or backend. */
   image?: string;
+  /** Host reservation change/cancellation copy. */
   policy: string;
+  /** Host reservation change cutoff in hours. */
   changeHours: number;
 }
+/** Render reservation details and submit changed fields using the host rules. */
 export function AccountReservationDetail({
   reservation: r,
   rules,
   onChanged,
   ...props
 }: DashboardProps & {
+  /** Authoritative customer table reservation. */
   reservation: AccountReservation;
+  /** Host reservation limits, policy and available times. */
   rules: ReservationRules;
+  /** Refresh authoritative host data after a successful mutation. */
   onChanged: () => void;
 }) {
   const { client, routes, help } = props;

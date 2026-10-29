@@ -1,45 +1,91 @@
 "use client";
 import { type ReactNode, useEffect, useId, useRef } from "react";
 
+/** Host presentation model for a product card. Amounts are integer cents; map catalogue data explicitly. */
 export type ShopProduct = {
+  /** Opaque backend identifier or accessible element ID. */
   id: string;
+  /** URL-safe host product slug. */
   slug: string;
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Optional host product subtitle. Optional; omitted unless supplied by the host or backend. */
   subtitle?: string;
+  /** Optional host producer label. Optional; omitted unless supplied by the host or backend. */
   producer?: string;
+  /** Price in integer cents. */
   price: number;
+  /** Host-formatted unit price. Optional; omitted unless supplied by the host or backend. */
   unitPrice?: string;
+  /** Host-formatted quantity information. Optional; omitted unless supplied by the host or backend. */
   quantityInformation?: string;
+  /** Host-owned product or section description. Optional; omitted unless supplied by the host or backend. */
   description?: string;
+  /** Host image URL. Optional; omitted unless supplied by the host or backend. */
   image?: string;
+  /** Accessible image description. Optional; omitted unless supplied by the host or backend. */
   imageAlt?: string;
+  /** Built-in product illustration used when no image is supplied. Optional; omitted unless supplied by the host or backend. */
   placeholder?: "bottle" | "jar" | "gift";
+  /** Host illustration background color. Optional; omitted unless supplied by the host or backend. */
   tint?: string;
+  /** Host illustration fill color. Optional; omitted unless supplied by the host or backend. */
   illustrationColor?: string;
+  /** Host illustration cap color. Optional; omitted unless supplied by the host or backend. */
   illustrationCapColor?: string;
+  /** Host product badge labels. Optional; omitted unless supplied by the host or backend. */
   badges?: string[];
+  /** Optional semantic tones keyed by badge label. Optional; omitted unless supplied by the host or backend. */
   badgeTones?: Record<string, "accent" | "success">;
+  /** Host availability copy. Optional; omitted unless supplied by the host or backend. */
   availability?: string;
+  /** Disable purchase presentation when true. Optional; omitted unless supplied by the host or backend. */
   unavailable?: boolean;
+  /** Whether the host permits a customer-entered amount. Optional; omitted unless supplied by the host or backend. */
   customerDefinedPrice?: boolean;
+  /** Minimum customer-defined price in integer cents. Optional; omitted unless supplied by the host or backend. */
   minimumPrice?: number;
+  /** Whether the backend excludes this item from withdrawal. Optional; omitted unless supplied by the host or backend. */
   withdrawalExcluded?: boolean;
+  /** Host withdrawal notice. Optional; omitted unless supplied by the host or backend. */
   withdrawalNotice?: string;
+  /** Whether fulfillment is pickup only. Optional; omitted unless supplied by the host or backend. */
   pickupOnly?: boolean;
+  /** Whether age verification applies. Optional; omitted unless supplied by the host or backend. */
   adultOnly?: boolean;
+  /** Host product category label. */
   category: string;
+  /** Public event variants with backend prices. Optional; omitted unless supplied by the host or backend. */
   variants?: {
+    /** Opaque backend identifier or accessible element ID. */
     id: string;
+    /** Selected icon or backend name. */
     name: string;
+    /** Price in integer cents. */
     price: number;
+    /** Whether age verification applies. Optional; omitted unless supplied by the host or backend. */
     adultOnly?: boolean;
+    /** Host-formatted unit price. Optional; omitted unless supplied by the host or backend. */
     unitPrice?: string;
   }[];
-  declarations?: { label: string; value: string }[];
+  /** Host-supplied product declaration rows. Optional; omitted unless supplied by the host or backend. */
+  declarations?: {
+    /** Accessible customer-visible label. */
+    label: string;
+    /** Current controlled value. */
+    value: string;
+  }[];
 };
-export function ShopSurface({ children }: { children: ReactNode }) {
+/** Scope shop presentation styles around children. */
+export function ShopSurface({
+  children,
+}: {
+  /** Host-supplied child content. */
+  children: ReactNode;
+}) {
   return <div className="sv-shop">{children}</div>;
 }
+/** Render a shop-styled button with standard React button attributes; defaults to type button. */
 export function ShopButton({
   children,
   ...props
@@ -54,11 +100,15 @@ export function ShopButton({
     </button>
   );
 }
+/** Render a status notice or an error alert. */
 export function ShopNotice({
   children,
   error = false,
 }: {
+  /** Host-supplied child content. */
   children: ReactNode;
+  /** Customer-visible error or error presentation flag.
+   * @defaultValue false */
   error?: boolean;
 }) {
   return (
@@ -70,13 +120,17 @@ export function ShopNotice({
     </div>
   );
 }
+/** Render an empty shop state with a host-supplied action. */
 export function ShopEmpty({
   title,
   children,
   action,
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Host-supplied child content. */
   children: ReactNode;
+  /** Optional host empty-state action. Optional; omitted unless supplied by the host or backend. */
   action?: ReactNode;
 }) {
   return (
@@ -87,6 +141,7 @@ export function ShopEmpty({
     </div>
   );
 }
+/** Render catalogue links and a host-owned search form. */
 export function ShopNavigation({
   label,
   links,
@@ -95,11 +150,24 @@ export function ShopNavigation({
   searchAction,
   query,
 }: {
+  /** Accessible customer-visible label. */
   label: string;
-  links: { label: string; href: string; current?: boolean }[];
+  /** Host navigation links and current state. */
+  links: {
+    /** Accessible customer-visible label. */
+    label: string;
+    /** Host navigation URL. */
+    href: string;
+    /** Current in the shop navigation contract. Optional; omitted unless supplied by the host or backend. */
+    current?: boolean;
+  }[];
+  /** Accessible label for shop search. */
   searchLabel: string;
+  /** Host search input placeholder. */
   searchPlaceholder: string;
+  /** Host route that accepts the search query. */
   searchAction: string;
+  /** Initial search query. Optional; omitted unless supplied by the host or backend. */
   query?: string;
 }) {
   const id = useId();
@@ -139,6 +207,7 @@ export function ShopNavigation({
     </div>
   );
 }
+/** Render a host-owned shop introduction with image and actions. */
 export function ShopHero({
   eyebrow,
   title,
@@ -148,12 +217,19 @@ export function ShopHero({
   imageAlt,
   note,
 }: {
+  /** Short host-supplied heading context. */
   eyebrow: string;
+  /** Customer-visible heading or title supplied by the host. */
   title: ReactNode;
+  /** Host-owned product or section description. */
   description: string;
+  /** Host action controls. */
   actions: ReactNode;
+  /** Host image URL. */
   image: string;
+  /** Accessible image description. */
   imageAlt: string;
+  /** Host supplemental content. */
   note: ReactNode;
 }) {
   return (
@@ -171,13 +247,17 @@ export function ShopHero({
     </section>
   );
 }
+/** Group shop content under a host heading and optional link. */
 export function ShopSection({
   title,
   link,
   children,
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: ReactNode;
+  /** Link in the shop section contract. Optional; omitted unless supplied by the host or backend. */
   link?: ReactNode;
+  /** Host-supplied child content. */
   children: ReactNode;
 }) {
   return (
@@ -190,7 +270,13 @@ export function ShopSection({
     </section>
   );
 }
-export function ShopMedia({ product }: { product: ShopProduct }) {
+/** Render a product image or the selected built-in illustration. */
+export function ShopMedia({
+  product,
+}: {
+  /** Host-mapped product presentation data. */
+  product: ShopProduct;
+}) {
   const id = useId().replace(/:/g, "");
   const shapePath =
     product.placeholder === "jar"
@@ -311,6 +397,7 @@ export function ShopMedia({ product }: { product: ShopProduct }) {
     </div>
   );
 }
+/** Render a host-formatted cent amount with optional unit price and legal labels. */
 export function ShopPrice({
   amount,
   formatPrice,
@@ -319,11 +406,17 @@ export function ShopPrice({
   shippingLabel,
   shippingHref,
 }: {
+  /** Amount in integer cents. */
   amount: number;
+  /** Format an integer-cent amount using the host locale and currency. */
   formatPrice: (amount: number) => string;
+  /** Host-formatted unit price. Optional; omitted unless supplied by the host or backend. */
   unitPrice?: string;
+  /** Host tax information. Optional; omitted unless supplied by the host or backend. */
   taxLabel?: string;
+  /** Host shipping information link label. Optional; omitted unless supplied by the host or backend. */
   shippingLabel?: string;
+  /** Host shipping information URL. Optional; omitted unless supplied by the host or backend. */
   shippingHref?: string;
 }) {
   return (
@@ -339,6 +432,7 @@ export function ShopPrice({
     </div>
   );
 }
+/** Render a controlled product card; the host owns navigation and add behavior. */
 export function ShopProductCard({
   product,
   href,
@@ -350,14 +444,23 @@ export function ShopProductCard({
   shippingLabel,
   shippingHref,
 }: {
+  /** Host-mapped product presentation data. */
   product: ShopProduct;
+  /** Host navigation URL. */
   href: string;
+  /** Format an integer-cent amount using the host locale and currency. */
   formatPrice: (amount: number) => string;
+  /** Host add-action label. */
   addLabel: string;
+  /** Host-owned add action; the package does not provide a cart flow. Optional; omitted unless supplied by the host or backend. */
   onAdd?: () => void;
+  /** Disable the host add action. Optional; omitted unless supplied by the host or backend. */
   addDisabled?: boolean;
+  /** Host tax information. Optional; omitted unless supplied by the host or backend. */
   taxLabel?: string;
+  /** Host shipping information link label. Optional; omitted unless supplied by the host or backend. */
   shippingLabel?: string;
+  /** Host shipping information URL. Optional; omitted unless supplied by the host or backend. */
   shippingHref?: string;
 }) {
   return (
@@ -401,15 +504,20 @@ export function ShopProductCard({
     </li>
   );
 }
+/** Lay out product cards as a grid or horizontal rail. */
 export function ShopProductGrid({
   children,
   rail = false,
 }: {
+  /** Host-supplied child content. */
   children: ReactNode;
+  /** Lay out products as a horizontal rail.
+   * @defaultValue false */
   rail?: boolean;
 }) {
   return <ul className={rail ? "sv-shop-rail" : "sv-shop-grid"}>{children}</ul>;
 }
+/** Render a controlled quantity input with host labels and bounds. */
 export function ShopQuantity({
   value,
   onChange,
@@ -419,12 +527,21 @@ export function ShopQuantity({
   max = 99,
   min = 1,
 }: {
+  /** Current controlled value. */
   value: number;
+  /** Receive the updated controlled value. */
   onChange: (value: number) => void;
+  /** Accessible customer-visible label. */
   label: string;
+  /** Accessible label for decreasing quantity. */
   decreaseLabel: string;
+  /** Accessible label for increasing quantity. */
   increaseLabel: string;
+  /** Inclusive maximum selectable value.
+   * @defaultValue 99 */
   max?: number;
+  /** Inclusive minimum selectable value.
+   * @defaultValue 1 */
   min?: number;
 }) {
   return (
@@ -449,6 +566,7 @@ export function ShopQuantity({
     </fieldset>
   );
 }
+/** Render a native modal drawer or sheet with a host close action. */
 export function ShopDialog({
   title,
   closeLabel,
@@ -456,10 +574,16 @@ export function ShopDialog({
   onClose,
   variant = "drawer",
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Accessible close button label. */
   closeLabel: string;
+  /** Host-supplied child content. */
   children: ReactNode;
+  /** Close the modal in host state. */
   onClose: () => void;
+  /** Modal presentation variant.
+   * @defaultValue "drawer" */
   variant?: "drawer" | "sheet";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -493,6 +617,7 @@ export function ShopDialog({
     </dialog>
   );
 }
+/** Render server-authoritative summary amounts; optional minimum rows receive the German prefix ab. */
 export function ShopSummary({
   title,
   rows,
@@ -502,12 +627,26 @@ export function ShopSummary({
   children,
   busy,
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
-  rows: { label: string; amount: number; isFrom?: boolean }[];
+  /** Host summary or declaration rows. */
+  rows: {
+    /** Accessible customer-visible label. */
+    label: string;
+    /** Amount in integer cents. */
+    amount: number;
+    /** Prefix this minimum amount with ab when true. Optional; omitted unless supplied by the host or backend. */
+    isFrom?: boolean;
+  }[];
+  /** Host total label. */
   totalLabel: string;
+  /** Server-authoritative total in integer cents. */
   total: number;
+  /** Format an integer-cent amount using the host locale and currency. */
   formatPrice: (amount: number) => string;
+  /** Host-supplied child content. Optional; omitted unless supplied by the host or backend. */
   children?: ReactNode;
+  /** Whether the host is refreshing the summary. Optional; omitted unless supplied by the host or backend. */
   busy?: boolean;
 }) {
   return (
@@ -532,12 +671,22 @@ export function ShopSummary({
     </aside>
   );
 }
+/** Render host-owned checkout step navigation. A complete checkout flow is not provided. */
 export function ShopCheckoutSteps({
   label,
   steps,
 }: {
+  /** Accessible customer-visible label. */
   label: string;
-  steps: { label: string; href: string; current?: boolean }[];
+  /** Host-owned checkout steps and current state. */
+  steps: {
+    /** Accessible customer-visible label. */
+    label: string;
+    /** Host navigation URL. */
+    href: string;
+    /** Current in the shop checkout steps contract. Optional; omitted unless supplied by the host or backend. */
+    current?: boolean;
+  }[];
 }) {
   return (
     <nav aria-label={label} className="sv-shop-steps">
@@ -554,12 +703,20 @@ export function ShopCheckoutSteps({
     </nav>
   );
 }
+/** Render product or legal declarations supplied by the host. */
 export function ShopDeclarations({
   title,
   rows,
 }: {
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
-  rows: { label: string; value: string }[];
+  /** Host summary or declaration rows. */
+  rows: {
+    /** Accessible customer-visible label. */
+    label: string;
+    /** Current controlled value. */
+    value: string;
+  }[];
 }) {
   return (
     <section className="sv-shop-declarations">

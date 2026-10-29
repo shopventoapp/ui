@@ -15,15 +15,26 @@ import {
   windowStarted,
 } from "./client";
 
+/** Load event variants, windows, settings and locations; abort obsolete requests and expose reload state.
+ * @param client - Stable client instance used for API requests.
+ * @param eventId - Public event identifier used to select variants and availability.
+ * @param locationId - Positive installation location identifier used to filter availability. */
 export function useBookingData(
   client: BookingClient,
   eventId: number,
   locationId?: number,
 ) {
   const [data, setData] = useState<{
+    /** Public event variants and integer-cent prices. */
     variants: ShopEvent[];
+
+    /** Loaded dated event availability. */
     windows: Timewindow[];
+
+    /** Authoritative installation booking settings. */
     settings: ShopSettings;
+
+    /** Public installation locations. */
     locations: Location[];
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +56,8 @@ export function useBookingData(
         if (!controller.signal.aborted)
           setData({
             variants,
+
+            /** Loaded dated event availability. */
             windows: windows.timewindows.filter(
               (w) =>
                 !windowStarted(w) &&
@@ -52,6 +65,8 @@ export function useBookingData(
                   w.franchise_location_id === locationId),
             ),
             settings,
+
+            /** Public installation locations. */
             locations: locations.locations,
           });
       })
@@ -63,12 +78,26 @@ export function useBookingData(
       });
     return () => controller.abort();
   }, [client, eventId, locationId, revision]);
-  return { data, loading, error, reload: () => setRevision((r) => r + 1) };
+  return {
+    /** Loaded authoritative data, or null while unavailable. */
+    data,
+    /** Whether the read is pending. */
+    loading,
+    /** Customer-visible error, or null. */
+    error,
+    /** Reload the resource from its authoritative API. */
+    reload: () => setRevision((r) => r + 1),
+  };
 }
+/** Compact form draft containing the selected window, seats and guest contact. */
 export interface BookingDraft {
+  /** Backend timewindow identifier used for submission. */
   timewindow_id: string;
+  /** Booked places, or requested seat count depending on the signature. */
   seats: Seat[];
+  /** Guest contact fields. */
   contact: GuestContact;
+  /** Optional booking notes, subject to the component and backend limits. Optional; omitted unless supplied by the host or backend. */
   notes?: string;
 }
 const emptyDraft = (): BookingDraft => ({
@@ -136,8 +165,23 @@ export function useBookingDraft(key: string) {
     }
     setDraft(emptyDraft());
   }, [key]);
-  return { draft, setDraft, ready: loadedKey === key, clear };
+  return {
+    /** Current in-memory booking draft. */
+    draft,
+    /** Update the in-memory and persisted draft. */
+    setDraft,
+    /** Whether the draft has been restored for this key. */
+    ready: loadedKey === key,
+    /** Remove the stored draft and reset in-memory state. */
+    clear,
+  };
 }
+/** Submit the booking once, expose field errors, validate checkout hosts and handle accepted orders safely.
+ * @param client - Stable client instance used for API requests.
+ * @param redirect - Redirect supplied by the host.
+ * @param checkoutHosts - Allowed HTTPS checkout hostnames. Defaults to checkout.stripe.com. Defaults to ["checkout.stripe.com"].
+ * @param onAccepted - On accepted supplied by the host.
+ * @param onFailure - On failure supplied by the host. */
 export function useSubmitBooking(
   client: BookingClient,
   redirect: (url: string) => void,
@@ -221,7 +265,20 @@ export function useSubmitBooking(
     setError(null);
     setFieldErrors({});
   }, []);
-  return { submit, pending, error, fieldErrors, result, clearError };
+  return {
+    /** Submit an authenticated booking request. In useSubmitBooking, pass guest, challenge token and consent explicitly for guest submissions; consent defaults to false. */
+    submit,
+    /** Whether booking submission is in progress. */
+    pending,
+    /** Customer-visible error, or null. */
+    error,
+    /** Validation errors keyed by contact field. */
+    fieldErrors,
+    /** Accepted booking response, when available. */
+    result,
+    /** Clear the visible booking error and field errors. */
+    clearError,
+  };
 }
 
 /** Independent public list hook for host-owned event navigation. */
@@ -247,10 +304,13 @@ export function useEvents(client: BookingClient) {
     return () => controller.abort();
   }, [client]);
   return {
+    /** Loaded public event variants. */
     events,
     /** @deprecated Use events. Removed in 1.0. */
     tastings: events,
+    /** Whether the read is pending. */
     loading,
+    /** Customer-visible error, or null. */
     error,
   };
 }

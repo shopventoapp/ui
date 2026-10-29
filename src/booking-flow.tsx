@@ -32,17 +32,29 @@ import {
 } from "./client";
 import { useSubmitBooking } from "./hooks";
 import { Turnstile } from "./turnstile";
+/** Tab-scoped booking draft. Phone, consent and challenge tokens are not persisted. */
 export interface FlowDraft {
+  /** Backend timewindow identifier, not the materialized row ID. */
   windowId: string;
+  /** Booked places, or requested seat count depending on the signature. */
   seats: Seat[];
+  /** Guest contact fields. */
   contact: GuestContact;
+  /** Optional booking notes, subject to the component and backend limits. */
   notes: string;
+  /** Voucher codes in submission order. */
   codes: string[];
+  /** Last update as Unix milliseconds. */
   updated: number;
 }
+/** Build an installation- and location-scoped storage key for a multi-step draft.
+ * @param installation - Installation supplied by the host.
+ * @param location - Selected installation location. */
 export function bookingDraftKey(installation: string, location: number) {
   return `vv:booking:v2:${installation}:${location}`;
 }
+/** Read a valid booking draft less than 24 hours old; return null for invalid or unavailable storage.
+ * @param key - Key supplied by the host. */
 export function readFlowDraft(key: string): FlowDraft | null {
   try {
     const d = JSON.parse(sessionStorage.getItem(key) ?? "null");
@@ -74,6 +86,9 @@ export function readFlowDraft(key: string): FlowDraft | null {
   }
   return null;
 }
+/** Persist a flow draft without phone, consent or security tokens.
+ * @param key - Key supplied by the host.
+ * @param draft - Draft supplied by the host. */
 export function writeFlowDraft(key: string, draft: FlowDraft) {
   try {
     sessionStorage.setItem(
@@ -87,6 +102,11 @@ export function writeFlowDraft(key: string, draft: FlowDraft) {
     /* The flow still works in memory. */
   }
 }
+/** Start a date and seat selection while retaining permitted contact and notes.
+ * @param key - Key supplied by the host.
+ * @param windowId - Backend timewindow identifier, not the materialized row ID.
+ * @param seats - Booked places, or requested seat count depending on the signature.
+ * @param variantId - Variant id supplied by the host. */
 export function startFlowDraft(
   key: string,
   windowId: string,
@@ -107,18 +127,30 @@ export function startFlowDraft(
   writeFlowDraft(key, d);
   return d;
 }
+/** Host-owned legal and editorial text displayed during booking. */
 export interface BookingTexts {
+  /** Withdrawal in the booking texts contract. */
   withdrawal: string;
+  /** Minimum in the booking texts contract. */
   minimum: string;
+  /** Reschedule in the booking texts contract. */
   reschedule: string;
+  /** Notes hint in the booking texts contract. Optional; omitted unless supplied by the host or backend. */
   notesHint?: string;
+  /** Host contact phone number or customer international phone field. Optional; omitted unless supplied by the host or backend. */
   phone?: string;
+  /** Customer-visible phone link label. Optional; omitted unless supplied by the host or backend. */
   phoneLabel?: string;
+  /** Group url in the booking texts contract. Optional; omitted unless supplied by the host or backend. */
   groupUrl?: string;
+  /** Address in the booking texts contract. Optional; omitted unless supplied by the host or backend. */
   address?: string;
+  /** Authoritative customer voucher. Optional; omitted unless supplied by the host or backend. */
   voucher?: string;
+  /** Intolerance in the booking texts contract. Optional; omitted unless supplied by the host or backend. */
   intolerance?: string;
 }
+/** Render host-supplied legal notes and the runtime minimum age. */
 export function LegalNotes({
   minAge,
   texts,
@@ -126,37 +158,63 @@ export function LegalNotes({
   heading = true,
   overview = false,
 }: {
+  /** Runtime minimum age supplied by the backend. Optional; omitted unless supplied by the host or backend. */
   minAge?: number;
+  /** Host-owned legal and editorial booking copy. */
   texts: BookingTexts;
+  /** Use the booking review presentation.
+   * @defaultValue false */
   review?: boolean;
+  /** Show the legal-notes heading.
+   * @defaultValue true */
   heading?: boolean;
+  /** Use the overview legal-notes presentation.
+   * @defaultValue false */
   overview?: boolean;
 }) {
   const items: Array<{
+    /** Availability icon name. */
     icon: "id" | "calendar" | "users" | "gift" | "alert";
     title: string;
+
+    /** Customer-visible German availability message. */
     text: string;
   }> = [
     ...(minAge != null
       ? [
           {
+            /** Availability icon name. */
             icon: "id" as const,
             title: `Ab ${minAge} Jahren`,
+
+            /** Customer-visible German availability message. */
             text: `Teilnahme ab ${minAge} Jahren. Mit der Buchung bestätigst Du, dass alle Gäste mindestens ${minAge} Jahre alt sind.`,
           },
         ]
       : []),
-    { icon: "users", title: "Mindestzahl Gäste", text: texts.minimum },
     {
+      /** Availability icon name. */
+      icon: "users",
+      title: "Mindestzahl Gäste",
+      /** Customer-visible German availability message. */
+      text: texts.minimum,
+    },
+    {
+      /** Availability icon name. */
       icon: "calendar",
       title: "Fester Termin, kein Widerruf",
+
+      /** Customer-visible German availability message. */
       text: `${texts.withdrawal} ${texts.reschedule}`,
     },
     ...(overview && texts.voucher
       ? [
           {
+            /** Availability icon name. */
             icon: "gift" as const,
             title: "Gutscheine einlösen",
+
+            /** Customer-visible German availability message. */
             text: texts.voucher,
           },
         ]
@@ -164,8 +222,11 @@ export function LegalNotes({
     ...(overview && texts.intolerance
       ? [
           {
+            /** Availability icon name. */
             icon: "alert" as const,
             title: "Wünsche und besondere Hinweise",
+
+            /** Customer-visible German availability message. */
             text: texts.intolerance,
           },
         ]
@@ -199,6 +260,9 @@ export function LegalNotes({
     </div>
   );
 }
+/** Normalize a host-supplied international dialing prefix and phone input.
+ * @param value - Current controlled value.
+ * @param prefix - International dialing prefix supplied by the host. */
 export function normalizeBookingPhone(value: string, prefix: string) {
   const clean = value
     .replace(/\(0\)/g, "")
@@ -206,6 +270,10 @@ export function normalizeBookingPhone(value: string, prefix: string) {
     .replace(/^00/, "+");
   return clean.startsWith("+") ? clean : prefix + clean.replace(/^0/, "");
 }
+/** Explain whether a checked voucher is depleted or inapplicable to the event or location.
+ * @param check - Public result of checking one voucher.
+ * @param eventId - Public event identifier used to select variants and availability.
+ * @param locationId - Positive installation location identifier used to filter availability. */
 export function voucherProblem(
   check: VoucherCheck,
   eventId: number,
@@ -226,13 +294,22 @@ export function voucherProblem(
     return "Dieser Gutschein gilt nicht für diesen Standort.";
   return null;
 }
+/** Apply checked event vouchers to assigned seats, then value vouchers in submission order. Backend totals remain authoritative.
+ * @param seatPrices - Per-seat prices in integer cents.
+ * @param orderedCodes - Voucher codes in submission order.
+ * @param checks - Public lookup results keyed by voucher code. */
 export function bookingVoucherAllocation(
   seatPrices: readonly number[],
   orderedCodes: readonly string[],
   checks: Readonly<Record<string, VoucherCheck>>,
 ) {
   const remaining = [...seatPrices];
-  const deductions = orderedCodes.map((code) => ({ code, amount: 0 }));
+  const deductions = orderedCodes.map((code) => ({
+    /** Voucher code used for this deduction. */
+    code,
+    /** Amount deducted in integer cents. */
+    amount: 0,
+  }));
   let pending = false;
   for (const [index, code] of orderedCodes.entries()) {
     const check = checks[code];
@@ -274,7 +351,14 @@ export function bookingVoucherAllocation(
       amountToPay += released;
     }
   }
-  return { deductions, pending, amountToPay };
+  return {
+    /** Deductions returned by bookingVoucherAllocation. */
+    deductions,
+    /** Whether booking submission is in progress. */
+    pending,
+    /** Amount to pay returned by bookingVoucherAllocation. */
+    amountToPay,
+  };
 }
 /** Bound untrusted URL input before placing it in a controlled text field. */
 export function voucherCodeFromQuery(value: string | null | undefined): string {
@@ -284,35 +368,68 @@ export function voucherCodeFromQuery(value: string | null | undefined): string {
     ? value
     : "";
 }
+/** Host routing, session, availability and copy needed by the multi-step booking flow. */
 export interface BookingFlowProps {
+  /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
+  /** Optional prefilled voucher code; still checked by the backend. Optional; omitted unless supplied by the host or backend. */
   initialVoucherCode?: string;
 
+  /** Stable client instance used for API requests. */
   client: BookingClient;
+  /** Fresh events, windows, settings and locations supplied by the host. */
   data: CalendarInput;
+  /** Installation- and location-scoped sessionStorage key. */
   draftKey: string;
+  /** Current host-owned booking step. */
   step: number;
+  /** Navigate to the requested host-owned booking step. */
   onStep: (step: number) => void;
+  /** Host calendar route. */
   calendarUrl: string;
+  /** Host sign-in route. */
   loginUrl: string;
+  /** Account client in the booking flow props contract. Optional; omitted unless supplied by the host or backend. */
   accountClient?: AccountClient;
+  /** Refresh the host session after successful authentication. Optional; omitted unless supplied by the host or backend. */
   onAuthenticated?: () => void;
+  /** Safe host account return path.
+   * @defaultValue "/konto" */
   accountReturnPath?: string;
+  /** Host route for accepted booking results. */
   successUrl: string;
+  /** Host terms and conditions URL. */
   termsUrl: string;
+  /** Host privacy policy URL. */
   privacyUrl: string;
+  /** Public Turnstile site key; never pass the private secret. Optional; omitted unless supplied by the host or backend. */
   siteKey?: string;
+  /** Authoritative authenticated profile; null represents a guest. Optional; omitted unless supplied by the host or backend. */
   profile?: AccountProfile | null;
+  /** Session loading in the booking flow props contract. Optional; omitted unless supplied by the host or backend. */
   sessionLoading?: boolean;
+  /** Host-owned legal and editorial booking copy. */
   texts: BookingTexts;
+  /** Host image URL. Optional; omitted unless supplied by the host or backend. */
   image?: string;
+  /** Reload authoritative availability after a seat conflict. Optional; omitted unless supplied by the host or backend. */
   onReloadAvailability?: () => void;
+  /** Perform the host sign-out action. Optional; omitted unless supplied by the host or backend. */
   onSignOut?: () => void | Promise<void>;
+  /** Allowed international dialing prefixes.
+   * @defaultValue [] */
   countryCodes?: readonly string[];
+  /** Optional locale and currency formatting settings.
+   * @defaultValue {} */
   format?: BookingFormat;
+  /** Optional CSS colors keyed by event identifier.
+   * @defaultValue {} */
   colors?: EventColors;
+  /** Navigate to a validated checkout URL; defaults to window.location.assign.
+   * @defaultValue Host browser navigation. */
   onRedirect?: (url: string) => void;
 }
+/** Render the host-routed booking steps with account access, vouchers, review and submission. */
 export function BookingFlow({
   labels,
   initialVoucherCode,
@@ -649,15 +766,24 @@ export function BookingFlow({
     const controller = new AbortController();
     const entered = code.trim();
     if (!entered) {
-      setErrors({ code: "Bitte gib Deinen Gutscheincode ein." });
+      setErrors({
+        /** Voucher code used for this deduction. */
+        code: "Bitte gib Deinen Gutscheincode ein.",
+      });
       return;
     }
     if (draft.codes.includes(entered)) {
-      setErrors({ code: "Dieser Gutschein ist schon hinzugefügt." });
+      setErrors({
+        /** Voucher code used for this deduction. */
+        code: "Dieser Gutschein ist schon hinzugefügt.",
+      });
       return;
     }
     if (draft.codes.length >= count) {
-      setErrors({ code: "Jeder Platz hat schon einen Gutschein." });
+      setErrors({
+        /** Voucher code used for this deduction. */
+        code: "Jeder Platz hat schon einen Gutschein.",
+      });
       return;
     }
     voucherRequest.current = controller;
@@ -674,7 +800,10 @@ export function BookingFlow({
         w.franchise_location_id,
       );
       if (problem) {
-        setErrors({ code: problem });
+        setErrors({
+          /** Voucher code used for this deduction. */
+          code: problem,
+        });
         return;
       }
       setVoucherIssues((issues) => {
@@ -707,6 +836,7 @@ export function BookingFlow({
         return;
       }
       setErrors({
+        /** Voucher code used for this deduction. */
         code:
           e instanceof Error && e.message === "used"
             ? "Dieser Gutschein wurde bereits eingelöst."

@@ -26,6 +26,9 @@ import {
 } from "./dashboard-ui";
 
 const get = (data: FormData, key: string) => String(data.get(key) ?? "").trim();
+/** Normalize an account phone field using the host dialing prefix.
+ * @param value - Current controlled value.
+ * @param prefix - International dialing prefix supplied by the host. */
 export function normalizeAccountPhone(value: string, prefix: string) {
   if (!value.trim()) return "";
   if (/[^\d\s()+\-/]/.test(value)) return null;
@@ -46,12 +49,22 @@ function Field({
   error,
   autoComplete,
 }: {
+  /** Selected icon or backend name. */
   name: string;
+  /** Accessible customer-visible label. */
   label: string;
+  /** Current controlled value.
+   * @defaultValue "" */
   value?: string | null;
+  /** Type in the field contract.
+   * @defaultValue "text" */
   type?: string;
+  /** Required in the field contract.
+   * @defaultValue false */
   required?: boolean;
+  /** Customer-visible error or error presentation flag. Optional; omitted unless supplied by the host or backend. */
   error?: string;
+  /** Auto complete in the field contract. Optional; omitted unless supplied by the host or backend. */
   autoComplete?: string;
 }) {
   const id = useId();
@@ -120,7 +133,12 @@ function useSave() {
     },
   };
 }
-function SaveStatus({ save }: { save: ReturnType<typeof useSave> }) {
+function SaveStatus({
+  save,
+}: {
+  /** Save in the save status contract. */
+  save: ReturnType<typeof useSave>;
+}) {
   return (
     <>
       {save.error && <p role="alert">{save.error}</p>}
@@ -132,7 +150,12 @@ function Personal({
   minimumAge,
   onChanged,
   ...props
-}: DashboardProps & { minimumAge: number; onChanged: () => void }) {
+}: DashboardProps & {
+  /** Runtime minimum age supplied by the host. */
+  minimumAge: number;
+  /** Refresh authoritative host data after a successful mutation. */
+  onChanged: () => void;
+}) {
   const { profile, client, labels } = props;
   const save = useSave();
   const [prefix, setPrefix] = useState("+49"),
@@ -268,11 +291,21 @@ function AddressForm({
   onClose,
   countries,
 }: {
+  /** Address in the address form contract. Optional; omitted unless supplied by the host or backend. */
   address?: ShippingAddress;
+  /** Stable client instance used for API requests. */
   client: DashboardProps["client"];
+  /** On done in the address form contract. */
   onDone: () => void;
+  /** Close the modal in host state. */
   onClose: () => void;
-  countries: { value: string; label: string }[];
+  /** Host-configured country values and labels. */
+  countries: {
+    /** Current controlled value. */
+    value: string;
+    /** Accessible customer-visible label. */
+    label: string;
+  }[];
 }) {
   const save = useSave();
   const countryId = useId();
@@ -381,7 +414,14 @@ function Addresses({
   onChanged,
   ...props
 }: DashboardProps & {
-  countries: { value: string; label: string }[];
+  /** Host-configured country values and labels. */
+  countries: {
+    /** Current controlled value. */
+    value: string;
+    /** Accessible customer-visible label. */
+    label: string;
+  }[];
+  /** Refresh authoritative host data after a successful mutation. */
   onChanged: () => void;
 }) {
   const { client, profile } = props;
@@ -705,7 +745,9 @@ function Newsletter({
   adapter,
   copy,
 }: {
+  /** Adapter in the newsletter contract. */
   adapter: NewsletterAdapter;
+  /** Copy in the newsletter contract. */
   copy: string;
 }) {
   const resource = useAccountResource(() => adapter.status(), [adapter]);
@@ -801,6 +843,7 @@ function Newsletter({
     </AccountCard>
   );
 }
+/** Render profile, address, password, email and newsletter settings using host policy. */
 export function AccountSettings({
   minimumAge,
   countries,
@@ -809,10 +852,20 @@ export function AccountSettings({
   onLogout,
   ...props
 }: DashboardProps & {
+  /** Runtime minimum age supplied by the host. */
   minimumAge: number;
-  countries: { value: string; label: string }[];
+  /** Host-configured country values and labels. */
+  countries: {
+    /** Current controlled value. */
+    value: string;
+    /** Accessible customer-visible label. */
+    label: string;
+  }[];
+  /** Newsletter adapter or host newsletter terminology. */
   newsletter: NewsletterAdapter;
+  /** Refresh authoritative host data after a successful mutation. */
   onChanged: () => void;
+  /** Perform the host logout action. */
   onLogout: () => void;
 }) {
   const [section, setSection] = useState("");

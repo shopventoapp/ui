@@ -1,6 +1,7 @@
 /** Generate only the public catalogue, quote and checkout wire contracts. */
 import { resolve } from "node:path";
 import { publicTypeNames } from "./public-type-names";
+import { documentWireTypes } from "./wire-documentation";
 
 const inputs = Bun.argv.slice(2);
 if (inputs.length < 2 || inputs.length > 3)
@@ -106,7 +107,9 @@ for (const name of needed)
   output += `export type ${name} = ${render(schemas[name])};\n`;
 await Bun.write(
   "src/shop-wire.ts",
-  publicTypeNames(`${output + operations}};\n${paths}} as const;\n`),
+  documentWireTypes(
+    publicTypeNames(`${output + operations}};\n${paths}} as const;\n`),
+  ),
 );
 const child = Bun.spawn(
   ["bun", "run", "format:generated", "src/shop-wire.ts"],

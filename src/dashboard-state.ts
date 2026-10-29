@@ -36,22 +36,39 @@ import type {
   AccountVoucher,
   WithdrawalOption,
 } from "./dashboard-client";
+/** Public entry type contract used by the storefront clients. */
 export type EntryType = "bestellungen" | "tastings" | "reservierungen";
+/** Normalized dashboard activity derived from an order, booking or reservation. */
 export interface AccountEntry {
+  /** Opaque backend identifier or accessible element ID. */
   id: string;
+  /** Type in the account entry contract. */
   type: EntryType;
+  /** Customer-visible heading or title supplied by the host. */
   title: string;
+  /** Number in the account entry contract. */
   number: string;
+  /** Date in the account entry contract. */
   date: string;
+  /** Next in the account entry contract. */
   next: number;
+  /** Current in the account entry contract. */
   current: boolean;
+  /** Read the current newsletter state: false, pending or true. */
   status: string;
+  /** Tone in the account entry contract. */
   tone: string;
+  /** Amount in integer cents. Optional; omitted unless supplied by the host or backend. */
   amount?: number;
+  /** Authoritative account order. Optional; omitted unless supplied by the host or backend. */
   order?: AccountOrder;
+  /** Authoritative customer booking. Optional; omitted unless supplied by the host or backend. */
   booking?: AccountBooking;
+  /** Authoritative customer table reservation. Optional; omitted unless supplied by the host or backend. */
   reservation?: AccountReservation;
 }
+/** Derive the customer-visible German order status and tone.
+ * @param order - Authoritative account order. */
 export function orderStatus(order: AccountOrder): [string, string] {
   if (order.withdrawal?.state === "REQUESTED")
     return ["Widerruf erklärt", "warn"];
@@ -92,6 +109,8 @@ export function orderStatus(order: AccountOrder): [string, string] {
     ]
   );
 }
+/** Derive order line categories from the backend order.
+ * @param order - Authoritative account order. */
 export function orderBreakdown(order: AccountOrder) {
   const subtotal = order.items.reduce(
     (sum, item) =>
@@ -117,22 +136,36 @@ export function orderBreakdown(order: AccountOrder) {
   );
   const pending = ["PENDING", "INCOMPLETE", "FAILED"].includes(order.status);
   return {
+    /** Subtotal returned by orderBreakdown. */
     subtotal,
+    /** Shipping returned by orderBreakdown. */
     shipping,
+    /** Discount returned by orderBreakdown. */
     discount,
+    /** Paid returned by orderBreakdown. */
     paid,
+    /** Refunded returned by orderBreakdown. */
     refunded,
+    /** Total returned by orderBreakdown. */
     total: pending ? subtotal + shipping - discount : paid - refunded,
   };
 }
+/** Read the order total in integer cents.
+ * @param order - Authoritative account order. */
 export function orderTotal(order: AccountOrder) {
   return orderBreakdown(order).total;
 }
+/** Public rebooked booking contract used by the storefront clients. */
 export type RebookedBooking = AccountBooking & {
+  /** Has been moved in the rebooked booking contract. Optional; omitted unless supplied by the host or backend. */
   has_been_moved?: boolean;
+  /** Reschedule count in the rebooked booking contract. Optional; omitted unless supplied by the host or backend. */
   reschedule_count?: number;
+  /** Moved at in the rebooked booking contract. Optional; omitted unless supplied by the host or backend. */
   moved_at?: string | null;
 };
+/** Check every supported backend indicator for previous rescheduling.
+ * @param booking - Authoritative customer booking. */
 export function bookingAlreadyMoved(booking: RebookedBooking) {
   return (
     booking.has_been_moved === true ||
@@ -140,6 +173,9 @@ export function bookingAlreadyMoved(booking: RebookedBooking) {
     !!booking.moved_at
   );
 }
+/** Check cancellation, prior movement and the backend rescheduling cutoff.
+ * @param booking - Authoritative customer booking.
+ * @param now - Current instant as milliseconds since the Unix epoch. Defaults to Date.now(). Defaults to Date.now(). */
 export function canReschedule(booking: RebookedBooking, now = Date.now()) {
   return (
     !bookingAlreadyMoved(booking) &&
@@ -148,6 +184,11 @@ export function canReschedule(booking: RebookedBooking, now = Date.now()) {
     Date.parse(booking.reschedulable_until) > now
   );
 }
+/** Normalize orders, bookings and reservations into sortable account activity.
+ * @param orders - Orders supplied by the host.
+ * @param bookings - Bookings supplied by the host.
+ * @param reservations - Reservations supplied by the host.
+ * @param now - Current instant as milliseconds since the Unix epoch. Defaults to Date.now(). Defaults to Date.now(). */
 export function accountEntries(
   orders: AccountOrder[],
   bookings: AccountBooking[],
@@ -204,6 +245,8 @@ export function accountEntries(
       current,
       status,
       tone,
+
+      /** Amount deducted in integer cents. */
       amount: orderTotal(order),
       order,
     });
@@ -251,6 +294,8 @@ export function accountEntries(
       date: `${reservation.date}T${reservation.time}`,
       next,
       current: next > now && reservation.status === "confirmed",
+
+      /** HTTP response status code. */
       status: statuses[reservation.status] ?? "Angefragt",
       tone: reservation.status === "confirmed" ? "ok" : "neutral",
       reservation,
@@ -258,10 +303,14 @@ export function accountEntries(
   }
   return result;
 }
+/** Read supported date and type filters from a host query string.
+ * @param search - Search supplied by the host. */
 export function accountFilters(search: string) {
   const q = new URLSearchParams(search);
   return {
+    /** Zeit returned by accountFilters. */
     zeit: q.get("zeit") === "vergangen" ? "vergangen" : "aktuell",
+    /** Typ returned by accountFilters. */
     typ: ["bestellungen", "tastings", "reservierungen"].includes(
       q.get("typ") ?? "",
     )
@@ -269,6 +318,10 @@ export function accountFilters(search: string) {
       : ("alle" as const),
   };
 }
+/** Apply the supported date and type filters to account activity.
+ * @param entries - Normalized account activity to filter or prioritize.
+ * @param zeit - Zeit supplied by the host.
+ * @param typ - Typ supplied by the host. */
 export function filterEntries(
   entries: AccountEntry[],
   zeit: string,
@@ -286,27 +339,61 @@ export function filterEntries(
         : a.next - b.next,
     );
 }
+/** Select upcoming activity and other items relevant to the account overview.
+ * @param entries - Normalized account activity to filter or prioritize.
+ * @param now - Current instant as milliseconds since the Unix epoch. Defaults to Date.now(). Defaults to Date.now(). */
 export function overviewPriorities(entries: AccountEntry[], now = Date.now()) {
   return entries
     .flatMap((e) =>
       e.status === "Zahlung fehlgeschlagen"
-        ? [{ entry: e, priority: 1 }]
+        ? [
+            {
+              /** Normalized customer activity associated with the priority. */
+              entry: e,
+              /** Display priority; lower values appear first. */
+              priority: 1,
+            },
+          ]
         : e.status === "Abholbereit"
-          ? [{ entry: e, priority: 2 }]
+          ? [
+              {
+                /** Normalized customer activity associated with the priority. */
+                entry: e,
+                /** Display priority; lower values appear first. */
+                priority: 2,
+              },
+            ]
           : e.current &&
               e.type !== "bestellungen" &&
               e.next - now <= 48 * 3600000
-            ? [{ entry: e, priority: 3 }]
+            ? [
+                {
+                  /** Normalized customer activity associated with the priority. */
+                  entry: e,
+                  /** Display priority; lower values appear first. */
+                  priority: 3,
+                },
+              ]
             : e.order?.withdrawal?.state === "AVAILABLE" &&
                 e.order.withdrawal.deadline_at &&
                 Date.parse(e.order.withdrawal.deadline_at) > now &&
                 Date.parse(e.order.withdrawal.deadline_at) - now <=
                   10 * 86400000
-              ? [{ entry: e, priority: 5 }]
+              ? [
+                  {
+                    /** Normalized customer activity associated with the priority. */
+                    entry: e,
+                    /** Display priority; lower values appear first. */
+                    priority: 5,
+                  },
+                ]
               : [],
     )
     .sort((a, b) => a.priority - b.priority || a.entry.next - b.entry.next);
 }
+/** Convert positive eligible line quantities into the backend withdrawal request.
+ * @param options - Options supplied by the host.
+ * @param quantities - Quantities supplied by the host. */
 export function withdrawalSelection(
   options: WithdrawalOption[],
   quantities: Record<string, number>,
@@ -320,11 +407,16 @@ export function withdrawalSelection(
         quantities[o.order_item_id] <= o.quantity,
     )
     .map((o) => ({
+      /** Opaque backend order line identifier. */
       order_item_id: o.order_item_id,
+
+      /** Eligible quantity selected for withdrawal. */
       quantity: quantities[o.order_item_id],
     }));
 }
+/** Format a signed voucher-history amount in integer cents as German EUR. */
 export const historyMoney = (amount: number) =>
   `${amount > 0 ? "+" : amount < 0 ? "-" : ""}${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Math.abs(amount) / 100)}`;
+/** Check whether the backend reports the customer voucher as active. */
 export const voucherActive = (v: AccountVoucher) =>
   !v.redeemed && v.remaining_value > 0;

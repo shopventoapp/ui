@@ -1,0 +1,33 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/index.ts"
+  ],
+  "out": "site/reference",
+  "name": "Shopvento UI",
+  "includeVersion": true,
+  "readme": "none",
+  "disableSources": true,
+  "disableGit": true,
+  "hideGenerator": true,
+  "navigationLinks": {
+    "Guides": "/guides/getting-started/",
+    "Shop API": "/api/"
+  },
+  "customCss": "docs/assets/reference.css",
+  "validation": {
+    "notExported": false,
+    "notDocumented": true,
+    "invalidLink": true
+  },
+  "requiredToBeDocumented": [
+    "Function",
+    "Class",
+    "Interface",
+    "TypeAlias",
+    "Variable",
+    "Property",
+    "Method"
+  ],
+  "treatWarningsAsErrors": true
+}
