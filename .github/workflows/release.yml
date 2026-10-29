@@ -21,7 +21,8 @@ jobs:
           bun-version: 1.3.10
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          # npm 11.5.1 or later is required for trusted publishing (OIDC).
+          node-version: 24
           registry-url: https://registry.npmjs.org
       - name: Tag matches package version
         run: |
@@ -36,6 +37,5 @@ jobs:
       - run: bun test
       - run: bun run build
       - run: npm pack --dry-run
+      # Trusted publishing: npm authenticates this workflow via OIDC, no token.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
