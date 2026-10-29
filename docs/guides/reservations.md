@@ -3,7 +3,7 @@
 `ReservationForm` creates a public table reservation with contact details, a strict German calendar date, normalized time, runtime party limits, opening hours, exceptions and Turnstile. Import `@shopvento/ui/forms.css` for its responsive layout and theme the `.sv-reservation` scope with `--sv-*` properties.
 
 ```tsx
-import { ReservationForm } from "@shopvento/ui";
+import { ReservationForm } from "@shopvento/ui/forms";
 const publicApi = async () => ({ shopvento: true, locationId: 1 });
 <ReservationForm siteKey="PUBLIC-TEST-KEY" publicApi={publicApi}
   privacyUrl="/privacy" termsUrl="/terms"

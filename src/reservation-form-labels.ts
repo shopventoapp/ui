@@ -1,6 +1,6 @@
 /** German defaults for reservation form. Override messages through labels; preserve numbered placeholders and surrounding whitespace. */
 export const defaultReservationLabels: Readonly<Record<string, string>> =
-  Object.freeze({
+  /* @__PURE__ */ Object.freeze({
     "Bitte gib ein gültiges Datum ein.": "Bitte gib ein gültiges Datum ein.",
     "Am {0} haben wir geschlossen.{1}": "Am {0} haben wir geschlossen.{1}",
     "Reservierungen ab {0} Uhr bis vor {1} Uhr.":

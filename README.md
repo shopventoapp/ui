@@ -64,7 +64,7 @@ export function Login() {
 }
 ```
 
-The [shop flow guide](docs/guides/shop.md), [reservations guide](docs/guides/reservations.md) and [newsletter guide](docs/guides/newsletter.md) explain host composition, legacy storage keys, validation and payment returns. New integrations can start with `ShopFlow`; existing hosts must configure their original cart, draft, pending-order and event names through `storage`.
+The [shop flow guide](docs/guides/shop.md), [reservations guide](docs/guides/reservations.md) and [newsletter guide](docs/guides/newsletter.md) explain host composition, legacy storage keys, validation and payment returns. New integrations can start with `ShopFlow` from `@shopvento/ui/shop-flow`; import standalone forms from `@shopvento/ui/forms` to keep checkout out of marketing-page JavaScript. Root exports remain available. Existing hosts must configure their original cart, draft, pending-order and event names through `storage`.
 
 The [integration guide](docs/integration.md) describes every component, the booking flow, the account dashboard, the shop primitives and the backend contract in detail.
 

@@ -144,15 +144,15 @@ const defaultRoutes: ShopFlowRoutes = {
   withdrawal: "/widerruf",
   events: "/termine",
 };
-const defaultClient = createShopClient();
-const defaultAccountClient = createAccountClient();
+const defaultClient = /* @__PURE__ */ createShopClient();
+const defaultAccountClient = /* @__PURE__ */ createAccountClient();
 const disabledAccountClient = {
   ...defaultAccountClient,
   getProfile: async () => {
     throw new AccountApiError(401, null);
   },
 };
-const defaultDashboardClient = createDashboardClient();
+const defaultDashboardClient = /* @__PURE__ */ createDashboardClient();
 const DefaultCheck = ({
   size = 20,
 }: {
@@ -264,9 +264,9 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
     phoneLabel: config.phoneLabel,
   };
 }
-const ShopFlowContext = createContext<ReturnType<typeof resolveConfig> | null>(
-  null,
-);
+const ShopFlowContext = /* @__PURE__ */ createContext<ReturnType<
+  typeof resolveConfig
+> | null>(null);
 /** Use Shop Flow for this public form or flow. */
 export function useShopFlow() {
   const config = useContext(ShopFlowContext);

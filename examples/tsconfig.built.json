@@ -1,5 +1,11 @@
 {
   "extends": "../tsconfig.json",
-  "compilerOptions": { "paths": { "@shopvento/ui": ["../dist/index.d.ts"] } },
+  "compilerOptions": {
+    "paths": {
+      "@shopvento/ui": ["../dist/index.d.ts"],
+      "@shopvento/ui/forms": ["../dist/public-forms-entry.d.ts"],
+      "@shopvento/ui/shop-flow": ["../dist/shop-flow-entry.d.ts"]
+    }
+  },
   "include": ["./**/*.ts", "./**/*.tsx"]
 }

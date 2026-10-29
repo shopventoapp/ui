@@ -1,6 +1,6 @@
 /** German defaults for shop flow. Override messages through labels; preserve numbered placeholders and surrounding whitespace. */
 export const defaultShopFlowLabels: Readonly<Record<string, string>> =
-  Object.freeze({
+  /* @__PURE__ */ Object.freeze({
     "Noch {0} bis zum kostenlosen Versand":
       "Noch {0} bis zum kostenlosen Versand",
     "Kostenloser Versand": "Kostenloser Versand",

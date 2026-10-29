@@ -1,5 +1,7 @@
 # Catalogue, cart and checkout
 
+Import `ShopFlow` from `@shopvento/ui/shop-flow` for shop routes and public forms from `@shopvento/ui/forms` for marketing/reservation pages. The root exports remain available; these focused entrypoints let the host bundle checkout separately and retain shared client/error identities.
+
 `ShopFlow` owns catalogue/category/product views, persistent cart state, voucher entry, guest and account checkout, fulfilment dates, delivery-zone quotes, legal acceptance, hosted Stripe Checkout navigation and order returns. All 0.2 presentation primitives remain available. Import `styles.css` and `shop.css`; mount the flow inside the host layout and keep the same component configuration across its routes.
 
 <!-- example:examples/shop-flow.tsx -->

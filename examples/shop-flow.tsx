@@ -1,11 +1,7 @@
 "use client";
-import {
-  defaultCategoryKey,
-  defaultShopProduct,
-  NewsletterSignup,
-  ReservationForm,
-  ShopFlow,
-} from "@shopvento/ui";
+import { defaultCategoryKey, defaultShopProduct } from "@shopvento/ui";
+import { NewsletterSignup, ReservationForm } from "@shopvento/ui/forms";
+import { ShopFlow } from "@shopvento/ui/shop-flow";
 
 const publicApi = async () => ({ shopvento: true, locationId: 1 });
 const sections = [

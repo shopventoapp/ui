@@ -3,7 +3,7 @@
 `NewsletterSignup` supports standalone guest signup, authenticated account adapters, pending double opt-in, explicit retries and a one-shot consent handoff from checkout or reservation. Import `@shopvento/ui/forms.css`; use `--sv-*` tokens on `.sv-newsletter` for colours and fonts.
 
 ```tsx
-import { NewsletterSignup } from "@shopvento/ui";
+import { NewsletterSignup } from "@shopvento/ui/forms";
 <NewsletterSignup siteKey="PUBLIC-TEST-KEY" privacyUrl="/privacy"
   labels={{ "Neuigkeiten zuerst erfahren": "Our latest events" }} />;
 ```

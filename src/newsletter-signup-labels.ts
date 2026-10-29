@@ -1,6 +1,6 @@
 /** German defaults for newsletter signup. Override messages through labels; preserve numbered placeholders and surrounding whitespace. */
 export const defaultNewsletterLabels: Readonly<Record<string, string>> =
-  Object.freeze({
+  /* @__PURE__ */ Object.freeze({
     "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.":
       "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.",
     "Bitte warte fünf Minuten nach der letzten E-Mail, bevor Du einen neuen Bestätigungslink anforderst.":

@@ -1,2 +1,2 @@
 import { defineConfig } from "tsup";
-export default defineConfig({ noExternal: ["qrcode-generator"] });
+export default defineConfig({ noExternal: ["qrcode-generator"], splitting: true });

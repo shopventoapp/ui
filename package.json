@@ -44,14 +44,24 @@
     "./package.json": "./package.json",
     "./styles.css": "./dist/styles.css",
     "./shop.css": "./dist/shop.css",
-    "./forms.css": "./dist/forms.css"
+    "./forms.css": "./dist/forms.css",
+    "./forms": {
+      "types": "./dist/public-forms-entry.d.ts",
+      "import": "./dist/public-forms-entry.js",
+      "default": "./dist/public-forms-entry.js"
+    },
+    "./shop-flow": {
+      "types": "./dist/shop-flow-entry.d.ts",
+      "import": "./dist/shop-flow-entry.js",
+      "default": "./dist/shop-flow-entry.js"
+    }
   },
   "publishConfig": {
     "access": "public",
     "provenance": true
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --external react --external react-dom --clean && bun run scripts/copy-css.ts",
+    "build": "tsup src/index.ts src/public-forms-entry.ts src/shop-flow-entry.ts --format esm --dts --external react --external react-dom --clean && bun run scripts/copy-css.ts",
     "lint": "biome check src tests scripts examples && tsc --noEmit",
     "test": "bun test",
     "pack": "bun run build && bun pm pack --destination artifacts",
