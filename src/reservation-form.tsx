@@ -138,7 +138,8 @@ function ReservationFormContent({
   NewsletterComponent = NewsletterSignup,
 }: ReservationFormProps) {
   const text = useMessages("reservation", labels);
-  const { locale } = useShopventoLocale();
+  const localeOptions = useShopventoLocale();
+  const { locale } = localeOptions;
   const [status, setStatus] = useState<Status>("idle");
   const [apiSiteKey, setApiSiteKey] = useState<string | null>(null);
   const [limits, setLimits] = useState(reservationGuests);
@@ -162,7 +163,7 @@ function ReservationFormContent({
   let dateError: string | null = null;
   if (dateValue.length === 10) {
     try {
-      isoDate = reservationDate(dateValue, locale);
+      isoDate = reservationDate(dateValue, localeOptions, labels);
     } catch (error) {
       dateError =
         error instanceof Error
@@ -354,7 +355,7 @@ function ReservationFormContent({
 
     try {
       const config = await publicApi();
-      const date = reservationDate(payload.date, locale);
+      const date = reservationDate(payload.date, localeOptions, labels);
       const res = await fetch(
         config.shopvento
           ? "/api/table-reservations/public"
@@ -403,7 +404,7 @@ function ReservationFormContent({
         data.error ??
           (typeof data.detail === "string"
             ? data.detail
-            : publicApiError(res.status, locale)),
+            : publicApiError(res.status, localeOptions, labels)),
       );
       window.turnstile?.reset(widgetIdRef.current ?? undefined);
     } catch (error) {

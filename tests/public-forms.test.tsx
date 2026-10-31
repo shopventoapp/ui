@@ -238,3 +238,17 @@ test("reservation date confirms the parsed day and month visibly", () => {
     cleanup();
   }
 });
+
+test("localized public helpers retain host message overrides", () => {
+  expect(
+    publicApiError(422, "en-GB", {
+      "Bitte prüfe Deine Angaben und die zulässige Personenzahl.":
+        "Host party error",
+    }),
+  ).toBe("Host party error");
+  expect(() =>
+    reservationDate("31/02/2026", "en-GB", {
+      "Bitte gib ein gültiges Datum ein.": "Host date error",
+    }),
+  ).toThrow("Host date error");
+});

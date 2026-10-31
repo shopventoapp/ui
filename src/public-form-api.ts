@@ -1,7 +1,32 @@
-import { getMessages, maskLocaleDate, parseLocaleDate } from "./locale";
+import {
+  dateInputPattern,
+  dateInputPlaceholder,
+  getMessages,
+  type LocaleOptions,
+  maskLocaleDate,
+  parseLocaleDate,
+} from "./locale";
 /** Parse a strict local calendar date into ISO, rejecting overflow. */
-export function reservationDate(value: string, locale = "de"): string {
-  return parseLocaleDate(value, locale);
+export function reservationDate(
+  value: string,
+  locale: string | LocaleOptions = "de",
+  overrides?: Partial<Record<string, string>>,
+): string {
+  const options = typeof locale === "string" ? { locale } : locale;
+  const language = options.locale ?? "de";
+  try {
+    return parseLocaleDate(value, language);
+  } catch {
+    const text = getMessages("forms", options, overrides);
+    throw new Error(
+      new RegExp(`^${dateInputPattern(language)}$`).test(value)
+        ? text("Bitte gib ein gültiges Datum ein.")
+        : text(
+            "Bitte gib das Datum als {0} ein.",
+            dateInputPlaceholder(language),
+          ),
+    );
+  }
 }
 /** Mask a locale numeric date, allowing English ISO input. */
 export function maskReservationDate(value: string, locale = "de"): string {
@@ -9,8 +34,16 @@ export function maskReservationDate(value: string, locale = "de"): string {
 }
 
 /** Map public API status codes to localized customer-safe reservation errors. */
-export function publicApiError(status: number, locale = "de"): string {
-  const text = getMessages("reservation", { locale });
+export function publicApiError(
+  status: number,
+  locale: string | LocaleOptions = "de",
+  overrides?: Partial<Record<string, string>>,
+): string {
+  const text = getMessages(
+    "reservation",
+    typeof locale === "string" ? { locale } : locale,
+    overrides,
+  );
   if (status === 403)
     return text(
       "Die Sicherheitsprüfung ist fehlgeschlagen oder die Online-Buchung ist nicht verfügbar. Bitte versuche es erneut oder rufe uns an.",
