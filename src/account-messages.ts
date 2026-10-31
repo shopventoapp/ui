@@ -1,5 +1,7 @@
 /** German account messages define the translation schema. */
-export const defaultAccountMessages = {
+export const defaultAccountMessages = Object.freeze({
+  /** Completed pickup status. */
+  Abgeholt: "Abgeholt",
   /** Customer terminology or message. */
   "Deine Sitzung ist abgelaufen. Bitte melde Dich erneut an.":
     "Deine Sitzung ist abgelaufen. Bitte melde Dich erneut an.",
@@ -883,11 +885,13 @@ export const defaultAccountMessages = {
   Produkte: "Produkte",
   /** Customer terminology or message. */
   "Gutschein einlösen": "Gutschein einlösen",
-} as const;
+} as const);
 /** English account messages. */
 export const englishAccountMessages: {
   [K in keyof typeof defaultAccountMessages]: string;
-} = {
+} = Object.freeze({
+  /** Completed pickup status. */
+  Abgeholt: "Collected",
   /** Customer terminology or message. */
   "Bitte gib eine gültige E-Mail-Adresse ein.":
     "Please enter a valid email address.",
@@ -1092,7 +1096,7 @@ export const englishAccountMessages: {
   /** Customer terminology or message. */
   Datenschutzhinweise: "privacy policy",
   /** Customer terminology or message. */
-  " gelesen.": "",
+  " gelesen.": ".",
   /** Customer terminology or message. */
   "Bitte akzeptiere die AGB und lies die Datenschutzhinweise.":
     "Please accept the terms and conditions and read the privacy policy.",
@@ -1223,7 +1227,7 @@ export const englishAccountMessages: {
     "Order {0} is ready for collection",
   /** Customer terminology or message. */
   "Widerruf für einzelne Artikel prüfen":
-    "Check cancellation rights for individual items",
+    "Check withdrawal rights for individual items",
   /** Customer terminology or message. */
   "Abholen bis {0}": "Collect by {0}",
   /** Customer terminology or message. */
@@ -1341,7 +1345,7 @@ export const englishAccountMessages: {
   /** Customer terminology or message. */
   "Gutschein bereits eingelöst": "Voucher already redeemed",
   /** Customer terminology or message. */
-  "Widerrufsfrist abgelaufen": "Cancellation period expired",
+  "Widerrufsfrist abgelaufen": "Withdrawal period expired",
   /** Customer terminology or message. */
   "Termingebundene Buchung": "Booking for a fixed date",
   /** Customer terminology or message. */
@@ -1415,15 +1419,15 @@ export const englishAccountMessages: {
   "Termin verbindlich verschieben": "Confirm rescheduling",
   /** Customer terminology or message. */
   "Dein Widerruf konnte nicht bestätigt werden. Bitte kontaktiere uns.":
-    "Your cancellation could not be confirmed. Please contact us.",
+    "Your withdrawal could not be confirmed. Please contact us.",
   /** Customer terminology or message. */
-  "Was möchtest Du widerrufen?": "What would you like to cancel?",
+  "Was möchtest Du widerrufen?": "What would you like to withdraw from?",
   /** Customer terminology or message. */
   "Wähl die Artikel und die Menge. Einen Grund brauchst Du nicht.":
     "Choose the items and quantities. You do not need to give a reason.",
   /** Customer terminology or message. */
   "Für diesen Artikel ist kein Widerruf möglich":
-    "Cancellation rights do not apply to this item",
+    "Withdrawal rights do not apply to this item",
   /** Customer terminology or message. */
   "Frist für diesen Artikel: {0}": "Deadline for this item: {0}",
   /** Customer terminology or message. */
@@ -1437,11 +1441,11 @@ export const englishAccountMessages: {
     "We will confirm the exact refund after reviewing your request. Discounts and previous refunds are taken into account.",
   /** Customer terminology or message. */
   "Mit „Widerruf bestätigen“ erklärst Du den Widerruf für die gewählten Artikel. Du erhältst eine Eingangsbestätigung per E-Mail.":
-    'Selecting "Confirm cancellation" cancels the selected items. You will receive an acknowledgement by email.',
+    'Selecting "Confirm withdrawal" declares withdrawal for the selected items. You will receive an acknowledgement by email.',
   /** Customer terminology or message. */
   "Wird gesendet...": "Sending...",
   /** Customer terminology or message. */
-  "Widerruf bestätigen": "Confirm cancellation",
+  "Widerruf bestätigen": "Confirm withdrawal",
   /** Customer terminology or message. */
   "Lieferung nach Hause": "Home delivery",
   /** Customer terminology or message. */
@@ -1460,30 +1464,30 @@ export const englishAccountMessages: {
   /** Customer terminology or message. */
   "inkl. gesetzlicher MwSt.": "including statutory VAT",
   /** Customer terminology or message. */
-  Widerruf: "Cancellation",
+  Widerruf: "Withdrawal",
   /** Customer terminology or message. */
   "Dein Widerruf ist eingegangen und wird geprüft.":
-    "Your cancellation has been received and is being reviewed.",
+    "Your withdrawal has been received and is being reviewed.",
   /** Customer terminology or message. */
   "Die Widerrufsfrist ist abgelaufen. Bei Mängeln hilft Dir unser Team weiter.":
-    "The cancellation period has expired. Our team can help with faulty items.",
+    "The withdrawal period has expired. Our team can help with faulty items.",
   /** Customer terminology or message. */
   "Dein Widerruf wurde angenommen. Die Erstattung folgt.":
-    "Your cancellation has been accepted. A refund will follow.",
+    "Your withdrawal has been accepted. A refund will follow.",
   /** Customer terminology or message. */
   "Dein Widerruf wurde angenommen und erstattet.":
-    "Your cancellation has been accepted and refunded.",
+    "Your withdrawal has been accepted and refunded.",
   /** Customer terminology or message. */
   "Dein Widerruf wurde abgelehnt. Die Begründung haben wir Dir per E-Mail geschickt.":
-    "Your cancellation was rejected. We have emailed you the reason.",
+    "Your withdrawal was rejected. We have emailed you the reason.",
   /** Customer terminology or message. */
   "Deine Widerrufsanfrage wurde bearbeitet.":
-    "Your cancellation request has been processed.",
+    "Your withdrawal request has been processed.",
   /** Customer terminology or message. */
   "Die zulässigen Artikel und ihre jeweiligen Fristen findest Du hier.":
     "Find eligible items and their deadlines here.",
   /** Customer terminology or message. */
-  "Vertrag widerrufen": "Cancel contract",
+  "Vertrag widerrufen": "Withdraw from contract",
   /** Customer terminology or message. */
   "Sendung verfolgen": "Track shipment",
   /** Customer terminology or message. */
@@ -1491,7 +1495,7 @@ export const englishAccountMessages: {
   /** Customer terminology or message. */
   "Noch keine Rechnung verfügbar.": "No invoice available yet.",
   /** Customer terminology or message. */
-  "Dein Widerruf ist eingegangen.": "Your cancellation has been received.",
+  "Dein Widerruf ist eingegangen.": "Your withdrawal has been received.",
   /** Customer terminology or message. */
   "Deine Reservierung wurde storniert.": "Your reservation has been cancelled.",
   /** Customer terminology or message. */
@@ -1690,7 +1694,7 @@ export const englishAccountMessages: {
   "Wähl einen Bereich, um Deine Daten zu ändern.":
     "Choose a section to update your details.",
   /** Customer terminology or message. */
-  "Widerruf erklärt": "Cancellation requested",
+  "Widerruf erklärt": "Withdrawal requested",
   /** Customer terminology or message. */
   "Teilweise storniert": "Partially cancelled",
   /** Customer terminology or message. */
@@ -1771,4 +1775,4 @@ export const englishAccountMessages: {
   Produkte: "Products",
   /** Customer terminology or message. */
   "Gutschein einlösen": "Redeem a voucher",
-};
+});

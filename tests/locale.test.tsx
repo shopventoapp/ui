@@ -5,6 +5,9 @@ import type { ShopArticle } from "../src/index";
 import {
   dateInputPattern,
   dateInputPlaceholder,
+  englishMessages,
+  germanMessages,
+  getMessages,
   localeMoney,
   maskLocaleDate,
   parseLocaleDate,
@@ -32,7 +35,7 @@ function Probe() {
     </p>
   );
 }
-test("locale scopes remain independent under concurrent renders and nested providers", async () => {
+test("locale scopes remain independent across separate renders and nested providers", async () => {
   const html = await Promise.all(
     ["en", "de", "en-GB", "de-DE"].map(async (locale) =>
       renderToStaticMarkup(
@@ -208,4 +211,44 @@ test("sidebar facets respect host order, hidden deep links, active host chips an
   } finally {
     browser.setURL("http://localhost/");
   }
+});
+
+test("shipped catalogues and every area resist cross-render mutation", () => {
+  for (const catalogue of [germanMessages, englishMessages]) {
+    expect(Object.isFrozen(catalogue)).toBe(true);
+    for (const area of Object.values(catalogue))
+      expect(Object.isFrozen(area)).toBe(true);
+  }
+});
+test("withdrawal keys consistently use withdrawal terminology", () => {
+  for (const area of Object.values(englishMessages))
+    for (const [key, value] of Object.entries(area))
+      if (/widerruf/i.test(key)) expect(value).not.toMatch(/cancel/i);
+  expect(getMessages("account", { locale: "en" })(" gelesen.")).toBe(".");
+  expect(getMessages("account", { locale: "en" })("Vertrag widerrufen")).toBe(
+    "Withdraw from contract",
+  );
+});
+
+test("pure helper lookup resolves only the requested catalogue area", () => {
+  const messages = {
+    get account(): NonNullable<ShopventoCatalogue["account"]> {
+      throw new Error("unrelated area read");
+    },
+    shop: { "Dein Einkauf": "Basket" },
+  };
+  expect(getMessages("shop", { locale: "en", messages })("Dein Einkauf")).toBe(
+    "Basket",
+  );
+  expect(getMessages("shop", { locale: "en" })("Versandkosten-Zusatz")).toBe(
+    "plus delivery costs",
+  );
+  expect(getMessages("shop", { locale: "en" })("Versand")).toBe("Delivery");
+});
+
+test("semantic booking and account defaults are immutable too", async () => {
+  const { defaultBookingLabels } = await import("../src/booking-labels");
+  const { defaultAccountLabels } = await import("../src/dashboard-ui");
+  expect(Object.isFrozen(defaultBookingLabels)).toBe(true);
+  expect(Object.isFrozen(defaultAccountLabels)).toBe(true);
 });

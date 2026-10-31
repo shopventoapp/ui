@@ -482,7 +482,7 @@ export function AccountEntryRow({
 }
 
 /** Default account terminology; hosts may override any noun or optional hint. */
-export const defaultAccountLabels: AccountLabels = {
+export const defaultAccountLabels: AccountLabels = Object.freeze({
   event: "Veranstaltung",
   events: "Veranstaltungen",
   eventVoucher: "Veranstaltungsgutscheine",
@@ -492,7 +492,7 @@ export const defaultAccountLabels: AccountLabels = {
   pickup: "Abholung",
   voucherUse: "Gutschein einlösen",
   newsletter: "Newsletter",
-};
+});
 /** Resolve account terminology for an explicit locale, then apply host copy choices. */
 export function mergeAccountLabels(
   labels: Partial<AccountLabels> = {},

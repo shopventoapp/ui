@@ -1,5 +1,7 @@
 /** German messages define the translation schema. */
-export const defaultShopFlowLabels = {
+export const defaultShopFlowLabels = Object.freeze({
+  /** Shipping price suffix, separate from the heading. */
+  "Versandkosten-Zusatz": "Versand",
   /** {0} away from free delivery */
   "Noch {0} bis zum kostenlosen Versand":
     "Noch {0} bis zum kostenlosen Versand",
@@ -724,11 +726,13 @@ export const defaultShopFlowLabels = {
   "{0} entfernen": "{0} entfernen",
   /** Price band with localized numeric amounts and currency. */
   "{0} bis {1} {2}": "{0} bis {1} {2}",
-} as const;
+} as const);
 /** Complete English messages. */
 export const englishShopFlowLabels: {
   [K in keyof typeof defaultShopFlowLabels]: string;
-} = {
+} = Object.freeze({
+  /** Shipping price suffix, separate from the heading. */
+  "Versandkosten-Zusatz": "plus delivery costs",
   /** {0} away from free delivery */
   "Noch {0} bis zum kostenlosen Versand": "{0} away from free delivery",
   /** Free delivery */
@@ -856,10 +860,10 @@ export const englishShopFlowLabels: {
   "Deine Wünsche: ": "Your requests: ",
   /** Cancellation rights do not apply to perishable fresh goods. */
   "Für schnell verderbliche frische Ware besteht kein Widerrufsrecht.":
-    "Cancellation rights do not apply to perishable fresh goods.",
+    "Withdrawal rights do not apply to perishable fresh goods.",
   /** Cancellation rights for applicable sealed goods end when the seal is removed. */
   "Nach Entfernen der Versiegelung erlischt das Widerrufsrecht bei geeigneter versiegelter Ware.":
-    "Cancellation rights for applicable sealed goods end when the seal is removed.",
+    "Withdrawal rights for applicable sealed goods end when the seal is removed.",
   /** Delivery date */
   Liefertermin: "Delivery date",
   /** Collection date */
@@ -916,7 +920,7 @@ export const englishShopFlowLabels: {
     "Order review is not configured yet. Please contact us before ordering.",
   /** Please accept the terms and read the cancellation policy. */
   "Bitte akzeptiere die AGB und lies die Widerrufsbelehrung.":
-    "Please accept the terms and read the cancellation policy.",
+    "Please accept the terms and read the withdrawal policy.",
   /** Please complete the security check. */
   "Bitte schließe die Sicherheitsprüfung ab.":
     "Please complete the security check.",
@@ -975,10 +979,10 @@ export const englishShopFlowLabels: {
   ", inkl. MwSt.": ", incl. VAT",
   /** Cancellation rights for applicable sealed goods end when the seal is removed. */
   "Bei geeigneter versiegelter Ware erlischt das Widerrufsrecht nach Entfernen der Versiegelung.":
-    "Cancellation rights for applicable sealed goods end when the seal is removed.",
+    "Withdrawal rights for applicable sealed goods end when the seal is removed.",
   /** Perishable goods: cancellation rights do not apply. */
   "Schnell verderbliche Ware: kein Widerrufsrecht.":
-    "Perishable goods: cancellation rights do not apply.",
+    "Perishable goods: withdrawal rights do not apply.",
   /** Discount */
   Rabatt: "Discount",
   /** Paid */
@@ -1081,7 +1085,7 @@ export const englishShopFlowLabels: {
   /** and have read the */
   "und habe die": "and have read the",
   /** cancellation policy */
-  Widerrufsbelehrung: "cancellation policy",
+  Widerrufsbelehrung: "right of withdrawal",
   /** before placing this order. */
   "zur Kenntnis genommen.": "before placing this order.",
   /** The security check is not configured yet. Please contact us before ordering. */
@@ -1302,7 +1306,7 @@ export const englishShopFlowLabels: {
   "Click & Collect: {0}, {1}.": "Click & Collect: {0}, {1}.",
   /** Cancellation rights end when the seal is removed from goods that cannot be returned for health or hygiene reasons. */
   "Nach Entfernen der Versiegelung erlischt das Widerrufsrecht bei versiegelter Ware, die aus Gründen des Gesundheitsschutzes oder der Hygiene nicht zur Rückgabe geeignet ist.":
-    "Cancellation rights end when the seal is removed from goods that cannot be returned for health or hygiene reasons.",
+    "Withdrawal rights end when the seal is removed from goods that cannot be returned for health or hygiene reasons.",
   /** Ask us in the shop: */
   "Frag uns im Laden:": "Ask us in the shop:",
   /** Description */
@@ -1445,4 +1449,4 @@ export const englishShopFlowLabels: {
   "{0} entfernen": "Remove {0}",
   /** Price band with localized numeric amounts and currency. */
   "{0} bis {1} {2}": "{2}{0} to {2}{1}",
-};
+});

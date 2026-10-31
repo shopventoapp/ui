@@ -24,6 +24,9 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Fixed
 
+- Confirm parsed reservation and birth dates with a written month in every locale. Translate completed pickups, reservation guest plurals and public form errors.
+- Use statutory withdrawal wording consistently in English, separate shipping price suffixes from headings, and localize unknown account failures.
+- Freeze shipped catalogues, resolve only the requested message area in pure helpers, avoid event reloads on unrelated catalogue changes, and extend the German literal guard to source helpers.
 - Price filter chips use catalogue messages and locale money formatting. Sidebar host facets omit the heading when `label` is missing; deep-link filtering stays active when controls are hidden.
 - Forward validated browser Origin and Sec-Fetch-Site on cookie writes; the instance shop domain must match the storefront host.
 - Strip decoded upstream compression/framing and hop headers in the Node adapter.

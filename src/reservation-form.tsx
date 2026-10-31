@@ -2,6 +2,7 @@
 
 import { useAccountContactPrefill } from "./account-contact-prefill";
 import {
+  dateInputConfirmation,
   dateInputPattern,
   dateInputPlaceholder,
   localeTime,
@@ -402,13 +403,13 @@ function ReservationFormContent({
         data.error ??
           (typeof data.detail === "string"
             ? data.detail
-            : text(publicApiError(res.status))),
+            : publicApiError(res.status, locale)),
       );
       window.turnstile?.reset(widgetIdRef.current ?? undefined);
     } catch (error) {
       setStatus("error");
       setErrorMsg(
-        error instanceof Error && error.message.startsWith("Bitte gib")
+        error instanceof Error && dateValue.length === 10 && !isoDate
           ? text(error.message)
           : text(
               "Verbindung fehlgeschlagen. Bitte versuche es erneut oder rufe uns an.",
@@ -650,9 +651,25 @@ function ReservationFormContent({
               }
               required
               aria-invalid={Boolean(dateError)}
-              aria-describedby={dateMessage ? "resv-date-message" : undefined}
+              aria-describedby={
+                [
+                  dateMessage ? "resv-date-message" : "",
+                  isoDate ? "resv-date-confirmation" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ") || undefined
+              }
               style={inputStyle}
             />
+            {isoDate && (
+              <p
+                id="resv-date-confirmation"
+                role="status"
+                style={fieldMessageStyle}
+              >
+                {dateInputConfirmation(dateValue, locale)}
+              </p>
+            )}
             {dateMessage && (
               <p
                 id="resv-date-message"

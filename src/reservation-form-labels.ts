@@ -1,5 +1,5 @@
 /** German customer-visible defaults. Numbered placeholders preserve interpolation. */
-export const defaultReservationLabels = {
+export const defaultReservationLabels = Object.freeze({
   /** Please enter a valid date. */
   "Bitte gib ein gültiges Datum ein.": "Bitte gib ein gültiges Datum ein.",
   /** We are closed on {0}.{1} */
@@ -130,12 +130,12 @@ export const defaultReservationLabels = {
     "Die Anfrage ist gerade nicht möglich. Bitte versuche es später erneut oder rufe uns an.",
   /** Numeric time input example. */
   "z. B. 18:30": "z. B. 18:30",
-} as const;
+} as const);
 
 /** English messages typed against every German key. */
 export const englishReservationLabels: {
   [K in keyof typeof defaultReservationLabels]: string;
-} = {
+} = Object.freeze({
   /** Please enter a valid date. */
   "Bitte gib ein gültiges Datum ein.": "Please enter a valid date.",
   /** We are closed on {0}.{1} */
@@ -265,4 +265,4 @@ export const englishReservationLabels: {
     "Requests are currently unavailable. Please try again later or call us.",
   /** Numeric time input example. */
   "z. B. 18:30": "e.g. 18:30",
-};
+});

@@ -103,7 +103,7 @@ export function orderStatus(
     order.fulfillments[0];
   const states: Record<string, [string, string]> = {
     PICKUP_READY: [text("Abholbereit"), "ok"],
-    PICKUP_COMPLETED: ["Abgeholt", "neutral"],
+    PICKUP_COMPLETED: [text("Abgeholt"), "neutral"],
     SHIPPING_IN_PROGRESS: [text("Unterwegs"), "neutral"],
     SHIPPING_COMPLETED: [text("Zugestellt"), "ok"],
     DIGITAL_COMPLETED: [text("Per E-Mail verschickt"), "neutral"],
@@ -305,7 +305,7 @@ export function accountEntries(
       title: text(
         "Tisch für {0} {1}",
         reservation.num_guests,
-        reservation.num_guests === 1 ? "Person" : "Personen",
+        reservation.num_guests === 1 ? text("Person") : text("Personen"),
       ),
       number: "",
       date: `${reservation.date}T${reservation.time}`,

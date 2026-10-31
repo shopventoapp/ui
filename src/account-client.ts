@@ -117,7 +117,11 @@ export function accountErrorMessage(
       "Dieser Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.",
     );
   if ([409, 422].includes(error.status) && typeof error.detail === "string")
-    return text(error.detail);
+    return text(
+      Object.hasOwn(defaultAccountMessages, error.detail)
+        ? error.detail
+        : "Bitte prüfe Deine Eingaben und versuche es erneut.",
+    );
   if (error.status === 422)
     return text("Bitte prüfe Deine Eingaben und versuche es erneut.");
   return text("Das hat gerade nicht geklappt. Bitte versuche es erneut.");

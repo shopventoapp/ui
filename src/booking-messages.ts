@@ -1,5 +1,5 @@
 /** German booking messages define every translation key. */
-export const defaultBookingMessages = {
+export const defaultBookingMessages = Object.freeze({
   /** {0}, {1} */
   "{0}, {1} Uhr": "{0}, {1} Uhr",
   /** Date */
@@ -206,7 +206,7 @@ export const defaultBookingMessages = {
     "Teilnahme ab {0} Jahren. Mit der Buchung bestätigst Du, dass alle Gäste mindestens {1} Jahre alt sind.",
   /** Minimum number of guests */
   "Mindestzahl Gäste": "Mindestzahl Gäste",
-  /** Fixed date, no cancellation right */
+  /** Fixed date, no right of withdrawal */
   "Fester Termin, kein Widerruf": "Fester Termin, kein Widerruf",
   /** Redeem vouchers */
   "Gutscheine einlösen": "Gutscheine einlösen",
@@ -552,11 +552,11 @@ export const defaultBookingMessages = {
   "Wertgutschein, {0} von {1} Guthaben": "Wertgutschein, {0} von {1} Guthaben",
   /** One moment */
   "Einen Moment": "Einen Moment",
-} as const;
+} as const);
 /** Complete English booking catalogue. */
 export const englishBookingMessages: {
   [K in keyof typeof defaultBookingMessages]: string;
-} = {
+} = Object.freeze({
   /** {0}, {1} */
   "{0}, {1} Uhr": "{0}, {1}",
   /** Date */
@@ -761,8 +761,8 @@ export const englishBookingMessages: {
     "Minimum age {0}. By booking you confirm that all guests are at least {1} years old.",
   /** Minimum number of guests */
   "Mindestzahl Gäste": "Minimum number of guests",
-  /** Fixed date, no cancellation right */
-  "Fester Termin, kein Widerruf": "Fixed date, no cancellation right",
+  /** Fixed date, no right of withdrawal */
+  "Fester Termin, kein Widerruf": "Fixed date, no right of withdrawal",
   /** Redeem vouchers */
   "Gutscheine einlösen": "Redeem vouchers",
   /** Requests and special notes */
@@ -1104,4 +1104,4 @@ export const englishBookingMessages: {
   "Wertgutschein, {0} von {1} Guthaben": "Value voucher, {0} of {1} balance",
   /** One moment */
   "Einen Moment": "One moment",
-};
+});

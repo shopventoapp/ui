@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import {
+  dateInputConfirmation,
   dateInputPlaceholder,
   formatLocaleDateInput,
   maskLocaleDate,
@@ -204,6 +205,8 @@ export function BirthDateInput({
   onValueChange: (value: string) => void;
 }) {
   const { locale } = useShopventoLocale();
+  const confirmationId = useId();
+  const confirmation = dateInputConfirmation(value, locale);
   const input = useRef<HTMLInputElement>(null);
   const [selection, setSelection] = useState<{ caret: number } | null>(null);
   useLayoutEffect(() => {
@@ -276,41 +279,53 @@ export function BirthDateInput({
     });
   }
   return (
-    <input
-      {...props}
-      ref={input}
-      type="text"
-      inputMode="numeric"
-      autoComplete="bday"
-      placeholder={dateInputPlaceholder(locale)}
-      value={value}
-      onChange={(event) =>
-        update(
-          event.target.value,
-          event.target.selectionStart ?? event.target.value.length,
-          (event.nativeEvent as InputEvent).inputType,
-        )
-      }
-      onKeyDown={(event) => {
-        props.onKeyDown?.(event);
-        if (event.defaultPrevented) return;
-        const start = event.currentTarget.selectionStart ?? 0;
-        const end = event.currentTarget.selectionEnd ?? start;
-        // Remove the preceding digit as well when Backspace crosses an auto-inserted dot.
-        if (
-          locale.startsWith("de") &&
-          event.key === "Backspace" &&
-          start === end &&
-          value[start - 1] === "."
-        ) {
-          event.preventDefault();
-          update(
-            value.slice(0, start - 2) + value.slice(start),
-            start - 2,
-            "deleteContentBackward",
-          );
+    <>
+      <input
+        {...props}
+        aria-describedby={
+          [props["aria-describedby"], confirmation ? confirmationId : ""]
+            .filter(Boolean)
+            .join(" ") || undefined
         }
-      }}
-    />
+        ref={input}
+        type="text"
+        inputMode="numeric"
+        autoComplete="bday"
+        placeholder={dateInputPlaceholder(locale)}
+        value={value}
+        onChange={(event) =>
+          update(
+            event.target.value,
+            event.target.selectionStart ?? event.target.value.length,
+            (event.nativeEvent as InputEvent).inputType,
+          )
+        }
+        onKeyDown={(event) => {
+          props.onKeyDown?.(event);
+          if (event.defaultPrevented) return;
+          const start = event.currentTarget.selectionStart ?? 0;
+          const end = event.currentTarget.selectionEnd ?? start;
+          // Remove the preceding digit as well when Backspace crosses an auto-inserted dot.
+          if (
+            locale.startsWith("de") &&
+            event.key === "Backspace" &&
+            start === end &&
+            value[start - 1] === "."
+          ) {
+            event.preventDefault();
+            update(
+              value.slice(0, start - 2) + value.slice(start),
+              start - 2,
+              "deleteContentBackward",
+            );
+          }
+        }}
+      />
+      {confirmation && (
+        <span id={confirmationId} role="status" className="hint">
+          {confirmation}
+        </span>
+      )}
+    </>
   );
 }

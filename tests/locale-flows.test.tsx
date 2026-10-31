@@ -1,5 +1,11 @@
 import { afterEach, expect, test } from "bun:test";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  waitFor,
+} from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   AccountApiError,
@@ -172,4 +178,69 @@ test("client helpers take explicit per-call locale and never leak German errors 
       { locale: "en" },
     ),
   ).not.toMatch(german);
+});
+
+test("birth date inputs confirm ambiguous numeric dates in words in each locale", () => {
+  for (const [locale, expected] of [
+    ["en-US", "December 11, 2000"],
+    ["en-GB", "12 November 2000"],
+    ["de", "12. November 2000"],
+  ]) {
+    const value = locale === "de" ? "12.11.2000" : "12/11/2000";
+    const view = render(
+      <ShopventoProvider locale={locale}>
+        <BirthDateInput
+          value={value}
+          onValueChange={() => {}}
+          aria-label="Birthday"
+        />
+      </ShopventoProvider>,
+    );
+    expect(view.container.textContent).toContain(expected);
+    cleanup();
+  }
+});
+test("unrecognized account details use localized generic copy", () => {
+  for (const status of [409, 422])
+    expect(
+      accountErrorMessage(
+        new AccountApiError(status, "Unbekannter interner Fehler"),
+        false,
+        undefined,
+        { locale: "en" },
+      ),
+    ).toBe("Please check your details and try again.");
+});
+
+test("events do not reload when only the provider catalogue changes", async () => {
+  const { useEvents } = await import("../src/hooks");
+  let calls = 0;
+  const client = createBookingClient({
+    baseUrl: "",
+    fetch: async () => {
+      calls++;
+      return Response.json([]);
+    },
+  });
+  function Events() {
+    const result = useEvents(client);
+    return <p>{result.loading ? "Loading" : "Ready"}</p>;
+  }
+  const view = render(
+    <ShopventoProvider locale="en">
+      <Events />
+    </ShopventoProvider>,
+  );
+  await waitFor(() => expect(view.getByText("Ready")).toBeTruthy());
+  await act(async () => {
+    view.rerender(
+      <ShopventoProvider
+        locale="en"
+        messages={{ shop: { "Dein Einkauf": "Basket" } }}
+      >
+        <Events />
+      </ShopventoProvider>,
+    );
+  });
+  expect(calls).toBe(1);
 });

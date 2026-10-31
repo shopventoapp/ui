@@ -216,7 +216,9 @@ export function AccountEventDetail({
               <span
                 className={`pill ${b.customer_status === "CONFIRMED" ? "ok" : b.customer_status === "PAYMENT_FAILED" ? "err" : "neutral"}`}
               >
-                {text(b.customer_status_label ?? "Status nicht verfügbar")}
+                {text(
+                  b.customer_status_label ?? text("Status nicht verfügbar"),
+                )}
               </span>
               {active && (
                 <AccountCountdown
@@ -1063,7 +1065,9 @@ export function AccountReservationDetail({
                         event_name: text(
                           "Tisch für {0} {1}",
                           r.num_guests,
-                          r.num_guests === 1 ? "Person" : "Personen",
+                          r.num_guests === 1
+                            ? text("Person")
+                            : text("Personen"),
                         ),
                         order_id: `reservation-${r.id}`,
                         franchise_location: {

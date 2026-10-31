@@ -298,6 +298,8 @@ export function useSubmitBooking(
 /** Independent public list hook for host-owned event navigation. */
 export function useEvents(client: BookingClient) {
   const options = useShopventoLocale();
+  const messages = useRef(options.messages);
+  messages.current = options.messages;
 
   const [events, setEvents] = useState<ShopEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -313,13 +315,18 @@ export function useEvents(client: BookingClient) {
       })
       .catch((error) => {
         if (!controller.signal.aborted)
-          setError(bookingErrorMessage(error, options));
+          setError(
+            bookingErrorMessage(error, {
+              locale: options.locale,
+              messages: messages.current,
+            }),
+          );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [client, options]);
+  }, [client, options.locale]);
   return {
     /** Loaded public event variants. */
     events,

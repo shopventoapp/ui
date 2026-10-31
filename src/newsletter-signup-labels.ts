@@ -1,5 +1,5 @@
 /** German customer-visible defaults. Numbered placeholders preserve interpolation. */
-export const defaultNewsletterLabels = {
+export const defaultNewsletterLabels = Object.freeze({
   /** Sign-up is currently unavailable. Please try again later. */
   "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.":
     "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.",
@@ -62,11 +62,11 @@ export const defaultNewsletterLabels = {
   "E-Mail": "E-Mail",
   /** Subscribe to the email newsletter */
   "Newsletter per E-Mail abonnieren": "Newsletter per E-Mail abonnieren",
-} as const;
+} as const);
 /** English messages typed against every German key. */
 export const englishNewsletterLabels: {
   [K in keyof typeof defaultNewsletterLabels]: string;
-} = {
+} = Object.freeze({
   /** Sign-up is currently unavailable. Please try again later. */
   "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.":
     "Sign-up is currently unavailable. Please try again later.",
@@ -129,4 +129,4 @@ export const englishNewsletterLabels: {
   "E-Mail": "Email",
   /** Subscribe to the email newsletter */
   "Newsletter per E-Mail abonnieren": "Subscribe to the email newsletter",
-};
+});

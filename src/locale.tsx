@@ -30,7 +30,7 @@ import {
 } from "./shop-flow-labels";
 
 /** Complete German message schema. Additional languages use the same keys. */
-export const germanMessages = {
+export const germanMessages = Object.freeze({
   /** Messages for shop. */
   shop: defaultShopFlowLabels,
   /** Messages for newsletter. */
@@ -47,7 +47,7 @@ export const germanMessages = {
   payment: defaultPaymentMessages,
   /** Messages for voucher. */
   voucher: defaultVoucherMessages,
-} as const;
+} as const);
 /** A fully translated catalogue, typed against the German keys. */
 export type ShopventoMessages = {
   [A in keyof typeof germanMessages]: {
@@ -59,7 +59,7 @@ export type ShopventoCatalogue = {
   [A in keyof ShopventoMessages]?: Partial<ShopventoMessages[A]>;
 };
 /** English copy shipped with the package. */
-export const englishMessages: ShopventoMessages = {
+export const englishMessages: ShopventoMessages = Object.freeze({
   /** Messages for shop. */
   shop: englishShopFlowLabels,
   /** Messages for newsletter. */
@@ -76,7 +76,7 @@ export const englishMessages: ShopventoMessages = {
   payment: englishPaymentMessages,
   /** Messages for voucher. */
   voucher: englishVoucherMessages,
-};
+});
 /** Per-render language and optional host translations. No global registration is needed. */
 export interface LocaleOptions {
   /** BCP 47 locale. German is the default; English is shipped. */
@@ -91,25 +91,32 @@ const defaultValue: LocaleValue = {
   messages: germanMessages,
 };
 const LocaleContext = createContext<LocaleValue>(defaultValue);
-function resolveMessages(
+function resolveArea(
+  area: keyof ShopventoMessages,
   locale: string,
   custom?: ShopventoCatalogue,
-): ShopventoMessages {
+) {
   const base =
     locale.toLowerCase().split("-")[0] === "en"
       ? englishMessages
       : germanMessages;
+  const overrides = custom?.[area];
+  if (!overrides) return base[area];
+  return {
+    ...base[area],
+    ...Object.fromEntries(
+      Object.entries(overrides).filter(([, value]) => value !== undefined),
+    ),
+  };
+}
+function resolveMessages(
+  locale: string,
+  custom?: ShopventoCatalogue,
+): ShopventoMessages {
   return Object.fromEntries(
     Object.keys(germanMessages).map((area) => [
       area,
-      {
-        ...base[area as keyof ShopventoMessages],
-        ...Object.fromEntries(
-          Object.entries(
-            custom?.[area as keyof ShopventoMessages] ?? {},
-          ).filter(([, v]) => v !== undefined),
-        ),
-      },
+      resolveArea(area as keyof ShopventoMessages, locale, custom),
     ]),
   ) as ShopventoMessages;
 }
@@ -174,7 +181,7 @@ export function getMessages(
   overrides?: Partial<Record<string, string>>,
 ) {
   return translator(
-    resolveMessages(options.locale ?? "de", options.messages)[area],
+    resolveArea(area, options.locale ?? "de", options.messages),
     overrides,
   );
 }
@@ -354,4 +361,17 @@ export function maskLocaleDate(value: string, locale = "de") {
     })
     .filter(Boolean)
     .join(de ? "." : "/");
+}
+
+/** Confirm a valid typed date using a written month; incomplete dates have no preview. */
+export function dateInputConfirmation(value: string, locale = "de") {
+  try {
+    return localeDate(parseLocaleDate(value, locale), locale, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return "";
+  }
 }

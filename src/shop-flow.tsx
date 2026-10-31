@@ -992,7 +992,7 @@ function ShopFlowPage({
       shippingLabel={
         p.category === "gutscheine" || isGiftBasket(p.category) || p.pickupOnly
           ? undefined
-          : text("Versand")
+          : text("Versandkosten-Zusatz")
       }
       shippingHref={resolveHref("/versand")}
       addLabel={`${p.title}: ${p.customerDefinedPrice || (p.variants?.length ?? 0) > 1 || isGiftBasket(p.category) ? text("Auswahl öffnen") : text("in den Warenkorb")}`}

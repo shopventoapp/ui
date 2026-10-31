@@ -69,3 +69,5 @@ Use `EventBooking`, `EventBookingProps`, `ShopEvent`, `useEvents`, `AccountEvent
 ```
 
 Product mapping, section copy, imagery, gift delivery notes, payment method names and editorial slots remain host props. The dictionary supplements the existing controlled primitive labels and preserves their override priority.
+
+Plural messages currently support one/other only. Select the singular catalogue key for a count of one and the plural key otherwise; languages requiring additional plural categories need an expanded API. Date inputs show the parsed date with a written month so guests can verify the numeric order.
