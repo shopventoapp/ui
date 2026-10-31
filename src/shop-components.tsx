@@ -1,5 +1,12 @@
 "use client";
-import { type ReactNode, useEffect, useId, useRef } from "react";
+import {
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+} from "react";
 
 /** Host presentation model for a product card. Amounts are integer cents; map catalogue data explicitly. */
 export type ShopProduct = {
@@ -26,7 +33,7 @@ export type ShopProduct = {
   /** Accessible image description. Optional; omitted unless supplied by the host or backend. */
   imageAlt?: string;
   /** Built-in product illustration used when no image is supplied. Optional; omitted unless supplied by the host or backend. */
-  placeholder?: "product" | "bottle" | "jar" | "gift";
+  placeholder?: "product" | "bottle" | "jar" | "gift" | ReactElement;
   /** Host illustration background color. Optional; omitted unless supplied by the host or backend. */
   tint?: string;
   /** Host illustration fill color. Optional; omitted unless supplied by the host or backend. */
@@ -299,6 +306,8 @@ export function ShopMedia({
           alt={product.imageAlt ?? product.title}
           loading="lazy"
         />
+      ) : isValidElement(product.placeholder) ? (
+        product.placeholder
       ) : !product.placeholder || product.placeholder === "product" ? (
         <svg
           viewBox="0 0 100 120"

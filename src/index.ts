@@ -39,7 +39,7 @@ export type {
   ShopSectionDefinition,
 } from "./shop-flow-context";
 export { defaultShopFlowLabels } from "./shop-flow-labels";
-export type { Article as ShopArticle } from "./shop-model";
+export type { Article as ShopArticle, ShopSectionFilter } from "./shop-model";
 export {
   defaultCategoryKey,
   defaultShopProduct,

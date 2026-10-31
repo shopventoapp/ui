@@ -12,6 +12,8 @@ import type { ShopArticle } from "../src/index";
 import { ShopMedia } from "../src/shop-components";
 import { ShopFlow } from "../src/shop-flow";
 import { ShopFlowProvider, useShopFlow } from "../src/shop-flow-context";
+import { defaultShopFlowLabels } from "../src/shop-flow-labels";
+import { filterShopArticles } from "../src/shop-model";
 import { defaultShopProduct } from "../src/shop-product";
 
 afterEach(cleanup);
@@ -139,16 +141,13 @@ const article = {
   slug: "a",
   title: "Product",
   price: 123,
-  category: { slug: "wein" },
+  category: { slug: "deli" },
   variants: [],
   type: "PHYSICAL",
   attributes: {},
 } as unknown as ShopArticle;
-test("generic mapping and unconfigured media use a neutral parcel; bottles require opt in", () => {
+test("generic mapping and unconfigured media use a neutral parcel", () => {
   expect(defaultShopProduct(article).placeholder).toBe("product");
-  expect(defaultShopProduct(article, {}, { wine: true }).placeholder).toBe(
-    "bottle",
-  );
   const html = renderToStaticMarkup(
     <ShopMedia
       product={{
@@ -163,60 +162,108 @@ test("generic mapping and unconfigured media use a neutral parcel; bottles requi
   expect(html).toContain('viewBox="0 0 100 120"');
   expect(html).not.toContain('viewBox="0 0 100 300"');
 });
-test("wine behavior follows an explicit section option regardless of its key", () => {
+const deliFilter = {
+  queryKey: "origin",
+  attribute: "country",
+  options: [
+    { value: "", label: "All origins" },
+    { value: "italien", label: "Italy" },
+  ],
+} as const;
+test("section placeholders support built-in and host elements with neutral German copy", () => {
   function Probe() {
     const c = useShopFlow();
+    const product = c.productModel(article);
     return (
-      <p>
-        {String(c.isWine("tea"))}:{String(c.isWine("wein"))}:
-        {
-          c.productModel({
-            ...article,
-            category: { ...article.category, slug: "tea" },
-          }).placeholder
-        }
-        :{c.text("Wein, Winzer, Rebsorte suchen")}
-      </p>
+      <>
+        <ShopMedia product={product} />
+        <p>
+          {c.text(
+            "Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.",
+          )}
+          :{c.text("Produkte und Gutscheine suchen")}
+        </p>
+      </>
     );
   }
-  const html = renderToStaticMarkup(
-    <ShopFlowProvider
-      config={{
-        sections: [
-          { key: "tea", label: "Wine", description: "", image: "", wine: true },
-          { key: "wein", label: "Other", description: "", image: "" },
-        ],
-      }}
-    >
-      <Probe />
-    </ShopFlowProvider>,
+  for (const placeholder of [
+    "jar",
+    <span key="custom">Host artwork</span>,
+  ] as const) {
+    const html = renderToStaticMarkup(
+      <ShopFlowProvider
+        config={{
+          sections: [
+            {
+              key: "deli",
+              label: "Deli",
+              description: "",
+              image: "",
+              placeholder,
+            },
+          ],
+        }}
+      >
+        <Probe />
+      </ShopFlowProvider>,
+    );
+    expect(html).toContain("Such Dir etwas Schönes aus.");
+    expect(html).toContain("Produkte und Gutscheine suchen");
+    if (placeholder !== "jar") expect(html).toContain("Host artwork");
+    else expect(html).toContain('viewBox="0 110 100 190"');
+  }
+  expect(defaultShopFlowLabels["Such Dir etwas Schönes aus."]).toBe(
+    "Such Dir etwas Schönes aus.",
   );
-  expect(html.replaceAll("<!-- -->", "")).toContain(
-    "true:false:bottle:Wein, Winzer, Rebsorte suchen",
-  );
+  expect(defaultShopFlowLabels["Im Shop suchen"]).toBe("Im Shop suchen");
 });
-
-test("a category named wein has no wine chips until the section opts in", () => {
-  const section = {
-    key: "wein",
-    label: "Products",
-    description: "",
-    image: "",
-  };
+test("section chips match normalized public attributes and render only when configured", () => {
+  const section = { key: "deli", label: "Deli", description: "", image: "" };
   const neutral = renderToStaticMarkup(
     <ShopFlow
-      initialPath="/shop/wein"
+      initialPath="/shop/deli"
       sections={[section]}
       accountEnabled={false}
     />,
   );
-  const wine = renderToStaticMarkup(
+  const configured = renderToStaticMarkup(
     <ShopFlow
-      initialPath="/shop/wein"
-      sections={[{ ...section, wine: true }]}
+      initialPath="/shop/deli"
+      sections={[{ ...section, filterChips: deliFilter }]}
       accountEnabled={false}
     />,
   );
-  expect(neutral).not.toContain("Weißwein");
-  expect(wine).toContain("Weißwein");
+  expect(neutral).not.toContain("All origins");
+  expect(configured).toContain("All origins");
+  expect(configured).toContain("Italy");
+  const italian = { ...article, attributes: { country: "Italien" } };
+  const other = { ...article, id: "other", attributes: { country: "France" } };
+  expect(
+    filterShopArticles(
+      [italian, other],
+      new URLSearchParams("origin=italien"),
+      deliFilter,
+    ),
+  ).toEqual([italian]);
+  expect(
+    filterShopArticles([italian, other], new URLSearchParams(), deliFilter),
+  ).toHaveLength(2);
+  expect(
+    filterShopArticles(
+      [{ ...article, attributes: { grapes: ["A", "B"] } }],
+      new URLSearchParams("variety=b"),
+      { ...deliFilter, queryKey: "variety", attribute: "grapes" },
+    ),
+  ).toHaveLength(1);
+});
+
+test("catalogue copy defaults stay neutral and German", () => {
+  expect(
+    defaultShopFlowLabels[
+      "Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus."
+    ],
+  ).toBe("Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.");
+  expect(defaultShopFlowLabels["Produkte und Gutscheine suchen"]).toBe(
+    "Produkte und Gutscheine suchen",
+  );
 });

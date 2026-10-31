@@ -21,9 +21,9 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Breaking
 
-- Unspecified `ShopMedia` placeholders and default product mapping now use neutral parcel artwork instead of bottles. Request `placeholder: "bottle"` explicitly or use the wine section option.
-- Wine wording and type filters require `ShopSectionDefinition.wine: true`. Category key `wein` alone no longer enables them; any category key can opt in.
-- Default empty-cart and search copy is neutral; existing label keys and overrides remain supported. This does not introduce the English catalogue planned in ui#6.
+- Unspecified `ShopMedia` placeholders and default product mapping now use neutral parcel artwork instead of bottles. Request artwork explicitly on the product or section.
+- Trade presentation belongs to hosts: `ShopSectionDefinition.filterChips` accepts a typed attribute/query/options group, and `placeholder` accepts built-in artwork or a host element. No category key enables trade presentation.
+- Default empty-cart and search copy is neutral; use the neutral label keys `Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.` and `Produkte und Gutscheine suchen`. Volume filter labels are now `Inhaltsmenge`, `Unter 0,5 l` and `Ab 1,4 l`. This does not introduce the English catalogue planned in ui#6.
 
 ## [0.3.0] - 2026-10-29
 

@@ -16,7 +16,13 @@ import { NewsletterSignup } from "./newsletter-signup";
 import { createShopClient } from "./shop-client";
 import type { ShopProduct } from "./shop-components";
 import { defaultShopFlowLabels } from "./shop-flow-labels";
-import { type Article, readCart, writeCart } from "./shop-model";
+import {
+  type Article,
+  filterShopArticles,
+  readCart,
+  type ShopSectionFilter,
+  writeCart,
+} from "./shop-model";
 import {
   defaultCategoryKey,
   defaultShopProduct,
@@ -35,8 +41,10 @@ export interface ShopSectionDefinition {
   image: string;
   /** Enable gift basket copy, customization and fulfilment presentation for this section. */
   giftBasket?: boolean;
-  /** Opt into wine wording, bottle placeholders and wine-type chips for this section. */
-  wine?: boolean;
+  /** Attribute-matching chips supplied by the host. Empty values clear the filter. */
+  filterChips?: ShopSectionFilter;
+  /** Fallback media for articles in this section, including custom host artwork. */
+  placeholder?: ShopProduct["placeholder"];
   /** Optional element ID to scroll to when this section opens with the matching hash. */
   businessAnchor?: string;
 }
@@ -224,17 +232,9 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
   const visibleSections = sections.filter((section) =>
     shopSectionEnabled(section.key),
   );
-  const wineCatalogue = sections.some((section) => section.wine);
   const text = (value: string, ...args: unknown[]) => {
     const template =
-      config.labels?.[value] ??
-      (wineCatalogue &&
-      [
-        "Wein, Feinkost oder ein Geschenk: Such Dir etwas Schönes aus.",
-        "Wein, Winzer, Rebsorte suchen",
-      ].includes(value)
-        ? value
-        : (defaultShopFlowLabels[value] ?? value));
+      config.labels?.[value] ?? defaultShopFlowLabels[value] ?? value;
     return template.replace(/\{(\d+)\}/g, (match, index: string) =>
       Number(index) < args.length ? String(args[Number(index)]) : match,
     );
@@ -260,22 +260,30 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
     writeCart: (cart: Parameters<typeof writeCart>[0]) =>
       writeCart(cart, config.storage?.cart, config.storage?.cartEvent),
     categoryKey: config.categoryKey || defaultCategoryKey,
-    productModel:
-      config.productModel ||
-      ((article: Article) =>
-        defaultShopProduct(article, config.labels, {
-          wine: sections.some(
-            (section) =>
-              section.key ===
-                (config.categoryKey || defaultCategoryKey)(article) &&
-              section.wine === true,
-          ),
-        })),
+    productModel: (article: Article) => {
+      const product = config.productModel
+        ? config.productModel(article)
+        : defaultShopProduct(article, config.labels);
+      const section = sections.find(
+        (section) =>
+          section.key === (config.categoryKey || defaultCategoryKey)(article),
+      );
+      return {
+        ...product,
+        placeholder: section?.placeholder ?? product.placeholder,
+      };
+    },
+    filterArticles: (articles: Article[], query: URLSearchParams) =>
+      articles.filter((article) => {
+        const section = sections.find(
+          (section) =>
+            section.key === (config.categoryKey || defaultCategoryKey)(article),
+        );
+        return (
+          filterShopArticles([article], query, section?.filterChips).length > 0
+        );
+      }),
     sections,
-    isWine: (category: string) =>
-      sections.some(
-        (section) => section.key === category && section.wine === true,
-      ),
     visibleSections,
     isGiftBasket: (category: string) =>
       visibleSections.some(

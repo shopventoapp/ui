@@ -49,9 +49,7 @@ import {
   defaultFulfillmentId,
   emptyCart,
   type Fulfillment,
-  facetCount,
   filterKeys,
-  filterShopArticles,
   formatFulfillmentDate,
   formatPrice,
   fulfillmentDateKey,
@@ -2762,7 +2760,7 @@ function ShopFlowPage({
             }
           >
             {text(
-              "Wein, Feinkost oder ein Geschenk: Such Dir etwas Schönes aus.",
+              "Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.",
             )}
           </ShopEmpty>
         ) : (
@@ -3059,7 +3057,7 @@ function ShopFlowPage({
                 })),
               ]}
               searchLabel={text("Im Shop suchen")}
-              searchPlaceholder={text("Wein, Winzer, Rebsorte suchen")}
+              searchPlaceholder={text("Produkte und Gutscheine suchen")}
               searchAction={resolveHref("/shop/suche")}
               query={route.query.get("q") || ""}
             />
@@ -3231,7 +3229,7 @@ function Filters({
   query: URLSearchParams;
   onQuery: (key: string, value: string) => void;
 }) {
-  const { text } = useShopFlow();
+  const { text, filterArticles } = useShopFlow();
 
   const group = (
     key: string,
@@ -3266,7 +3264,17 @@ function Filters({
               }}
             />
             <span>{label}</span>
-            <small>{facetCount(articles, query, key, value)}</small>
+            <small>
+              {
+                filterArticles(
+                  articles,
+                  new URLSearchParams({
+                    ...Object.fromEntries(query),
+                    [key]: value,
+                  }),
+                ).length
+              }
+            </small>
           </label>
         ))}
       </fieldset>
@@ -3322,10 +3330,10 @@ function Filters({
         </div>
       </details>
       {articles.some((a) => a.attributes?.volume_l) &&
-        group("groesse", text("Flaschengröße"), [
-          { value: "halb", label: text("Halbe Flasche") },
+        group("groesse", text("Inhaltsmenge"), [
+          { value: "halb", label: text("Unter 0,5 l") },
           { value: "normal", label: "0,75 l" },
-          { value: "gross", label: text("Magnum und größer") },
+          { value: "gross", label: text("Ab 1,4 l") },
         ])}
       {group(
         "bio",
@@ -3353,10 +3361,10 @@ function MobileFilters({
   onApply: (query: URLSearchParams) => void;
   onClose: () => void;
 }) {
-  const { text } = useShopFlow();
+  const { text, filterArticles } = useShopFlow();
 
   const [draft, setDraft] = useState(() => new URLSearchParams(query));
-  const count = filterShopArticles(articles, draft).length;
+  const count = filterArticles(articles, draft).length;
   return (
     <ShopDialog
       title={text("Filter")}
@@ -3416,12 +3424,19 @@ function Catalogue({
   card: (p: ShopProduct) => ReactNode;
   loading: boolean;
 }) {
-  const { categoryKey, sections, resolveHref, text, isGiftBasket, isWine } =
-    useShopFlow();
+  const {
+    categoryKey,
+    sections,
+    resolveHref,
+    text,
+    isGiftBasket,
+    filterArticles,
+  } = useShopFlow();
 
   const section = sections.find((s) => s.key === category);
+  const chips = section?.filterChips;
   const base = articles.filter((a) => categoryKey(a) === category);
-  const matches = new Set(filterShopArticles(base, query).map((a) => a.id));
+  const matches = new Set(filterArticles(base, query).map((a) => a.id));
   const matching = products.filter((p) => matches.has(p.id));
   const sorted = [...matching].sort((a, b) =>
     query.get("sort") === "preis-auf"
@@ -3473,23 +3488,17 @@ function Catalogue({
           </aside>
         )}
         <div>
-          {isWine(category) && (
+          {chips && (
             <div className="sv-shop-chips">
-              {[
-                ["", text("Alle")],
-                ["weisswein", text("Weißwein")],
-                ["rotwein", text("Rotwein")],
-                ["rosé", text("Rosé")],
-                ["schaumwein", text("Schaumwein")],
-              ].map(([key, label]) => (
+              {chips.options.map(({ value, label }) => (
                 <button
                   type="button"
                   className="sv-shop-chip"
-                  key={key}
-                  aria-pressed={(query.get("art") || "") === key}
-                  onClick={() => onQuery("art", key)}
+                  key={value}
+                  aria-pressed={(query.get(chips.queryKey) || "") === value}
+                  onClick={() => onQuery(chips.queryKey, value)}
                 >
-                  {label}
+                  {text(label)}
                 </button>
               ))}
             </div>
@@ -3518,7 +3527,12 @@ function Catalogue({
             </select>
           </div>
           <div className="sv-shop-chips">
-            {filterKeys
+            {[
+              ...new Set([
+                ...filterKeys,
+                ...(section?.filterChips ? [section.filterChips.queryKey] : []),
+              ]),
+            ]
               .filter((key) => query.get(key))
               .flatMap((key) =>
                 (query.get(key) || "").split(",").map((value) => (

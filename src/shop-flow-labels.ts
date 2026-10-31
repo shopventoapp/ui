@@ -220,8 +220,6 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     Warenkorb: "Warenkorb",
     "Noch nichts im Korb.": "Noch nichts im Korb.",
     "Im Shop stöbern": "Im Shop stöbern",
-    "Wein, Feinkost oder ein Geschenk: Such Dir etwas Schönes aus.":
-      "A new discovery or a gift: find something lovely.",
     Gutschein: "Gutschein",
     "Zur Kasse": "Zur Kasse",
     "Der Shop lädt gerade nicht.": "Der Shop lädt gerade nicht.",
@@ -258,7 +256,9 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     empfohlen: "empfohlen",
     Shop: "Shop",
     "Im Shop suchen": "Im Shop suchen",
-    "Wein, Winzer, Rebsorte suchen": "Search products and vouchers",
+    "Produkte und Gutscheine suchen": "Produkte und Gutscheine suchen",
+    "Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.":
+      "Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.",
     "Der Online-Shop macht gerade Pause.":
       "Der Online-Shop macht gerade Pause.",
     " Stöbern geht weiterhin. Im Laden sind wir wie gewohnt für Dich da.":
@@ -277,9 +277,9 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     Rebsorte: "Rebsorte",
     Preis: "Preis",
     "über 60 €": "über 60 €",
-    Flaschengröße: "Flaschengröße",
-    "Halbe Flasche": "Halbe Flasche",
-    "Magnum und größer": "Magnum und größer",
+    Inhaltsmenge: "Inhaltsmenge",
+    "Unter 0,5 l": "Unter 0,5 l",
+    "Ab 1,4 l": "Ab 1,4 l",
     Bio: "Bio",
     "Bio-zertifiziert": "Bio-zertifiziert",
     "Aus unseren Veranstaltungen": "Aus unseren Veranstaltungen",
@@ -293,10 +293,6 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
       "Wir packen jeden Korb für Dich von Hand.",
     "Alle Filter zurücksetzen": "Alle Filter zurücksetzen",
     Alle: "Alle",
-    Weißwein: "Weißwein",
-    Rotwein: "Rotwein",
-    Rosé: "Rosé",
-    Schaumwein: "Schaumwein",
     Sortieren: "Sortieren",
     Empfehlung: "Empfehlung",
     "Preis aufsteigend": "Preis aufsteigend",

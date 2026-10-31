@@ -131,10 +131,25 @@ const normalized = (value: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/ß/g, "ss")
     .toLowerCase();
+/** One host-defined group of chips matching a public product attribute. */
+export interface ShopSectionFilter {
+  /** URL parameter used to persist the selected value. Avoid built-in facet keys. */
+  queryKey: string;
+  /** Public article attribute to compare, including array-valued attributes. */
+  attribute: keyof NonNullable<Article["attributes"]>;
+  /** Customer-visible choices. An empty value clears the selection. */
+  options: readonly {
+    /** Attribute value to match, or an empty string to clear the filter. */
+    value: string;
+    /** Customer-visible chip text, resolved through the host label catalogue. */
+    label: string;
+  }[];
+}
 /** Match URL facets against public article attributes, without computing prices. */
 export function filterShopArticles(
   articles: Article[],
   query: URLSearchParams,
+  chips?: ShopSectionFilter,
 ): Article[] {
   const selected = (key: string) =>
     (query.get(key) || "").split(",").filter(Boolean);
@@ -145,11 +160,13 @@ export function filterShopArticles(
     );
   return articles.filter((article) => {
     const a = article.attributes;
-    if (
-      !includes("land", a?.country) ||
-      !includes("region", a?.region) ||
-      !includes("art", a?.wine_type)
-    )
+    if (chips && query.get(chips.queryKey)) {
+      const value = a?.[chips.attribute];
+      const values = Array.isArray(value) ? value : [value];
+      if (!values.some((item) => includes(chips.queryKey, String(item ?? ""))))
+        return false;
+    }
+    if (!includes("land", a?.country) || !includes("region", a?.region))
       return false;
     if (
       query.get("rebsorte") &&

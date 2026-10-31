@@ -44,6 +44,29 @@ The controlled `ShopSurface`, `ShopNavigation`, `ShopHero`, `ShopSection`, produ
 
 <!-- example:examples/shop.tsx -->
 
-## Neutral defaults and wine presentation
+## Neutral defaults and section presentation
 
-Unconfigured product media renders a neutral parcel; vouchers use gift artwork. Wine behavior is explicit: set `wine: true` on a `ShopSectionDefinition` to enable wine wording, bottle placeholders in default mapping and wine-type chips. The option works with any category key, and the historical `wein` key does not enable it automatically. Hosts with custom product mapping can set `placeholder: "bottle"` themselves. `defaultShopProduct(article, labels, { wine: true })` supports the same opt-in outside the flow.
+Unconfigured product media renders a neutral parcel; vouchers use gift artwork. The German default catalogue stays neutral. Override copy through `labels`, for example `"Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus."` and `"Produkte und Gutscheine suchen"`.
+
+Each `ShopSectionDefinition` accepts `placeholder` (`"product"`, `"bottle"`, `"jar"`, `"gift"` or a React element) and one typed `filterChips: ShopSectionFilter` group. The section placeholder also applies with a custom `productModel`. Chips compare a public article attribute, including array values, with normalized case and accents; the empty choice clears the filter. Use a unique URL parameter that does not collide with built-in facets, sorting or pagination. Selection survives navigation and combines with the other facets, including mobile filter counts.
+
+```tsx
+const sections: ShopSectionDefinition[] = [{
+  key: "deli",
+  label: "Feinkost",
+  description: "Kleine Köstlichkeiten",
+  image: "deli",
+  placeholder: "jar",
+  filterChips: {
+    queryKey: "origin",
+    attribute: "country",
+    options: [
+      { value: "", label: "Alle" },
+      { value: "italien", label: "Italien" },
+      { value: "frankreich", label: "Frankreich" },
+    ],
+  },
+}];
+```
+
+Attribute declarations (such as producer, origin, ingredients and vintage) render when the API supplies them. The host owns trade wording, filter choices and artwork.
