@@ -48,7 +48,7 @@ The controlled `ShopSurface`, `ShopNavigation`, `ShopHero`, `ShopSection`, produ
 
 Unconfigured product media renders a neutral parcel; vouchers use gift artwork. The German default catalogue stays neutral. Override copy through `labels`, for example `"Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus."` and `"Produkte und Gutscheine suchen"`.
 
-Each `ShopSectionDefinition` accepts `placeholder` (`"product"`, `"bottle"`, `"jar"`, `"gift"` or a React element) and one typed `filterChips: ShopSectionFilter` group. The section placeholder also applies with a custom `productModel`. Chips compare a public article attribute, including array values, with normalized case and accents; the empty choice clears the filter. Use a unique URL parameter that does not collide with built-in facets, sorting or pagination. Selection survives navigation and combines with the other facets, including mobile filter counts.
+Each `ShopSectionDefinition` accepts `placeholder` (`"product"`, `"bottle"`, `"jar"`, `"gift"` or a React element) and one typed `filterChips: ShopSectionFilter` group. The section placeholder is a fallback: an explicit placeholder returned by the host `productModel` takes priority. Chips compare a public article attribute, including array values, with normalized case and accents; the empty choice clears the filter. Use a unique URL parameter that does not collide with built-in facets, sorting or pagination. Selection survives navigation and combines with the other facets, including mobile filter counts.
 
 ```tsx
 const sections: ShopSectionDefinition[] = [{
@@ -70,3 +70,7 @@ const sections: ShopSectionDefinition[] = [{
 ```
 
 Attribute declarations (such as producer, origin, ingredients and vintage) render when the API supplies them. The host owns trade wording, filter choices and artwork.
+
+`filterGroups` adds sidebar and mobile facets using the same `ShopSectionFilter` shape as `filterChips`. Each group has a `label`; `options` supplies choices or can be omitted to derive sorted choices from the public `attribute`. `open` expands the group initially; optional `visible(articles)` controls whether its controls render while preserving deep-link filtering. `order` places groups among the neutral defaults (country 0, region 1, price 3, bio 5, events 6, availability 7; host groups default to 2). Optional `matches(article, selectedValue)` handles host ranges and aliases instead of equality. Multiple selected values within a group are ORed; groups and chips are ANDed. An empty options array preserves filtering for deep links without rendering controls.
+
+For example, a workshop host can configure `{ queryKey: "format", attribute: "product_type", label: "Format" }` to derive available formats, or provide explicit options and a `matches` predicate for capacity bands. Grape choices, volume bands and deli aliases are host configuration; the package does not interpret their old URL keys. Hosts migrating those filters must configure their own groups and copy. Host group labels and option labels resolve through the existing label catalogue.

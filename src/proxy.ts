@@ -121,7 +121,7 @@ export async function proxyShopRequest(
     mutation &&
     (request.headers.get("Origin") !== source.origin ||
       ["cross-site", "same-site"].includes(
-        request.headers.get("Sec-Fetch-Site") ?? "",
+        request.headers.get("Sec-Fetch-Site")?.toLowerCase() ?? "",
       ))
   )
     return failure("Invalid origin", 403);
@@ -136,6 +136,13 @@ export async function proxyShopRequest(
   for (const name of ["Content-Type", "Accept", "User-Agent"]) {
     const value = request.headers.get(name);
     if (value !== null) headers.set(name, value);
+  }
+  // Cookie-authenticated writes are checked against the configured shop origin upstream.
+  if (mutation) {
+    for (const name of ["Origin", "Sec-Fetch-Site"]) {
+      const value = request.headers.get(name);
+      if (value !== null) headers.set(name, value);
+    }
   }
   // Send only the backend session cookie; unrelated host cookies stay private.
   const sessionCookie = request.headers

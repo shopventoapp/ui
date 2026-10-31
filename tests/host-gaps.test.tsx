@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createDashboardClient } from "../src/dashboard-client";
 import {
@@ -9,8 +9,10 @@ import {
 import { AccountReservationDetail } from "../src/dashboard-details";
 import { AccountHelpCard, accountContact } from "../src/dashboard-ui";
 import type { ShopArticle } from "../src/index";
+import { createShopClient } from "../src/shop-client";
 import { ShopMedia } from "../src/shop-components";
 import { ShopFlow } from "../src/shop-flow";
+import type { ShopSectionDefinition } from "../src/shop-flow-context";
 import { ShopFlowProvider, useShopFlow } from "../src/shop-flow-context";
 import { defaultShopFlowLabels } from "../src/shop-flow-labels";
 import { filterShopArticles } from "../src/shop-model";
@@ -159,7 +161,7 @@ test("generic mapping and unconfigured media use a neutral parcel", () => {
       }}
     />,
   );
-  expect(html).toContain('viewBox="0 0 100 120"');
+  expect(html).toContain('d="M15 35 50 15 85 35 50 55Z"');
   expect(html).not.toContain('viewBox="0 0 100 300"');
 });
 const deliFilter = {
@@ -266,4 +268,142 @@ test("catalogue copy defaults stay neutral and German", () => {
   expect(defaultShopFlowLabels["Produkte und Gutscheine suchen"]).toBe(
     "Produkte und Gutscheine suchen",
   );
+});
+
+test("a host product placeholder takes priority over its section fallback", () => {
+  function Probe() {
+    return <ShopMedia product={useShopFlow().productModel(article)} />;
+  }
+  const html = renderToStaticMarkup(
+    <ShopFlowProvider
+      config={{
+        sections: [
+          {
+            key: "deli",
+            label: "Deli",
+            description: "",
+            image: "",
+            placeholder: "bottle",
+          },
+        ],
+        productModel: (a) => ({
+          ...defaultShopProduct(a),
+          placeholder: <span>Explicit host artwork</span>,
+        }),
+      }}
+    >
+      <Probe />
+    </ShopFlowProvider>,
+  );
+  expect(html).toContain("Explicit host artwork");
+});
+
+test("trade facets and aliases have no effect without host configuration", () => {
+  const goods = [
+    {
+      ...article,
+      attributes: { grapes: ["A"], volume_l: 1, product_type: "Pesto" },
+    },
+  ];
+  expect(
+    filterShopArticles(
+      goods,
+      new URLSearchParams("art=red&rebsorte=Other&groesse=normal&sorte=kaese"),
+    ),
+  ).toEqual(goods);
+});
+
+test("host facet groups support attribute arrays and custom matching together with chips", () => {
+  const goods = [
+    {
+      ...article,
+      attributes: { grapes: ["A", "B"], volume_l: 0.75, country: "Italy" },
+    },
+    {
+      ...article,
+      id: "other",
+      attributes: { grapes: ["B"], volume_l: 1.5, country: "France" },
+    },
+  ];
+  const groups = [
+    { queryKey: "variety", attribute: "grapes", label: "Variety" },
+    {
+      queryKey: "size",
+      attribute: "volume_l",
+      label: "Size",
+      options: [{ value: "small", label: "Small" }],
+      matches: (a: ShopArticle, value: string) =>
+        value === "small" && (a.attributes?.volume_l || 0) < 1,
+    },
+  ] as const;
+  expect(
+    filterShopArticles(
+      goods,
+      new URLSearchParams("variety=b&size=small"),
+      groups,
+    ),
+  ).toEqual([goods[0]]);
+});
+
+test("clicking a host section chip filters the rendered catalogue", async () => {
+  const italian = {
+    ...article,
+    title: "Italian product",
+    attributes: { country: "Italien", grapes: ["A"], volume_l: 0.75 },
+  };
+  const french = {
+    ...article,
+    id: "b",
+    slug: "b",
+    title: "French product",
+    attributes: { country: "France" },
+  };
+  const client = createShopClient({
+    fetcher: async (input) =>
+      Response.json(
+        String(input).includes("catalogue")
+          ? { articles: [italian, french] }
+          : String(input).includes("articles/")
+            ? italian
+            : {},
+      ),
+  });
+  const section: ShopSectionDefinition = {
+    key: "deli",
+    label: "Deli",
+    description: "",
+    image: "",
+    filterChips: deliFilter,
+  };
+  const browser = (
+    window as unknown as { happyDOM: { setURL(url: string): void } }
+  ).happyDOM;
+  browser.setURL("http://localhost/shop/deli");
+  try {
+    const view = render(
+      <ShopFlow client={client} accountEnabled={false} sections={[section]} />,
+    );
+    await waitFor(() =>
+      expect(
+        view.container.querySelectorAll(".sv-shop-product-card").length,
+      ).toBe(2),
+    );
+    expect(view.queryByText("Rebsorte")).toBeNull();
+    expect(view.queryByText("0,75 l")).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Italy" }));
+    await waitFor(() =>
+      expect(
+        view.container.querySelectorAll(".sv-shop-product-card").length,
+      ).toBe(1),
+    );
+    expect(
+      view.container.querySelector(".sv-shop-product-card")?.textContent,
+    ).toContain("Italian product");
+    expect(
+      view.container.querySelector(".sv-shop-product-card")?.textContent,
+    ).not.toContain("French product");
+    expect(window.location.search).toBe("?origin=italien");
+  } finally {
+    browser.setURL("http://localhost/");
+  }
 });

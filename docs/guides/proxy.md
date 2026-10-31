@@ -35,3 +35,7 @@ Node uses an explicit public origin and never trusts forwarded host headers. The
 Allowed routes are `/api/shop/*`, the exact public table-reservation form/settings/cancel endpoints, `/branding/theme.css`, and lowercase SHA-256 font filenames under `/branding/fonts/` ending in `.woff` or `.woff2`. Branding assets accept only GET/HEAD. Encoded traversal, unrelated APIs and unsupported methods are rejected. Mutation requests need the exact host `Origin`; `Sec-Fetch-Site: same-site` or `cross-site` is rejected too.
 
 Only the session cookie and selected content headers go upstream. Authorization, unrelated host cookies and spoofable visitor headers stay private. Session cookies become host-only, HttpOnly, SameSite=Strict, Path=/, and Secure on HTTPS. Credential JSON from login/callback/password-reset-confirm responses is bounded and redacted. Upstream same-instance redirects return to the host origin. Responses are no-store, including CDN caches. Fetch failures return a neutral error without logging customer or credential data.
+
+## Cookie write configuration
+
+Set the instance's `SHOP_DOMAIN_HOST` to the storefront host (including its port for local development), without a scheme or path. It must equal the browser storefront host, not the instance API host. The backend validates cookie-authenticated writes against that shop origin. The proxy forwards the already validated browser `Origin` and `Sec-Fetch-Site` on mutating requests; foreign origins remain rejected before forwarding.

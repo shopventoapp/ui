@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { createServer } from "node:http";
+import { gzipSync } from "node:zlib";
 import { createWorkerShopProxy } from "../src/proxy";
 import { createNodeShopProxy } from "../src/proxy-node";
 
@@ -79,5 +80,52 @@ test("Node adapter streams requests and responses, validates origin, and preserv
           : resolve(),
       ),
     );
+  }
+});
+
+test("Node adapter serves an already decoded gzip upstream body without stale transport headers", async () => {
+  const payload = JSON.stringify({
+    message: "Compressed catalogue response".repeat(30),
+  });
+  const compressed = gzipSync(payload);
+  const upstream = createServer((_request, response) => {
+    response.writeHead(200, {
+      "Content-Type": "application/json",
+      "Content-Encoding": "gzip",
+      "Content-Length": String(compressed.length),
+      Connection: "keep-alive",
+      "Keep-Alive": "timeout=5",
+    });
+    response.end(compressed);
+  });
+  const proxy = createServer();
+  const listen = (server: ReturnType<typeof createServer>) =>
+    new Promise<number>((resolve) =>
+      server.listen(0, "127.0.0.1", () =>
+        resolve((server.address() as { port: number }).port),
+      ),
+    );
+  const upstreamPort = await listen(upstream);
+  const proxyPort = await listen(proxy);
+  proxy.on(
+    "request",
+    createNodeShopProxy({
+      origin: `http://127.0.0.1:${proxyPort}`,
+      apiUrl: `http://127.0.0.1:${upstreamPort}`,
+    }),
+  );
+  try {
+    const result = await fetch(
+      `http://127.0.0.1:${proxyPort}/api/shop/catalogue`,
+    );
+    expect(result.status).toBe(200);
+    expect(result.headers.get("Content-Encoding")).toBeNull();
+    expect(result.headers.get("Content-Length")).toBeNull();
+    expect(await result.text()).toBe(payload);
+  } finally {
+    for (const server of [proxy, upstream]) {
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   }
 });

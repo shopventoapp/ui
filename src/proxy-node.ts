@@ -42,7 +42,18 @@ export function createNodeShopProxy(options: NodeShopProxyOptions) {
       const result = await proxyShopRequest(request, options);
       outgoing.statusCode = result.status;
       result.headers.forEach((value, name) => {
-        if (name !== "set-cookie") outgoing.setHeader(name, value);
+        // Node fetch has decoded the body; framing and connection headers belong to this hop.
+        if (
+          ![
+            "set-cookie",
+            "content-encoding",
+            "content-length",
+            "transfer-encoding",
+            "connection",
+            "keep-alive",
+          ].includes(name)
+        )
+          outgoing.setHeader(name, value);
       });
       const cookies = result.headers.getSetCookie();
       if (cookies.length) outgoing.setHeader("Set-Cookie", cookies);

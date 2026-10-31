@@ -138,16 +138,44 @@ describe("same-origin shop transport", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store");
   });
   test("forwards only edge-supplied IPs when the Worker opts into trust", async () => {
+    let captured: Headers | undefined;
     const fetcher = fakeFetch((_input, init) => {
-      expect(new Headers(init?.headers).get("X-Visitor-Ip")).toBe("192.0.2.7");
+      captured = new Headers(init?.headers);
       return Response.json({ ok: true });
     });
-    await proxyShopRequest(
+    const response = await proxyShopRequest(
       request("/api/shop/settings", {
         headers: { "CF-Connecting-IP": "192.0.2.7" },
       }),
       { apiUrl, trustVisitorIp: true, fetcher },
     );
+    expect(response.status).toBe(200);
+    expect(captured?.get("X-Visitor-Ip")).toBe("192.0.2.7");
+  });
+  test("preserves validated browser origin and fetch metadata for cookie writes", async () => {
+    let captured: Headers | undefined;
+    const response = await proxyShopRequest(
+      request("/api/shop/user/profile", {
+        method: "PATCH",
+        headers: {
+          Origin: site,
+          "Sec-Fetch-Site": "same-origin",
+          Cookie: "shop_access_token=synthetic",
+        },
+        body: "{}",
+      }),
+      {
+        apiUrl,
+        fetcher: fakeFetch((_input, init) => {
+          captured = new Headers(init?.headers);
+          return new Response(null, { status: 204 });
+        }),
+      },
+    );
+    expect(response.status).toBe(204);
+    expect(captured?.get("Origin")).toBe(site);
+    expect(captured?.get("Sec-Fetch-Site")).toBe("same-origin");
+    expect(captured?.get("Cookie")).toBe("shop_access_token=synthetic");
   });
   test("rewrites cookies to the first-party host and removes login bearer credentials", async () => {
     const fetcher = fakeFetch(

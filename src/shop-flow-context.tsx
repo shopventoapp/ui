@@ -43,6 +43,8 @@ export interface ShopSectionDefinition {
   giftBasket?: boolean;
   /** Attribute-matching chips supplied by the host. Empty values clear the filter. */
   filterChips?: ShopSectionFilter;
+  /** Host facet groups, merged with the neutral origin, price and availability facets. */
+  filterGroups?: readonly ShopSectionFilter[];
   /** Fallback media for articles in this section, including custom host artwork. */
   placeholder?: ShopProduct["placeholder"];
   /** Optional element ID to scroll to when this section opens with the matching hash. */
@@ -270,7 +272,9 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
       );
       return {
         ...product,
-        placeholder: section?.placeholder ?? product.placeholder,
+        placeholder: config.productModel
+          ? (product.placeholder ?? section?.placeholder)
+          : (section?.placeholder ?? product.placeholder),
       };
     },
     filterArticles: (articles: Article[], query: URLSearchParams) =>
@@ -280,7 +284,10 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
             section.key === (config.categoryKey || defaultCategoryKey)(article),
         );
         return (
-          filterShopArticles([article], query, section?.filterChips).length > 0
+          filterShopArticles([article], query, [
+            ...(section?.filterChips ? [section.filterChips] : []),
+            ...(section?.filterGroups ?? []),
+          ]).length > 0
         );
       }),
     sections,
