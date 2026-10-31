@@ -43,3 +43,7 @@ German message overrides use `labels`, keyed by the default message. `defaultSho
 The controlled `ShopSurface`, `ShopNavigation`, `ShopHero`, `ShopSection`, product cards/media/prices, quantity, dialog, summary, checkout-step, declaration, notice and empty-state components continue to support independent compositions. Dialogs use native modal focus containment, Escape dismissal and focus restoration. Product illustrations accept `--sv-product-fill`.
 
 <!-- example:examples/shop.tsx -->
+
+## Neutral defaults and wine presentation
+
+Unconfigured product media renders a neutral parcel; vouchers use gift artwork. Wine behavior is explicit: set `wine: true` on a `ShopSectionDefinition` to enable wine wording, bottle placeholders in default mapping and wine-type chips. The option works with any category key, and the historical `wein` key does not enable it automatically. Hosts with custom product mapping can set `placeholder: "bottle"` themselves. `defaultShopProduct(article, labels, { wine: true })` supports the same opt-in outside the flow.

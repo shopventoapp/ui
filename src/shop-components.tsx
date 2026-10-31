@@ -26,7 +26,7 @@ export type ShopProduct = {
   /** Accessible image description. Optional; omitted unless supplied by the host or backend. */
   imageAlt?: string;
   /** Built-in product illustration used when no image is supplied. Optional; omitted unless supplied by the host or backend. */
-  placeholder?: "bottle" | "jar" | "gift";
+  placeholder?: "product" | "bottle" | "jar" | "gift";
   /** Host illustration background color. Optional; omitted unless supplied by the host or backend. */
   tint?: string;
   /** Host illustration fill color. Optional; omitted unless supplied by the host or backend. */
@@ -299,6 +299,16 @@ export function ShopMedia({
           alt={product.imageAlt ?? product.title}
           loading="lazy"
         />
+      ) : !product.placeholder || product.placeholder === "product" ? (
+        <svg
+          viewBox="0 0 100 120"
+          role="img"
+          aria-label={product.imageAlt ?? product.title}
+        >
+          <path d="M15 35 50 15 85 35 50 55Z" fill="var(--sv-accent)" />
+          <path d="M15 35v50l35 20V55Z" fill="var(--sv-primary)" />
+          <path d="M50 55v50l35-20V35Z" fill="var(--sv-text-2)" />
+        </svg>
       ) : product.placeholder === "gift" ? (
         <svg
           viewBox="0 0 100 120"

@@ -51,17 +51,24 @@ export interface AccountRoutes {
 /** Host-owned contact and location information displayed in account help. */
 export interface AccountHelp {
   /** Host contact phone number or customer international phone field. */
-  phone: string;
+  phone?: string;
   /** Customer-visible phone link label. */
-  phoneLabel: string;
+  phoneLabel?: string;
   /** Email in the account help contract. */
-  email: string;
+  email?: string;
   /** Address in the account help contract. */
   address: string;
   /** Host directions link. */
   routeUrl: string;
   /** Hours in the account help contract. Optional; omitted unless supplied by the host or backend. */
   hours?: string;
+  /** Already loaded public instance company contact, used when host contact is empty. */
+  company?: {
+    /** Public instance phone. */
+    phone?: string | null;
+    /** Public instance email. */
+    email?: string | null;
+  };
 }
 /** Format an account date for German display. */
 export const accountDate = (date: string) => bookingDate(date.slice(0, 10));
@@ -218,6 +225,23 @@ export function AccountCard({
     </section>
   );
 }
+/** Resolve public host contact with an already loaded instance company fallback. */
+export function accountContact(help: AccountHelp): {
+  /** Resolved nonempty public phone. */
+  phone: string | undefined;
+  /** Resolved nonempty public email. */
+  email: string | undefined;
+  /** Public phone display label. */
+  phoneLabel: string | undefined;
+} {
+  const phone = help.phone?.trim() || help.company?.phone?.trim() || undefined;
+  const email = help.email?.trim() || help.company?.email?.trim() || undefined;
+  return {
+    phone,
+    email,
+    phoneLabel: help.phone?.trim() ? help.phoneLabel?.trim() || phone : phone,
+  };
+}
 /** Render the installation contact and directions. */
 export function AccountHelpCard({
   help,
@@ -225,13 +249,15 @@ export function AccountHelpCard({
   /** Host contact, opening hours and directions. */
   help: AccountHelp;
 }) {
+  const { phone, email, phoneLabel } = accountContact(help);
+  if (!phone && !email && !help.hours) return null;
   return (
     <AccountCard title="Hilfe & Kontakt">
       <p className="small muted">
         Fragen zu Deiner Bestellung oder Buchung? Ruf an oder schreib uns.
       </p>
-      <a href={`tel:${help.phone}`}>{help.phoneLabel}</a>
-      <a href={`mailto:${help.email}`}>{help.email}</a>
+      {phone && <a href={`tel:${phone}`}>{phoneLabel}</a>}
+      {email && <a href={`mailto:${email}`}>{email}</a>}
       {help.hours && <p className="small muted">{help.hours}</p>}
     </AccountCard>
   );

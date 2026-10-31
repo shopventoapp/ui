@@ -10,6 +10,21 @@ All notable changes to this package are documented here. The format follows [Kee
 - Typechecked source and built-package examples, a host-owned session proxy recipe, a public OpenAPI exporter and static link checks.
 - SHA-pinned GitHub Pages workflow for main and version tags.
 
+## [0.4.0] - 2026-10-31
+
+### Added
+
+- Fetch/Cloudflare Worker proxy at `@shopvento/ui/proxy` and Node HTTP adapter at `@shopvento/ui/proxy/node`, ported from the storefront transport with first-party cookies, exact-origin mutation checks, credential/header redaction, trusted visitor IP forwarding and a strict branding asset allowlist.
+- Server/build/Worker/browser `loadBranding`, `brandingTokens`, `brandingTokenMap` and `brandingStylesheet` at `@shopvento/ui/branding`.
+- Reservation details without host rules, explicit `readOnly`, and optional `onChanged`. No reservation-rules endpoint exists in the bundled OpenAPI, so editing still needs host rules.
+- Optional account phone/email, hidden empty links and fallback to already loaded instance company contact via `help.company`.
+
+### Breaking
+
+- Unspecified `ShopMedia` placeholders and default product mapping now use neutral parcel artwork instead of bottles. Request `placeholder: "bottle"` explicitly or use the wine section option.
+- Wine wording and type filters require `ShopSectionDefinition.wine: true`. Category key `wein` alone no longer enables them; any category key can opt in.
+- Default empty-cart and search copy is neutral; existing label keys and overrides remain supported. This does not introduce the English catalogue planned in ui#6.
+
 ## [0.3.0] - 2026-10-29
 
 ### Added

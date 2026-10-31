@@ -26,6 +26,7 @@ export function defaultCategoryKey(article: Article): string {
 export function defaultShopProduct(
   article: Article,
   labels: Partial<Record<string, string>> = {},
+  options: { wine?: boolean } = {},
 ): ShopProduct {
   const text = (value: string) => labels[value] ?? value;
   const a = article.attributes;
@@ -73,6 +74,11 @@ export function defaultShopProduct(
     description: article.description || undefined,
     image: article.images?.[0]?.image.image_url,
     imageAlt: article.title,
+    placeholder: options.wine
+      ? "bottle"
+      : article.type === "VOUCHER"
+        ? "gift"
+        : "product",
     quantityInformation: article.quantity_information || undefined,
     unitPrice: [article.quantity_information, unit].filter(Boolean).join(" · "),
     availability: available?.text,

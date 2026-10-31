@@ -44,3 +44,9 @@ Provide `AccountLabels`, `AccountRoutes`, `AccountHelp`, allowed countries, runt
 The backend supplies rescheduling cutoffs, prior-move indicators and withdrawal eligibility per order line. The host refreshes data after successful mutations. Newsletter status is false, pending or true; `profileNewsletterAdapter` handles profile timestamps and explicit subscribe/unsubscribe calls.
 
 Payment retry, voucher transfer, guest magic links, data export, default-address management and a full order timeline are not provided.
+
+## Optional public contact and reservation details
+
+`AccountHelp.phone`, `phoneLabel` and `email` are optional. Whitespace-only values are empty; each empty entry is hidden in the sidebar and help card. Pass already loaded public company contact through `help.company: { phone, email }` to supply a fallback. Explicit host contact takes priority. The package does not substitute the customer's private profile contact.
+
+`AccountReservationDetail` displays an existing reservation with no `rules` or `onChanged`. Supply authoritative `ReservationRules` to enable changes before the configured cutoff; `readOnly` always suppresses editing and cancellation. Missing rules never imply a change policy. The bundled public OpenAPI provides reservation list/detail/update/cancel operations but no reservation-rules endpoint, so this release cannot load those rules from the backend.

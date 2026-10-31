@@ -15,6 +15,7 @@ import type { NewsletterSignupProps } from "./newsletter-signup";
 import { NewsletterSignup } from "./newsletter-signup";
 import { createShopClient } from "./shop-client";
 import type { ShopProduct } from "./shop-components";
+import { defaultShopFlowLabels } from "./shop-flow-labels";
 import { type Article, readCart, writeCart } from "./shop-model";
 import {
   defaultCategoryKey,
@@ -34,6 +35,8 @@ export interface ShopSectionDefinition {
   image: string;
   /** Enable gift basket copy, customization and fulfilment presentation for this section. */
   giftBasket?: boolean;
+  /** Opt into wine wording, bottle placeholders and wine-type chips for this section. */
+  wine?: boolean;
   /** Optional element ID to scroll to when this section opens with the matching hash. */
   businessAnchor?: string;
 }
@@ -221,8 +224,17 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
   const visibleSections = sections.filter((section) =>
     shopSectionEnabled(section.key),
   );
+  const wineCatalogue = sections.some((section) => section.wine);
   const text = (value: string, ...args: unknown[]) => {
-    const template = config.labels?.[value] ?? value;
+    const template =
+      config.labels?.[value] ??
+      (wineCatalogue &&
+      [
+        "Wein, Feinkost oder ein Geschenk: Such Dir etwas Schönes aus.",
+        "Wein, Winzer, Rebsorte suchen",
+      ].includes(value)
+        ? value
+        : (defaultShopFlowLabels[value] ?? value));
     return template.replace(/\{(\d+)\}/g, (match, index: string) =>
       Number(index) < args.length ? String(args[Number(index)]) : match,
     );
@@ -250,8 +262,20 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
     categoryKey: config.categoryKey || defaultCategoryKey,
     productModel:
       config.productModel ||
-      ((article: Article) => defaultShopProduct(article, config.labels)),
+      ((article: Article) =>
+        defaultShopProduct(article, config.labels, {
+          wine: sections.some(
+            (section) =>
+              section.key ===
+                (config.categoryKey || defaultCategoryKey)(article) &&
+              section.wine === true,
+          ),
+        })),
     sections,
+    isWine: (category: string) =>
+      sections.some(
+        (section) => section.key === category && section.wine === true,
+      ),
     visibleSections,
     isGiftBasket: (category: string) =>
       visibleSections.some(

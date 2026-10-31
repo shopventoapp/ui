@@ -8,6 +8,7 @@ These source files are typechecked by `bun run typecheck` and copied verbatim in
 - `labels.tsx`: retain host Tasting terminology through label overrides.
 - `customer-account.tsx`: stable same-origin account client and login form.
 - `shop-flow.tsx`: complete shop flow with configurable storage, plus public reservation and newsletter forms.
+- `host-transport.ts`: Worker and Node proxy adapters, server/browser branding and token mapping.
 - `shop.tsx`: a controlled product presentation with integer-cent prices.
 - `next-app/app/layout.tsx` and `page.tsx`: Next.js App Router CSS and client boundary. Copy the shared `event-booking.tsx` at the relative location or adjust the import.
 - `next-app/app/api/shop/[...path]/route.ts`: host-owned Node-runtime session proxy recipe. It checks mutation Origins, allowlists public operations, encrypts session tokens in secure HttpOnly cookies and redacts upstream credentials. The guide explains the server-only environment variables and OAuth/download boundaries.

@@ -221,7 +221,7 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     "Noch nichts im Korb.": "Noch nichts im Korb.",
     "Im Shop stöbern": "Im Shop stöbern",
     "Wein, Feinkost oder ein Geschenk: Such Dir etwas Schönes aus.":
-      "Wein, Feinkost oder ein Geschenk: Such Dir etwas Schönes aus.",
+      "A new discovery or a gift: find something lovely.",
     Gutschein: "Gutschein",
     "Zur Kasse": "Zur Kasse",
     "Der Shop lädt gerade nicht.": "Der Shop lädt gerade nicht.",
@@ -258,7 +258,7 @@ export const defaultShopFlowLabels: Readonly<Record<string, string>> =
     empfohlen: "empfohlen",
     Shop: "Shop",
     "Im Shop suchen": "Im Shop suchen",
-    "Wein, Winzer, Rebsorte suchen": "Wein, Winzer, Rebsorte suchen",
+    "Wein, Winzer, Rebsorte suchen": "Search products and vouchers",
     "Der Online-Shop macht gerade Pause.":
       "Der Online-Shop macht gerade Pause.",
     " Stöbern geht weiterhin. Im Laden sind wir wie gewohnt für Dich da.":

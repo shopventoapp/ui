@@ -2,7 +2,7 @@
 
 React components for storefronts built on the Shopvento API: catalogue, cart, checkout, table reservations, newsletter signup, event booking with vouchers, customer accounts (sign-in, registration, dashboard with bookings, orders, vouchers and reservations) and shop building blocks (product cards, prices, dialogs, summaries). The components are plain React with one CSS file per area, no router and no styling runtime. Prices, availability, voucher balances and booking rules stay authoritative in the backend.
 
-Version 0.3 adds the complete catalogue, cart, guest/account checkout and order-return flow, plus table reservations and newsletter signup. Version 0.3 removes the deprecated aliases; see the changelog for breaking changes. The host owns routing, editorial content, branding and its same-origin proxy.
+Version 0.3 adds the complete catalogue, cart, guest/account checkout and order-return flow, plus table reservations and newsletter signup. Version 0.3 removes the deprecated aliases; see the changelog for breaking changes. Version 0.4 adds a shared same-origin proxy, typed branding, read-only reservation details and neutral catalogue defaults. The host owns routing and editorial content.
 
 Full English documentation: [docs.shopvento.de](https://docs.shopvento.de), including guides, the generated component/type reference and the public Shop API reference.
 
@@ -12,7 +12,7 @@ Full English documentation: [docs.shopvento.de](https://docs.shopvento.de), incl
 - React 18.2 or 19 and React DOM as peer dependencies.
 - An ESM bundler (Next.js, Vite, React Router, Astro islands or similar).
 - Current evergreen browsers (Chrome, Edge, Firefox, Safari). The dialogs rely on the native `<dialog>` element.
-- Account and shop components call same-origin `/api/shop/*` paths with the session cookie. The host site must proxy these paths to the instance so the HttpOnly cookie stays first party.
+- Account and shop components call same-origin `/api/shop/*` paths with the session cookie. Use `@shopvento/ui/proxy` (Workers / Fetch) or `@shopvento/ui/proxy/node` (Node HTTP) to keep the HttpOnly session first party.
 
 ## Install
 
@@ -105,3 +105,11 @@ The GitHub Pages workflow builds on main and version tags. Server-proxy fixtures
 ## Licence
 
 MIT, see [LICENSE](LICENSE). Bundled third-party code and assets (qrcode-generator, Google Sans, the Google "G" mark) keep their own licences and terms, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Host integration (0.4)
+
+- [Same-origin proxy](docs/guides/proxy.md): strict public paths, cookies, origin validation and trusted visitor IPs.
+- [Runtime branding](docs/guides/branding.md): `loadBranding`, `brandingTokens` and `brandingStylesheet` from `@shopvento/ui/branding`, usable during static builds, in Workers and browsers.
+- `AccountReservationDetail` accepts omitted `rules` and `onChanged` for read-only details; `readOnly` also suppresses editing with rules present. The bundled public OpenAPI has no rules endpoint. Supply authoritative host `ReservationRules` to enable changes; no policy is invented.
+- `AccountHelp.phone`, `phoneLabel` and `email` are optional. Empty entries are hidden. `help.company` can reuse already loaded public company contact as a fallback; this never reads the customer's profile phone/email.
+- Catalogue placeholders are neutral parcels. Opt into wine presentation with `sections: [{ key: "wine", label: "Wine", description: "Our wines", image: "wine", wine: true }]`. The option enables wine wording, type chips and bottle placeholders independently of the category slug. Low-level `ShopMedia` supports explicit `placeholder: "bottle"`; generic `defaultShopProduct(article, labels, { wine: true })` does the same.

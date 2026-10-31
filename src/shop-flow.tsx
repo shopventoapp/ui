@@ -3416,7 +3416,7 @@ function Catalogue({
   card: (p: ShopProduct) => ReactNode;
   loading: boolean;
 }) {
-  const { categoryKey, sections, resolveHref, text, isGiftBasket } =
+  const { categoryKey, sections, resolveHref, text, isGiftBasket, isWine } =
     useShopFlow();
 
   const section = sections.find((s) => s.key === category);
@@ -3473,7 +3473,7 @@ function Catalogue({
           </aside>
         )}
         <div>
-          {category === "wein" && (
+          {isWine(category) && (
             <div className="sv-shop-chips">
               {[
                 ["", text("Alle")],
