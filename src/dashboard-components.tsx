@@ -22,6 +22,7 @@ import {
   AccountQr,
   type AccountRoutes,
   AccountState,
+  accountContact,
   accountDate,
   useAccountResource,
 } from "./dashboard-ui";
@@ -66,6 +67,7 @@ export function AccountLayout({
    * @defaultValue {} */
   counts?: Partial<Record<string, number>>;
 }) {
+  const { phone, email, phoneLabel } = accountContact(help);
   const nav = [
     ["overview", "Übersicht", "Übersicht", "calendar"],
     ["bookings", "Bestellungen & Buchungen", "Buchungen", "id"],
@@ -109,11 +111,19 @@ export function AccountLayout({
             {links()}
           </nav>
           <div className="side-card">
-            <p>Wir helfen gern:</p>
-            <a href={`tel:${help.phone}`}>{help.phoneLabel}</a>
-            <br />
-            <a href={`mailto:${help.email}`}>{help.email}</a>
-            <br />
+            {(phone || email) && <p>Wir helfen gern:</p>}
+            {phone && (
+              <>
+                <a href={`tel:${phone}`}>{phoneLabel}</a>
+                <br />
+              </>
+            )}
+            {email && (
+              <>
+                <a href={`mailto:${email}`}>{email}</a>
+                <br />
+              </>
+            )}
             <button className="btn-link" type="button" onClick={onLogout}>
               Abmelden
             </button>

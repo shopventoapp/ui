@@ -8,3 +8,5 @@ export type {
   ShopFlowStorage,
   ShopSectionDefinition,
 } from "./shop-flow-context";
+
+export type { ShopSectionFilter } from "./shop-model";

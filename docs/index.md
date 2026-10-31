@@ -2,7 +2,7 @@
 
 <div class="home-intro">React components and typed clients for event booking, vouchers, customer accounts and complete shop flows. Keep your routes, your design and your customer relationship.</div>
 
-<div class="home-meta">@shopvento/ui 0.3.0 · React 18.2 or 19 · ESM · TypeScript</div>
+<div class="home-meta">@shopvento/ui 0.4.0 · React 18.2 or 19 · ESM · TypeScript</div>
 
 <div class="home-install">
 

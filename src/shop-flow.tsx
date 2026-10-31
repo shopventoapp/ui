@@ -49,9 +49,7 @@ import {
   defaultFulfillmentId,
   emptyCart,
   type Fulfillment,
-  facetCount,
   filterKeys,
-  filterShopArticles,
   formatFulfillmentDate,
   formatPrice,
   fulfillmentDateKey,
@@ -2762,7 +2760,7 @@ function ShopFlowPage({
             }
           >
             {text(
-              "Wein, Feinkost oder ein Geschenk: Such Dir etwas Schönes aus.",
+              "Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.",
             )}
           </ShopEmpty>
         ) : (
@@ -3059,7 +3057,7 @@ function ShopFlowPage({
                 })),
               ]}
               searchLabel={text("Im Shop suchen")}
-              searchPlaceholder={text("Wein, Winzer, Rebsorte suchen")}
+              searchPlaceholder={text("Produkte und Gutscheine suchen")}
               searchAction={resolveHref("/shop/suche")}
               query={route.query.get("q") || ""}
             />
@@ -3231,7 +3229,10 @@ function Filters({
   query: URLSearchParams;
   onQuery: (key: string, value: string) => void;
 }) {
-  const { text } = useShopFlow();
+  const { text, filterArticles, sections, categoryKey } = useShopFlow();
+  const section = sections.find((s) =>
+    articles.some((a) => categoryKey(a) === s.key),
+  );
 
   const group = (
     key: string,
@@ -3266,79 +3267,135 @@ function Filters({
               }}
             />
             <span>{label}</span>
-            <small>{facetCount(articles, query, key, value)}</small>
+            <small>
+              {
+                filterArticles(
+                  articles,
+                  new URLSearchParams({
+                    ...Object.fromEntries(query),
+                    [key]: value,
+                  }),
+                ).length
+              }
+            </small>
           </label>
         ))}
       </fieldset>
     </details>
   );
-  return (
-    <>
-      {(
+  const originGroups = (
+    [
+      ["land", text("Land"), "country"],
+      ["region", text("Region"), "region"],
+    ] as const
+  ).map(([key, label, attribute], order) => {
+    const values = [
+      ...new Set(
+        articles.flatMap((article) => {
+          const value = article.attributes?.[attribute];
+          return value ? [value] : [];
+        }),
+      ),
+    ].sort();
+    return {
+      order,
+      node: values.length
+        ? group(
+            key,
+            label,
+            values.map((value) => ({ value, label: value })),
+            key === "land",
+          )
+        : null,
+    };
+  });
+  const hostGroups = (section?.filterGroups ?? [])
+    .filter((filter) => filter.visible?.(articles) !== false)
+    .map((filter) => {
+      const options =
+        filter.options ??
         [
-          ["land", text("Land"), "country"],
-          ["region", text("Region"), "region"],
-          ["rebsorte", text("Rebsorte"), "grapes"],
-        ] as const
-      ).map(([key, label, attribute]) => {
-        const values = [
           ...new Set(
-            articles.flatMap((a) => {
-              const value = a.attributes?.[attribute];
-              return Array.isArray(value) ? value : value ? [value] : [];
+            articles.flatMap((article) => {
+              const value = article.attributes?.[filter.attribute];
+              return (
+                Array.isArray(value) ? value : value == null ? [] : [value]
+              ).map(String);
             }),
           ),
-        ].sort();
-        return values.length
+        ]
+          .sort()
+          .map((value) => ({ value, label: value }));
+      return {
+        order: filter.order ?? 2,
+        node: options.length
           ? group(
-              key,
-              label,
-              values.map((value) => ({ value, label: value })),
-              key === "land",
+              filter.queryKey,
+              text(filter.label ?? filter.queryKey),
+              options.map((option) => ({
+                ...option,
+                label: text(option.label),
+              })),
+              filter.open,
             )
-          : null;
-      })}
-      <details className="vv-shop-facet-group" open>
-        <summary>{text("Preis")}</summary>
-        <div className="sv-shop-chips">
-          {[
-            ["bis-15", "bis 15 €"],
-            ["15-30", "15 bis 30 €"],
-            ["30-60", "30 bis 60 €"],
-            ["ab-60", text("über 60 €")],
-          ].map(([value, label]) => (
-            <button
-              type="button"
-              className="sv-shop-chip"
-              key={value}
-              aria-pressed={query.get("preis") === value}
-              onClick={() =>
-                onQuery("preis", query.get("preis") === value ? "" : value)
-              }
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </details>
-      {articles.some((a) => a.attributes?.volume_l) &&
-        group("groesse", text("Flaschengröße"), [
-          { value: "halb", label: text("Halbe Flasche") },
-          { value: "normal", label: "0,75 l" },
-          { value: "gross", label: text("Magnum und größer") },
-        ])}
-      {group(
-        "bio",
-        text("Bio"),
-        [{ value: "1", label: text("Bio-zertifiziert") }],
-        true,
-      )}
-      {group("tasting", text("Aus unseren Veranstaltungen"), [
-        { value: "1", label: text("Bei Veranstaltungen") },
-      ])}
-      {group("sofort", text("Verfügbarkeit"), [
-        { value: "1", label: text("Sofort verfügbar") },
-      ])}
+          : null,
+      };
+    });
+  const priceGroup = (
+    <details key="preis" className="vv-shop-facet-group" open>
+      <summary>{text("Preis")}</summary>
+      <div className="sv-shop-chips">
+        {[
+          ["bis-15", "bis 15 €"],
+          ["15-30", "15 bis 30 €"],
+          ["30-60", "30 bis 60 €"],
+          ["ab-60", text("über 60 €")],
+        ].map(([value, label]) => (
+          <button
+            type="button"
+            className="sv-shop-chip"
+            key={value}
+            aria-pressed={query.get("preis") === value}
+            onClick={() =>
+              onQuery("preis", query.get("preis") === value ? "" : value)
+            }
+          >
+            {text(label)}
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+  return (
+    <>
+      {[
+        ...originGroups,
+        ...hostGroups,
+        { order: 3, node: priceGroup },
+        {
+          order: 5,
+          node: group(
+            "bio",
+            text("Bio"),
+            [{ value: "1", label: text("Bio-zertifiziert") }],
+            true,
+          ),
+        },
+        {
+          order: 6,
+          node: group("tasting", text("Aus unseren Veranstaltungen"), [
+            { value: "1", label: text("Bei Veranstaltungen") },
+          ]),
+        },
+        {
+          order: 7,
+          node: group("sofort", text("Verfügbarkeit"), [
+            { value: "1", label: text("Sofort verfügbar") },
+          ]),
+        },
+      ]
+        .sort((a, b) => a.order - b.order)
+        .map((group) => group.node)}
     </>
   );
 }
@@ -3353,10 +3410,10 @@ function MobileFilters({
   onApply: (query: URLSearchParams) => void;
   onClose: () => void;
 }) {
-  const { text } = useShopFlow();
+  const { text, filterArticles } = useShopFlow();
 
   const [draft, setDraft] = useState(() => new URLSearchParams(query));
-  const count = filterShopArticles(articles, draft).length;
+  const count = filterArticles(articles, draft).length;
   return (
     <ShopDialog
       title={text("Filter")}
@@ -3416,12 +3473,19 @@ function Catalogue({
   card: (p: ShopProduct) => ReactNode;
   loading: boolean;
 }) {
-  const { categoryKey, sections, resolveHref, text, isGiftBasket } =
-    useShopFlow();
+  const {
+    categoryKey,
+    sections,
+    resolveHref,
+    text,
+    isGiftBasket,
+    filterArticles,
+  } = useShopFlow();
 
   const section = sections.find((s) => s.key === category);
+  const chips = section?.filterChips;
   const base = articles.filter((a) => categoryKey(a) === category);
-  const matches = new Set(filterShopArticles(base, query).map((a) => a.id));
+  const matches = new Set(filterArticles(base, query).map((a) => a.id));
   const matching = products.filter((p) => matches.has(p.id));
   const sorted = [...matching].sort((a, b) =>
     query.get("sort") === "preis-auf"
@@ -3473,23 +3537,17 @@ function Catalogue({
           </aside>
         )}
         <div>
-          {category === "wein" && (
+          {chips && (
             <div className="sv-shop-chips">
-              {[
-                ["", text("Alle")],
-                ["weisswein", text("Weißwein")],
-                ["rotwein", text("Rotwein")],
-                ["rosé", text("Rosé")],
-                ["schaumwein", text("Schaumwein")],
-              ].map(([key, label]) => (
+              {(chips.options ?? []).map(({ value, label }) => (
                 <button
                   type="button"
                   className="sv-shop-chip"
-                  key={key}
-                  aria-pressed={(query.get("art") || "") === key}
-                  onClick={() => onQuery("art", key)}
+                  key={value}
+                  aria-pressed={(query.get(chips.queryKey) || "") === value}
+                  onClick={() => onQuery(chips.queryKey, value)}
                 >
-                  {label}
+                  {text(label)}
                 </button>
               ))}
             </div>
@@ -3518,7 +3576,14 @@ function Catalogue({
             </select>
           </div>
           <div className="sv-shop-chips">
-            {filterKeys
+            {[
+              ...new Set([
+                ...filterKeys,
+                ...(section?.filterGroups?.map((group) => group.queryKey) ??
+                  []),
+                ...(section?.filterChips ? [section.filterChips.queryKey] : []),
+              ]),
+            ]
               .filter((key) => query.get(key))
               .flatMap((key) =>
                 (query.get(key) || "").split(",").map((value) => (

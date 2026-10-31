@@ -4,7 +4,10 @@
     "paths": {
       "@shopvento/ui": ["../src/index.ts"],
       "@shopvento/ui/forms": ["../src/public-forms-entry.ts"],
-      "@shopvento/ui/shop-flow": ["../src/shop-flow-entry.ts"]
+      "@shopvento/ui/shop-flow": ["../src/shop-flow-entry.ts"],
+      "@shopvento/ui/proxy": ["../src/proxy.ts"],
+      "@shopvento/ui/proxy/node": ["../src/proxy-node.ts"],
+      "@shopvento/ui/branding": ["../src/branding.ts"]
     }
   },
   "include": ["./**/*.ts", "./**/*.tsx"]

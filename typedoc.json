@@ -1,7 +1,7 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": [
-    "src/index.ts"
+    "src/docs-entry.ts"
   ],
   "out": "site/reference",
   "name": "Shopvento UI",

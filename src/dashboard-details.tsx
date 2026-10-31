@@ -816,15 +816,18 @@ export interface ReservationRules {
 export function AccountReservationDetail({
   reservation: r,
   rules,
-  onChanged,
+  onChanged = () => {},
+  readOnly = false,
   ...props
 }: DashboardProps & {
   /** Authoritative customer table reservation. */
   reservation: AccountReservation;
   /** Host reservation limits, policy and available times. */
-  rules: ReservationRules;
+  rules?: ReservationRules;
+  /** Always suppress changes and cancellation, even when rules are supplied. */
+  readOnly?: boolean;
   /** Refresh authoritative host data after a successful mutation. */
-  onChanged: () => void;
+  onChanged?: () => void;
 }) {
   const { client, routes, help } = props;
   const [sheet, setSheet] = useState<"change" | "cancel" | null>(null),
@@ -836,6 +839,10 @@ export function AccountReservationDetail({
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
   const editable =
+    !readOnly &&
+    !!rules &&
+    Number.isFinite(rules.changeHours) &&
+    rules.changeHours >= 0 &&
     r.status === "confirmed" &&
     reservationStartInstant(r.date, r.time) - Date.now() >=
       rules.changeHours * 3600000;
@@ -845,7 +852,7 @@ export function AccountReservationDetail({
     guests !== r.num_guests ||
     notes !== (r.notes ?? "");
   const submit = async () => {
-    if (sheet === "change" && !hasChanges) return;
+    if (!editable || (sheet === "change" && !hasChanges)) return;
     setBusy(true);
     setError("");
     try {
@@ -882,7 +889,7 @@ export function AccountReservationDetail({
       <div className="detail-grid">
         <div className="stack">
           <section className="card">
-            {rules.image && (
+            {rules?.image && (
               <img
                 className="event-photo"
                 src={rules.image}
@@ -970,24 +977,26 @@ export function AccountReservationDetail({
                 >
                   Reservierung stornieren
                 </button>
-              ) : r.status === "confirmed" ? (
+              ) : rules && !readOnly && r.status === "confirmed" ? (
                 <p className="notice">
                   Ändern und Stornieren geht jetzt nur noch telefonisch.
                 </p>
-              ) : (
+              ) : r.status !== "confirmed" ? (
                 <a className="btn" href={routes.reserve}>
                   Wieder reservieren
                 </a>
-              )}
+              ) : null}
               <p role="status">{message}</p>
             </div>
           </section>
         </div>
         <div className="stack">
-          <AccountCard title="Gut zu wissen">
-            <p>{rules.policy}</p>
-            <p>Mehr als {rules.maxGuests} Personen? Ruf uns bitte an.</p>
-          </AccountCard>
+          {rules && (
+            <AccountCard title="Gut zu wissen">
+              <p>{rules.policy}</p>
+              <p>Mehr als {rules.maxGuests} Personen? Ruf uns bitte an.</p>
+            </AccountCard>
+          )}
           <AccountCard title="Ort">
             <address>
               {r.location_name}
@@ -998,7 +1007,7 @@ export function AccountReservationDetail({
           <AccountHelpCard help={help} />
         </div>
       </div>
-      {sheet && (
+      {sheet && editable && rules && (
         <AccountSheet
           title={
             sheet === "change"

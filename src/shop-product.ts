@@ -38,8 +38,13 @@ export function defaultShopProduct(
     if (value !== null && value !== undefined && value !== "")
       rows.push({ label: text(label), value: String(value) });
   };
-  add("Erzeuger", a?.producer);
-  add("Art", a?.wine_type || a?.product_type);
+  // Wire attributes are data: render the first supplied value for each declaration.
+  for (const [label, fields] of Object.entries({
+    Erzeuger: ["producer"],
+    Art: ["product_type", "wine_type"],
+  } as const)) {
+    add(label, fields.map((field) => a?.[field]).find(Boolean));
+  }
   add("Herkunft", [a?.region, a?.country].filter(Boolean).join(", "));
   add("Rebsorten", a?.grapes?.join(", "));
   add("Jahrgang", a?.vintage);
@@ -67,12 +72,13 @@ export function defaultShopProduct(
     producer: a?.producer || "",
     subtitle:
       voucherLabel(article) ||
-      [a?.wine_type, a?.region, a?.country].filter(Boolean).join(" · ") ||
+      [a?.product_type, a?.region, a?.country].filter(Boolean).join(" · ") ||
       article.subtitle ||
       "",
     description: article.description || undefined,
     image: article.images?.[0]?.image.image_url,
     imageAlt: article.title,
+    placeholder: article.type === "VOUCHER" ? "gift" : "product",
     quantityInformation: article.quantity_information || undefined,
     unitPrice: [article.quantity_information, unit].filter(Boolean).join(" · "),
     availability: available?.text,

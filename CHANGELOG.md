@@ -10,6 +10,26 @@ All notable changes to this package are documented here. The format follows [Kee
 - Typechecked source and built-package examples, a host-owned session proxy recipe, a public OpenAPI exporter and static link checks.
 - SHA-pinned GitHub Pages workflow for main and version tags.
 
+## [0.4.0] - 2026-10-31
+
+### Added
+
+- Fetch/Cloudflare Worker proxy at `@shopvento/ui/proxy` and Node HTTP adapter at `@shopvento/ui/proxy/node`, ported from the storefront transport with first-party cookies, exact-origin mutation checks, credential/header redaction, trusted visitor IP forwarding and a strict branding asset allowlist.
+- Server/build/Worker/browser `loadBranding`, `brandingTokens`, `brandingTokenMap` and `brandingStylesheet` at `@shopvento/ui/branding`.
+- Reservation details without host rules, explicit `readOnly`, and optional `onChanged`. No reservation-rules endpoint exists in the bundled OpenAPI, so editing still needs host rules.
+- Optional account phone/email, hidden empty links and fallback to already loaded instance company contact via `help.company`.
+
+### Fixed
+
+- Forward validated browser Origin and Sec-Fetch-Site on cookie writes; the instance shop domain must match the storefront host.
+- Strip decoded upstream compression/framing and hop headers in the Node adapter.
+
+### Breaking
+
+- Unspecified `ShopMedia` placeholders and default product mapping now use neutral parcel artwork instead of bottles. Request artwork explicitly on the product or section.
+- Trade presentation belongs to hosts: `ShopSectionDefinition.filterChips` accepts a typed attribute/query/options group, and `placeholder` accepts built-in artwork or a host element. No category key enables trade presentation. `filterGroups` adds generic sidebar/mobile facets, derived attribute choices, ordering and host predicates for ranges or aliases; grape, bottle-size and deli filters and their legacy URL keys now require host configuration. Explicit product placeholders take priority over section fallbacks.
+- Default empty-cart and search copy is neutral; use the neutral label keys `Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.` and `Produkte und Gutscheine suchen`. This does not introduce the English catalogue planned in ui#6.
+
 ## [0.3.0] - 2026-10-29
 
 ### Added

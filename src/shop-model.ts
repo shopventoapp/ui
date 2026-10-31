@@ -114,16 +114,12 @@ export function mergeLine(cart: ShopCart, line: CartItem): ShopCart {
 
 /** Supported catalogue URL facet keys; tasting is retained as the backend wire filter. */
 export const filterKeys = [
-  "art",
   "land",
   "region",
-  "rebsorte",
   "preis",
-  "groesse",
   "bio",
   "tasting",
   "sofort",
-  "sorte",
 ] as const;
 const normalized = (value: string) =>
   value
@@ -131,10 +127,35 @@ const normalized = (value: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/ß/g, "ss")
     .toLowerCase();
+/** One host-defined filter group matching public product data. */
+export interface ShopSectionFilter {
+  /** URL parameter used to persist the selected value. Avoid built-in facet keys. */
+  queryKey: string;
+  /** Public article attribute to compare, including array-valued attributes. */
+  attribute: keyof NonNullable<Article["attributes"]>;
+  /** Facet heading. Omit for a chip row without a heading. */
+  label?: string;
+  /** Facet order among the neutral defaults: origin 0/1, price 3, flags 5/6/7. */
+  order?: number;
+  /** Expand a facet initially. */
+  open?: boolean;
+  /** Optional host condition for showing controls; filtering remains active for deep links. */
+  visible?: (articles: readonly Article[]) => boolean;
+  /** Optional host predicate for ranges or aliases. Receives one selected value. */
+  matches?: (article: Article, value: string) => boolean;
+  /** Customer-visible choices. Omit to derive choices from the attribute. An empty value clears the selection. */
+  options?: readonly {
+    /** Attribute value to match, or an empty string to clear the filter. */
+    value: string;
+    /** Customer-visible chip text, resolved through the host label catalogue. */
+    label: string;
+  }[];
+}
 /** Match URL facets against public article attributes, without computing prices. */
 export function filterShopArticles(
   articles: Article[],
   query: URLSearchParams,
+  filters?: ShopSectionFilter | readonly ShopSectionFilter[],
 ): Article[] {
   const selected = (key: string) =>
     (query.get(key) || "").split(",").filter(Boolean);
@@ -145,16 +166,27 @@ export function filterShopArticles(
     );
   return articles.filter((article) => {
     const a = article.attributes;
-    if (
-      !includes("land", a?.country) ||
-      !includes("region", a?.region) ||
-      !includes("art", a?.wine_type)
-    )
-      return false;
-    if (
-      query.get("rebsorte") &&
-      !a?.grapes?.some((grape) => selected("rebsorte").includes(grape))
-    )
+    const groups: readonly ShopSectionFilter[] = filters
+      ? "queryKey" in filters
+        ? [filters]
+        : filters
+      : [];
+    for (const filter of groups) {
+      if (!query.get(filter.queryKey)) continue;
+      const value = a?.[filter.attribute];
+      const values = Array.isArray(value) ? value : [value];
+      if (
+        filter.matches
+          ? !selected(filter.queryKey).some((option) =>
+              filter.matches?.(article, option),
+            )
+          : !values.some((item) =>
+              includes(filter.queryKey, String(item ?? "")),
+            )
+      )
+        return false;
+    }
+    if (!includes("land", a?.country) || !includes("region", a?.region))
       return false;
     if (query.get("bio") === "1" && !a?.bio) return false;
     if (query.get("tasting") === "1" && !a?.tasting_product) return false;
@@ -172,41 +204,6 @@ export function filterShopArticles(
     if (price === "30-60" && (article.price < 3000 || article.price > 6000))
       return false;
     if (price === "ab-60" && article.price < 6000) return false;
-    const volume = a?.volume_l || 0;
-    const sizes = selected("groesse");
-    if (
-      sizes.length &&
-      !sizes.some((size) =>
-        size === "halb"
-          ? volume > 0 && volume < 0.5
-          : size === "normal"
-            ? volume >= 0.5 && volume < 0.8
-            : size === "gross"
-              ? volume >= 1.4
-              : false,
-      )
-    )
-      return false;
-    const sub = query.get("sorte");
-    if (sub) {
-      const key = normalized(article.category.slug || article.category.name);
-      const type = normalized(a?.product_type || "");
-      const title = normalized(article.title);
-      const aliases: Record<string, RegExp> = {
-        antipasti: /antipasti|pesto/,
-        chutneys: /chutney|crema|confit/,
-        oele: /ol|essig/,
-        pasta: /pasta|sugo/,
-        suess: /suss|honig|panettone|schokolade/,
-        salumi: /salami|schinken|wurst|pancetta/,
-        kaese: /kase/,
-      };
-      if (
-        !key.includes(normalized(sub)) &&
-        !aliases[sub]?.test(type + " " + title)
-      )
-        return false;
-    }
     return true;
   });
 }

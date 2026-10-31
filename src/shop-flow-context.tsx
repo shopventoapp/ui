@@ -15,7 +15,14 @@ import type { NewsletterSignupProps } from "./newsletter-signup";
 import { NewsletterSignup } from "./newsletter-signup";
 import { createShopClient } from "./shop-client";
 import type { ShopProduct } from "./shop-components";
-import { type Article, readCart, writeCart } from "./shop-model";
+import { defaultShopFlowLabels } from "./shop-flow-labels";
+import {
+  type Article,
+  filterShopArticles,
+  readCart,
+  type ShopSectionFilter,
+  writeCart,
+} from "./shop-model";
 import {
   defaultCategoryKey,
   defaultShopProduct,
@@ -34,6 +41,12 @@ export interface ShopSectionDefinition {
   image: string;
   /** Enable gift basket copy, customization and fulfilment presentation for this section. */
   giftBasket?: boolean;
+  /** Attribute-matching chips supplied by the host. Empty values clear the filter. */
+  filterChips?: ShopSectionFilter;
+  /** Host facet groups, merged with the neutral origin, price and availability facets. */
+  filterGroups?: readonly ShopSectionFilter[];
+  /** Fallback media for articles in this section, including custom host artwork. */
+  placeholder?: ShopProduct["placeholder"];
   /** Optional element ID to scroll to when this section opens with the matching hash. */
   businessAnchor?: string;
 }
@@ -222,7 +235,8 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
     shopSectionEnabled(section.key),
   );
   const text = (value: string, ...args: unknown[]) => {
-    const template = config.labels?.[value] ?? value;
+    const template =
+      config.labels?.[value] ?? defaultShopFlowLabels[value] ?? value;
     return template.replace(/\{(\d+)\}/g, (match, index: string) =>
       Number(index) < args.length ? String(args[Number(index)]) : match,
     );
@@ -248,9 +262,34 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
     writeCart: (cart: Parameters<typeof writeCart>[0]) =>
       writeCart(cart, config.storage?.cart, config.storage?.cartEvent),
     categoryKey: config.categoryKey || defaultCategoryKey,
-    productModel:
-      config.productModel ||
-      ((article: Article) => defaultShopProduct(article, config.labels)),
+    productModel: (article: Article) => {
+      const product = config.productModel
+        ? config.productModel(article)
+        : defaultShopProduct(article, config.labels);
+      const section = sections.find(
+        (section) =>
+          section.key === (config.categoryKey || defaultCategoryKey)(article),
+      );
+      return {
+        ...product,
+        placeholder: config.productModel
+          ? (product.placeholder ?? section?.placeholder)
+          : (section?.placeholder ?? product.placeholder),
+      };
+    },
+    filterArticles: (articles: Article[], query: URLSearchParams) =>
+      articles.filter((article) => {
+        const section = sections.find(
+          (section) =>
+            section.key === (config.categoryKey || defaultCategoryKey)(article),
+        );
+        return (
+          filterShopArticles([article], query, [
+            ...(section?.filterChips ? [section.filterChips] : []),
+            ...(section?.filterGroups ?? []),
+          ]).length > 0
+        );
+      }),
     sections,
     visibleSections,
     isGiftBasket: (category: string) =>

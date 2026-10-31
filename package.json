@@ -1,6 +1,6 @@
 {
   "name": "@shopvento/ui",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "React booking, voucher, customer account and shop components for the Shopvento storefront API",
   "license": "MIT",
   "author": "digital cuisine GmbH & Co. KG",
@@ -55,14 +55,29 @@
       "import": "./dist/shop-flow-entry.js",
       "default": "./dist/shop-flow-entry.js"
     },
-    "./shop-flow.css": "./dist/shop-flow.css"
+    "./shop-flow.css": "./dist/shop-flow.css",
+    "./proxy": {
+      "types": "./dist/proxy.d.ts",
+      "import": "./dist/proxy.js",
+      "default": "./dist/proxy.js"
+    },
+    "./proxy/node": {
+      "types": "./dist/proxy-node.d.ts",
+      "import": "./dist/proxy-node.js",
+      "default": "./dist/proxy-node.js"
+    },
+    "./branding": {
+      "types": "./dist/branding.d.ts",
+      "import": "./dist/branding.js",
+      "default": "./dist/branding.js"
+    }
   },
   "publishConfig": {
     "access": "public",
     "provenance": true
   },
   "scripts": {
-    "build": "tsup src/index.ts src/public-forms-entry.ts src/shop-flow-entry.ts --format esm --dts --external react --external react-dom --clean && bun run scripts/copy-css.ts",
+    "build": "tsup src/index.ts src/public-forms-entry.ts src/shop-flow-entry.ts src/proxy.ts src/proxy-node.ts src/branding.ts --format esm --dts --external react --external react-dom --clean && bun run scripts/copy-css.ts",
     "lint": "biome check src tests scripts examples && tsc --noEmit",
     "test": "bun test",
     "pack": "bun run build && bun pm pack --destination artifacts",
