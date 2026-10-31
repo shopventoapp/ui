@@ -28,15 +28,6 @@ All notable changes to this package are documented here. The format follows [Kee
 - Forward validated browser Origin and Sec-Fetch-Site on cookie writes; the instance shop domain must match the storefront host.
 - Strip decoded upstream compression/framing and hop headers in the Node adapter.
 
-### Breaking
-
-- Price-band copy uses the parameterized keys `bis {0}`, `{0} bis {1} {2}` and `über {0}` so currency formatting can follow the locale; replace the old `über 60 €` override.
-- Catalogue exports are now typed against their German keys; arbitrary dictionary indexing should use `getMessages`, `useMessages`, or an explicit string-record view.
-- Date inputs follow the selected locale; German keeps `TT.MM.JJJJ`, while English accepts ISO or its numeric locale order.
-- Unspecified `ShopMedia` placeholders and default product mapping now use neutral parcel artwork instead of bottles. Request artwork explicitly on the product or section.
-- Trade presentation belongs to hosts: `ShopSectionDefinition.filterChips` accepts a typed attribute/query/options group, and `placeholder` accepts built-in artwork or a host element. No category key enables trade presentation. `filterGroups` adds generic sidebar/mobile facets, derived attribute choices, ordering and host predicates for ranges or aliases; grape, bottle-size and deli filters and their legacy URL keys now require host configuration. Explicit product placeholders take priority over section fallbacks.
-- Default empty-cart and search copy is neutral; use the neutral label keys `Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.` and `Produkte und Gutscheine suchen`. The German wording remains the default.
-
 ## [0.3.0] - 2026-10-29
 
 ### Added
@@ -50,18 +41,6 @@ All notable changes to this package are documented here. The format follows [Kee
 - Generic `ReservationForm` and `NewsletterSignup` with runtime public API adapters, Turnstile, opening-hour validation, account prefill and separate double opt-in.
 - Internal cart, draft, checkout validation, fulfilment, display and return-consent logic; migrated consumer regressions and new form/validation tests.
 - Complete cart/checkout, reservation and newsletter guides with typechecked examples and documented public APIs.
-
-### Breaking
-
-- Remove `TastingBooking` / `TastingBookingProps`; use `EventBooking` / `EventBookingProps`.
-- Remove `Tasting` and `ShopTasting`; use `ShopEvent`. Backend JSON fields and endpoint paths stay unchanged.
-- Remove `tastingId`; use the required `eventId` booking prop.
-- Remove `useTastings`; use `useEvents`. Remove the `tastings` hook result, calendar data and calendar/list props; use `events`. `CalendarData` and `CalendarInput` require the event shape.
-- Remove `listTastings` / `getTasting`; use `listEvents` / `getEvent` on booking clients.
-- Remove `AccountTastingDetail`; use `AccountEventDetail`.
-- Remove `TastingColors` / `tastingStyle`; use `EventColors` / `eventStyle`.
-- Remove `--sv-tasting` fallbacks and `k-tasting` / `t-tasting` selectors; use `--sv-event` and `k-event` / `t-event`.
-- Before 1.0, minor releases may break compatibility; deprecated aliases are removed in 0.3.0 rather than retained until 1.0.
 
 ### Compatibility
 
@@ -86,25 +65,6 @@ All notable changes to this package are documented here. The format follows [Kee
   tasting-specific terminology. Hosts can override every changed message.
 - Booking error-focus tests avoid expensive DOM-object diagnostic formatting
   during asynchronous focus polling, without increasing timeouts.
-
-### Deprecated
-
-- All previous `Tasting`/`tasting` public names remain compatible aliases until
-  1.0. New props take precedence when both names are supplied. Backend endpoints,
-  generated wire contracts, request fields, draft storage and URL filters stay
-  unchanged.
-
-- When both `events` and deprecated `tastings` are supplied, `events` wins.
-  Hosts replacing only `tastings` on data returned by `useCalendar` must replace
-  `events` instead. `CalendarData` keeps both arrays required; `CalendarInput`
-  accepts either key for component props.
-- The package calls `client.listEvents` and `client.getEvent`. Hand-written
-  clients must provide these methods; overriding only `listTastings` or
-  `getTasting` no longer takes effect.
-- Eight German default texts changed to generic event terminology: loading,
-  unavailable event, disabled guest booking, required voucher, missing voucher
-  count, voucher description, voucher notice and event details. Hosts that want
-  "Tasting" wording must pass `labels` overrides.
 
 ## [0.1.0] - 2026-10-29
 

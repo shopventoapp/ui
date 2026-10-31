@@ -2,7 +2,7 @@
 
 React components for storefronts built on the Shopvento API: catalogue, cart, checkout, table reservations, newsletter signup, event booking with vouchers, customer accounts (sign-in, registration, dashboard with bookings, orders, vouchers and reservations) and shop building blocks (product cards, prices, dialogs, summaries). The components are plain React with one CSS file per area, no router and no styling runtime. Prices, availability, voucher balances and booking rules stay authoritative in the backend.
 
-Version 0.3 adds the complete catalogue, cart, guest/account checkout and order-return flow, plus table reservations and newsletter signup. Version 0.3 removes the deprecated aliases; see the changelog for breaking changes. Version 0.4 adds a shared same-origin proxy, typed branding, read-only reservation details and neutral catalogue defaults, typed German/English message catalogues and per-render locale formatting. The host owns routing and editorial content.
+Version 0.3 adds the complete catalogue, cart, guest/account checkout and order-return flow, plus table reservations and newsletter signup. Version 0.4 adds a shared same-origin proxy, typed branding, read-only reservation details and neutral catalogue defaults, typed German/English message catalogues and per-render locale formatting. The host owns routing and editorial content.
 
 Full English documentation: [docs.shopvento.de](https://docs.shopvento.de), including guides, the generated component/type reference and the public Shop API reference.
 
