@@ -1,3 +1,4 @@
+import { getMessages, type LocaleOptions } from "./locale";
 import type {
   BookingRequest,
   BookingResponse,
@@ -69,12 +70,17 @@ const safeGermanDetail = (detail: unknown): detail is string =>
   /^(Online kannst Du|Direktbuchungen|Dieser Gutschein|Dieser Termin|Diesen Termin|Den Gutscheincode|Der Gutscheincode|Jeder Gutscheincode|Die gewählte Variante|Für diesen Termin|Bitte |Du |Dein[e ]|Diese Buchung|Die Zahlung|Da ist leider|Nur noch|Nicht genügend|Der Termin|Das Tasting|Tasting|Zu viele Anfragen)/u.test(
     detail,
   );
-function validationMessages(error: unknown): Array<{
+function validationMessages(
+  error: unknown,
+  options: LocaleOptions = {},
+): Array<{
   /** Field in the validation messages contract. Optional; omitted unless supplied by the host or backend. */
   field?: string;
   /** Message in the validation messages contract. */
   message: string;
 }> {
+  const text = getMessages("booking", options);
+
   if (
     !(error instanceof BookingApiError) ||
     error.status !== 422 ||
@@ -91,22 +97,31 @@ function validationMessages(error: unknown): Array<{
     const field = Array.isArray(loc) ? loc.at(-1) : undefined;
     const message =
       typeof msg === "string" ? msg.replace(/^Value error, /u, "") : msg;
-    if (safeGermanDetail(message)) return [{ field, message }];
+    if (
+      safeGermanDetail(message) &&
+      (!(options.locale ?? "de").startsWith("en") || text(message) !== message)
+    )
+      return [{ field, message: text(message) }];
     if (field === "email" && type === "value_error")
-      return [{ field, message: "Bitte gib eine gültige E-Mail-Adresse an." }];
+      return [
+        { field, message: text("Bitte gib eine gültige E-Mail-Adresse an.") },
+      ];
     if (
       (field === "first_name" || field === "last_name") &&
       type === "string_too_short"
     )
-      return [{ field, message: "Bitte gib Deinen Namen an." }];
+      return [{ field, message: text("Bitte gib Deinen Namen an.") }];
     return [];
   });
 }
 /** Map supported backend validation failures onto guest contact fields.
  * @param error - Customer-visible error or error presentation flag. */
-export function bookingFieldErrors(error: unknown): GuestFieldErrors {
+export function bookingFieldErrors(
+  error: unknown,
+  options: LocaleOptions = {},
+): GuestFieldErrors {
   const errors: GuestFieldErrors = {};
-  for (const { field, message } of validationMessages(error)) {
+  for (const { field, message } of validationMessages(error, options)) {
     if (
       field === "first_name" ||
       field === "last_name" ||
@@ -129,26 +144,40 @@ export class BookingApiError extends Error {
     super(typeof detail === "string" ? detail : "Request failed");
   }
 }
-/** Turn a booking failure into customer-safe German copy, preserving supported backend validation messages.
+/** Turn a booking failure into localized customer-safe copy, preserving supported validation messages.
  * @param error - Customer-visible error or error presentation flag. */
-export function bookingErrorMessage(error: unknown): string {
+export function bookingErrorMessage(
+  error: unknown,
+  options: LocaleOptions = {},
+): string {
+  const text = getMessages("booking", options);
+
   if (!(error instanceof BookingApiError))
-    return "Die Verbindung ist fehlgeschlagen. Bitte versuche es erneut.";
-  if (safeGermanDetail(error.detail)) return error.detail;
+    return text("Die Verbindung ist fehlgeschlagen. Bitte versuche es erneut.");
+  if (
+    safeGermanDetail(error.detail) &&
+    (!(options.locale ?? "de").startsWith("en") ||
+      text(error.detail) !== error.detail)
+  )
+    return text(error.detail);
   if (error.status === 429)
-    return "Zu viele Anfragen. Bitte versuche es in einer Minute erneut.";
+    return text("Zu viele Anfragen. Bitte versuche es in einer Minute erneut.");
   if (error.status === 422)
     return (
-      validationMessages(error)
+      validationMessages(error, options)
         .map(({ message }) => message)
         .filter(
           (message, index, messages) => messages.indexOf(message) === index,
         )
-        .join(" ") || "Bitte prüfe Deine Eingaben und versuche es erneut."
+        .join(" ") || text("Bitte prüfe Deine Eingaben und versuche es erneut.")
     );
   if (error.status === 401 || error.status === 403)
-    return "Die Anmeldung oder Sicherheitsprüfung ist nicht mehr gültig. Bitte lade die Seite neu.";
-  return "Die Buchung konnte nicht abgeschlossen werden. Bitte versuche es erneut.";
+    return text(
+      "Die Anmeldung oder Sicherheitsprüfung ist nicht mehr gültig. Bitte lade die Seite neu.",
+    );
+  return text(
+    "Die Buchung konnte nicht abgeschlossen werden. Bitte versuche es erneut.",
+  );
 }
 /** Transport and authentication options for direct booking API calls. */
 export interface ClientOptions {

@@ -6,8 +6,11 @@ import {
   type AccountProfile,
   accountErrorMessage,
 } from "./account-client";
+import { useShopventoLocale } from "./locale";
 /** The profile is authoritative; readable hint cookies never establish a session. */
 export function useAccountSession(client: AccountClient) {
+  const options = useShopventoLocale();
+
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +30,8 @@ export function useAccountSession(client: AccountClient) {
         if (!controller.signal.aborted) setProfile(value);
       })
       .catch((cause) => {
-        if (!controller.signal.aborted) setError(accountErrorMessage(cause));
+        if (!controller.signal.aborted)
+          setError(accountErrorMessage(cause, false, undefined, options));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -45,10 +49,10 @@ export function useAccountSession(client: AccountClient) {
     } catch (cause) {
       if (cause instanceof AccountApiError && cause.status === 401)
         setProfile(null);
-      setError(accountErrorMessage(cause));
+      setError(accountErrorMessage(cause, false, undefined, options));
       throw cause;
     }
-  }, [client]);
+  }, [client, options]);
   return {
     /** Authoritative customer profile, or null. */
     profile,

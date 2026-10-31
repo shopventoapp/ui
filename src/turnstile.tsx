@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useMessages } from "./locale";
 
 interface TurnstileApi {
   /** Render in the turnstile api contract. */
@@ -55,6 +56,7 @@ export function Turnstile({
   /** Receive the current short-lived challenge token, or an empty string after expiry or error. */
   onToken: (token: string) => void;
 }) {
+  const text = useMessages("forms");
   const container = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -96,8 +98,9 @@ export function Turnstile({
       <div ref={container} />
       {failed && (
         <p role="alert">
-          Die Sicherheitsprüfung ist nicht verfügbar. Bitte lade die Seite
-          erneut.
+          {text(
+            "Die Sicherheitsprüfung ist nicht verfügbar. Bitte lade die Seite erneut.",
+          )}
         </p>
       )}
     </div>

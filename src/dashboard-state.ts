@@ -1,3 +1,4 @@
+import { getMessages, type LocaleOptions } from "./locale";
 /** Resolve a Berlin wall-clock date without using the browser time zone. */
 export function berlinStartInstant(date: string, time: string) {
   const wall = Date.parse(
@@ -69,42 +70,49 @@ export interface AccountEntry {
 }
 /** Derive the customer-visible German order status and tone.
  * @param order - Authoritative account order. */
-export function orderStatus(order: AccountOrder): [string, string] {
+export function orderStatus(
+  order: AccountOrder,
+  options: LocaleOptions = {},
+): [string, string] {
+  const text = getMessages("account", options);
+
   if (order.withdrawal?.state === "REQUESTED")
-    return ["Widerruf erklärt", "warn"];
+    return [text("Widerruf erklärt"), "warn"];
   const terminal: Record<string, string> = {
-    CANCELLED: "Storniert",
-    PARTIALLY_CANCELLED: "Teilweise storniert",
-    RETURNED: "Erstattet",
-    PARTIALLY_RETURNED: "Teilweise erstattet",
-    REFUNDED: "Erstattet",
-    REFUNDED_EXTERNALLY: "Erstattet",
-    DISPUTED: "In Klärung",
-    DISPUTED_LOST: "In Klärung",
+    CANCELLED: text("Storniert"),
+    PARTIALLY_CANCELLED: text("Teilweise storniert"),
+    RETURNED: text("Erstattet"),
+    PARTIALLY_RETURNED: text("Teilweise erstattet"),
+    REFUNDED: text("Erstattet"),
+    REFUNDED_EXTERNALLY: text("Erstattet"),
+    DISPUTED: text("In Klärung"),
+    DISPUTED_LOST: text("In Klärung"),
   };
   if (terminal[order.status])
     return [
       terminal[order.status],
       order.status.startsWith("DISPUTED") ? "warn" : "neutral",
     ];
-  if (order.status === "FAILED") return ["Zahlung fehlgeschlagen", "err"];
-  if (order.status === "PENDING") return ["Zahlung offen", "warn"];
+  if (order.status === "FAILED") return [text("Zahlung fehlgeschlagen"), "err"];
+  if (order.status === "PENDING") return [text("Zahlung offen"), "warn"];
   if (order.status === "PAID" && order.voucher_only)
-    return ["Bezahlt", "neutral"];
+    return [text("Bezahlt"), "neutral"];
   const fulfillment =
     order.fulfillments.find((f) => f.status === "PICKUP_READY") ??
     order.fulfillments.find((f) => f.status === "SHIPPING_IN_PROGRESS") ??
     order.fulfillments[0];
   const states: Record<string, [string, string]> = {
-    PICKUP_READY: ["Abholbereit", "ok"],
-    PICKUP_COMPLETED: ["Abgeholt", "neutral"],
-    SHIPPING_IN_PROGRESS: ["Unterwegs", "neutral"],
-    SHIPPING_COMPLETED: ["Zugestellt", "ok"],
-    DIGITAL_COMPLETED: ["Per E-Mail verschickt", "neutral"],
+    PICKUP_READY: [text("Abholbereit"), "ok"],
+    PICKUP_COMPLETED: [text("Abgeholt"), "neutral"],
+    SHIPPING_IN_PROGRESS: [text("Unterwegs"), "neutral"],
+    SHIPPING_COMPLETED: [text("Zugestellt"), "ok"],
+    DIGITAL_COMPLETED: [text("Per E-Mail verschickt"), "neutral"],
   };
   return (
     states[fulfillment?.status ?? ""] ?? [
-      order.status === "COMPLETED" ? "Abgeschlossen" : "In Vorbereitung",
+      order.status === "COMPLETED"
+        ? text("Abgeschlossen")
+        : text("In Vorbereitung"),
       "neutral",
     ]
   );
@@ -194,14 +202,17 @@ export function accountEntries(
   bookings: AccountBooking[],
   reservations: AccountReservation[],
   now = Date.now(),
+  options: LocaleOptions = {},
 ): AccountEntry[] {
+  const text = getMessages("account", options);
+
   const result: AccountEntry[] = [];
   for (const order of orders.filter(
     (o) =>
       o.order_source !== "SHOP_BOOKING" &&
       !bookings.some((b) => b.order_id === o.id),
   )) {
-    const [status, tone] = orderStatus(order);
+    const [status, tone] = orderStatus(order, options);
     const terminal = [
       "CANCELLED",
       "RETURNED",
@@ -238,7 +249,7 @@ export function accountEntries(
     result.push({
       id: `o-${order.id}`,
       type: "bestellungen",
-      title: order.items[0]?.title ?? "Bestellung",
+      title: order.items[0]?.title ?? text("Bestellung"),
       number: order.order_number,
       date: order.created_at,
       next,
@@ -254,7 +265,9 @@ export function accountEntries(
   for (const booking of bookings) {
     const date = `${booking.date}T${booking.start_time}`;
     const next = berlinStartInstant(booking.date, booking.start_time);
-    const status = booking.customer_status_label ?? "Status nicht verfügbar";
+    const status = text(
+      booking.customer_status_label ?? "Status nicht verfügbar",
+    );
     result.push({
       id: `t-${booking.order_id}`,
       type: "tastings",
@@ -280,23 +293,27 @@ export function accountEntries(
   for (const reservation of reservations) {
     const next = reservationStartInstant(reservation.date, reservation.time);
     const statuses: Record<string, string> = {
-      confirmed: "Bestätigt",
-      seated: "Angekommen",
-      completed: "Vergangen",
-      cancelled: "Storniert",
-      no_show: "Nicht erschienen",
+      confirmed: text("Bestätigt"),
+      seated: text("Angekommen"),
+      completed: text("Vergangen"),
+      cancelled: text("Storniert"),
+      no_show: text("Nicht erschienen"),
     };
     result.push({
       id: `r-${reservation.id}`,
       type: "reservierungen",
-      title: `Tisch für ${reservation.num_guests} ${reservation.num_guests === 1 ? "Person" : "Personen"}`,
+      title: text(
+        "Tisch für {0} {1}",
+        reservation.num_guests,
+        reservation.num_guests === 1 ? text("Person") : text("Personen"),
+      ),
       number: "",
       date: `${reservation.date}T${reservation.time}`,
       next,
       current: next > now && reservation.status === "confirmed",
 
       /** HTTP response status code. */
-      status: statuses[reservation.status] ?? "Angefragt",
+      status: statuses[reservation.status] ?? text("Angefragt"),
       tone: reservation.status === "confirmed" ? "ok" : "neutral",
       reservation,
     });
@@ -342,10 +359,16 @@ export function filterEntries(
 /** Select upcoming activity and other items relevant to the account overview.
  * @param entries - Normalized account activity to filter or prioritize.
  * @param now - Current instant as milliseconds since the Unix epoch. Defaults to Date.now(). Defaults to Date.now(). */
-export function overviewPriorities(entries: AccountEntry[], now = Date.now()) {
+export function overviewPriorities(
+  entries: AccountEntry[],
+  now = Date.now(),
+  options: LocaleOptions = {},
+) {
+  const text = getMessages("account", options);
+
   return entries
     .flatMap((e) =>
-      e.status === "Zahlung fehlgeschlagen"
+      e.status === text("Zahlung fehlgeschlagen")
         ? [
             {
               /** Normalized customer activity associated with the priority. */
@@ -354,7 +377,7 @@ export function overviewPriorities(entries: AccountEntry[], now = Date.now()) {
               priority: 1,
             },
           ]
-        : e.status === "Abholbereit"
+        : e.status === text("Abholbereit")
           ? [
               {
                 /** Normalized customer activity associated with the priority. */
@@ -414,9 +437,9 @@ export function withdrawalSelection(
       quantity: quantities[o.order_item_id],
     }));
 }
-/** Format a signed voucher-history amount in integer cents as German EUR. */
-export const historyMoney = (amount: number) =>
-  `${amount > 0 ? "+" : amount < 0 ? "-" : ""}${new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Math.abs(amount) / 100)}`;
+/** Format a signed voucher-history amount in integer cents in the requested locale. */
+export const historyMoney = (amount: number, options: LocaleOptions = {}) =>
+  `${amount > 0 ? "+" : amount < 0 ? "-" : ""}${new Intl.NumberFormat(options.locale ?? "de", { style: "currency", currency: "EUR" }).format(Math.abs(amount) / 100)}`;
 /** Check whether the backend reports the customer voucher as active. */
 export const voucherActive = (v: AccountVoucher) =>
   !v.redeemed && v.remaining_value > 0;

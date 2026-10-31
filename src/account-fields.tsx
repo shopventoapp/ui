@@ -7,6 +7,15 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  dateInputConfirmation,
+  dateInputPlaceholder,
+  formatLocaleDateInput,
+  maskLocaleDate,
+  parseLocaleDate,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 
 /** A country selector value and customer-visible label. */
 export type CountryOption = {
@@ -92,6 +101,8 @@ export function CountrySelect({
   /** Customer-visible error or error presentation flag. Optional; omitted unless supplied by the host or backend. */
   error?: string;
 }) {
+  const text = useMessages("account");
+
   const id = useId();
   const initial =
     accountCountryOption(countries, defaultValue)?.value ||
@@ -120,7 +131,7 @@ export function CountrySelect({
         }}
       >
         {unknown && <option value={current}>{current}</option>}
-        {!current && <option value="">Bitte wähle ein Land</option>}
+        {!current && <option value="">{text("Bitte wähle ein Land")}</option>}
         {countries.map((country) => (
           <option key={country.value} value={country.value}>
             {country.label}
@@ -136,9 +147,10 @@ export function CountrySelect({
   );
 }
 
-/** Format typed digits as a German day.month.year date.
+/** Format typed digits in the selected locale, with the historic German caret behavior.
  * @param value - Current controlled value. */
-export function maskBirthDate(value: string) {
+export function maskBirthDate(value: string, locale = "de") {
+  if (!locale.startsWith("de")) return maskLocaleDate(value, locale);
   const trimmed = value.trim();
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
   const german = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(trimmed);
@@ -154,21 +166,31 @@ export function maskBirthDate(value: string) {
     (digits.length >= 4 ? `.${digits.slice(4)}` : "")
   );
 }
-/** Convert an ISO date into a German date input value.
+/** Convert an ISO date into a numeric input value for the selected locale.
  * @param value - Current controlled value. */
-export function birthDateFromISO(value?: string | null) {
+export function birthDateFromISO(value?: string | null, locale = "de") {
+  if (!locale.startsWith("de"))
+    return formatLocaleDateInput(value ?? "", locale);
   return value
     ? `${value.slice(8, 10)}.${value.slice(5, 7)}.${value.slice(0, 4)}`
     : "";
 }
 /** Null signals an incomplete or malformed entry; empty stays optional. */
-export function birthDateToISO(value: string): string | null {
+export function birthDateToISO(value: string, locale = "de"): string | null {
+  if (!locale.startsWith("de")) {
+    if (!value) return "";
+    try {
+      return parseLocaleDate(value, locale);
+    } catch {
+      return null;
+    }
+  }
   if (!value) return "";
   if (!/^\d{2}\.\d{2}\.\d{4}$/.test(value)) return null;
   return `${value.slice(6)}-${value.slice(3, 5)}-${value.slice(0, 2)}`;
 }
 
-/** Render a controlled German-format birth date field. */
+/** Render a controlled locale-aware birth date field. */
 export function BirthDateInput({
   value,
   onValueChange,
@@ -182,6 +204,9 @@ export function BirthDateInput({
   /** Receive the updated formatted date value. */
   onValueChange: (value: string) => void;
 }) {
+  const { locale } = useShopventoLocale();
+  const confirmationId = useId();
+  const confirmation = dateInputConfirmation(value, locale);
   const input = useRef<HTMLInputElement>(null);
   const [selection, setSelection] = useState<{ caret: number } | null>(null);
   useLayoutEffect(() => {
@@ -189,6 +214,10 @@ export function BirthDateInput({
       input.current?.setSelectionRange(selection.caret, selection.caret);
   }, [selection]);
   function update(raw: string, position: number, inputType?: string) {
+    if (!locale.startsWith("de")) {
+      onValueChange(maskBirthDate(raw, locale));
+      return;
+    }
     // Forward deletion crosses a separator by removing the next digit.
     if (
       inputType === "deleteContentForward" &&
@@ -250,40 +279,53 @@ export function BirthDateInput({
     });
   }
   return (
-    <input
-      {...props}
-      ref={input}
-      type="text"
-      inputMode="numeric"
-      autoComplete="bday"
-      placeholder="TT.MM.JJJJ"
-      value={value}
-      onChange={(event) =>
-        update(
-          event.target.value,
-          event.target.selectionStart ?? event.target.value.length,
-          (event.nativeEvent as InputEvent).inputType,
-        )
-      }
-      onKeyDown={(event) => {
-        props.onKeyDown?.(event);
-        if (event.defaultPrevented) return;
-        const start = event.currentTarget.selectionStart ?? 0;
-        const end = event.currentTarget.selectionEnd ?? start;
-        // Remove the preceding digit as well when Backspace crosses an auto-inserted dot.
-        if (
-          event.key === "Backspace" &&
-          start === end &&
-          value[start - 1] === "."
-        ) {
-          event.preventDefault();
-          update(
-            value.slice(0, start - 2) + value.slice(start),
-            start - 2,
-            "deleteContentBackward",
-          );
+    <>
+      <input
+        {...props}
+        aria-describedby={
+          [props["aria-describedby"], confirmation ? confirmationId : ""]
+            .filter(Boolean)
+            .join(" ") || undefined
         }
-      }}
-    />
+        ref={input}
+        type="text"
+        inputMode="numeric"
+        autoComplete="bday"
+        placeholder={dateInputPlaceholder(locale)}
+        value={value}
+        onChange={(event) =>
+          update(
+            event.target.value,
+            event.target.selectionStart ?? event.target.value.length,
+            (event.nativeEvent as InputEvent).inputType,
+          )
+        }
+        onKeyDown={(event) => {
+          props.onKeyDown?.(event);
+          if (event.defaultPrevented) return;
+          const start = event.currentTarget.selectionStart ?? 0;
+          const end = event.currentTarget.selectionEnd ?? start;
+          // Remove the preceding digit as well when Backspace crosses an auto-inserted dot.
+          if (
+            locale.startsWith("de") &&
+            event.key === "Backspace" &&
+            start === end &&
+            value[start - 1] === "."
+          ) {
+            event.preventDefault();
+            update(
+              value.slice(0, start - 2) + value.slice(start),
+              start - 2,
+              "deleteContentBackward",
+            );
+          }
+        }}
+      />
+      {confirmation && (
+        <span id={confirmationId} role="status" className="hint">
+          {confirmation}
+        </span>
+      )}
+    </>
   );
 }

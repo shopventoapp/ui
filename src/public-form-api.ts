@@ -1,34 +1,62 @@
-/** Parse a strict German calendar date into ISO form, rejecting invalid dates and overflow. */
-export function reservationDate(value: string): string {
-  const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);
-  if (!match) throw new Error("Bitte gib das Datum als TT.MM.JJJJ ein.");
-  const iso = `${match[3]}-${match[2]}-${match[1]}`;
-  const parsed = new Date(`${iso}T12:00:00Z`);
-  if (
-    !Number.isFinite(parsed.getTime()) ||
-    parsed.toISOString().slice(0, 10) !== iso
-  )
-    throw new Error("Bitte gib ein gültiges Datum ein.");
-  return iso;
+import {
+  dateInputPattern,
+  dateInputPlaceholder,
+  getMessages,
+  type LocaleOptions,
+  maskLocaleDate,
+  parseLocaleDate,
+} from "./locale";
+/** Parse a strict local calendar date into ISO, rejecting overflow. */
+export function reservationDate(
+  value: string,
+  locale: string | LocaleOptions = "de",
+  overrides?: Partial<Record<string, string>>,
+): string {
+  const options = typeof locale === "string" ? { locale } : locale;
+  const language = options.locale ?? "de";
+  try {
+    return parseLocaleDate(value, language);
+  } catch {
+    const text = getMessages("forms", options, overrides);
+    throw new Error(
+      new RegExp(`^${dateInputPattern(language)}$`).test(value)
+        ? text("Bitte gib ein gültiges Datum ein.")
+        : text(
+            "Bitte gib das Datum als {0} ein.",
+            dateInputPlaceholder(language),
+          ),
+    );
+  }
 }
-/** Mask up to eight date digits as DD.MM.YYYY. */
-export function maskReservationDate(value: string): string {
-  return value
-    .replace(/\D/g, "")
-    .slice(0, 8)
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2}\.\d{2})(\d)/, "$1.$2");
+/** Mask a locale numeric date, allowing English ISO input. */
+export function maskReservationDate(value: string, locale = "de"): string {
+  return maskLocaleDate(value, locale);
 }
 
-/** Map public API status codes to customer-safe German reservation errors. */
-export function publicApiError(status: number): string {
+/** Map public API status codes to localized customer-safe reservation errors. */
+export function publicApiError(
+  status: number,
+  locale: string | LocaleOptions = "de",
+  overrides?: Partial<Record<string, string>>,
+): string {
+  const text = getMessages(
+    "reservation",
+    typeof locale === "string" ? { locale } : locale,
+    overrides,
+  );
   if (status === 403)
-    return "Die Sicherheitsprüfung ist fehlgeschlagen oder die Online-Buchung ist nicht verfügbar. Bitte versuche es erneut oder rufe uns an.";
+    return text(
+      "Die Sicherheitsprüfung ist fehlgeschlagen oder die Online-Buchung ist nicht verfügbar. Bitte versuche es erneut oder rufe uns an.",
+    );
   if (status === 409)
-    return "Zu dieser Zeit sind nicht genügend Plätze verfügbar. Bitte wähle einen anderen Termin oder rufe uns an.";
+    return text(
+      "Zu dieser Zeit sind nicht genügend Plätze verfügbar. Bitte wähle einen anderen Termin oder rufe uns an.",
+    );
   if (status === 422)
-    return "Bitte prüfe Deine Angaben und die zulässige Personenzahl.";
+    return text("Bitte prüfe Deine Angaben und die zulässige Personenzahl.");
   if (status === 429)
-    return "Zu viele Versuche. Bitte warte kurz und versuche es erneut.";
-  return "Die Anfrage ist gerade nicht möglich. Bitte versuche es später erneut oder rufe uns an.";
+    return text("Zu viele Versuche. Bitte warte kurz und versuche es erneut.");
+  return text(
+    "Die Anfrage ist gerade nicht möglich. Bitte versuche es später erneut oder rufe uns an.",
+  );
 }

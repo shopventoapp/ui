@@ -1,3 +1,9 @@
+import {
+  getMessages,
+  type LocaleOptions,
+  localeDate,
+  localeMoney,
+} from "./locale";
 import type { ShopOperations } from "./shop-client";
 /** Public catalogue article consumed by the shop flow. */
 export type Article =
@@ -15,11 +21,22 @@ export type CheckoutAddress = NonNullable<
   ShopOperations["checkout"]["body"]["shipping_address"]
 >;
 /** Format an offered ISO calendar date in UTC to avoid timezone shifts. */
-export function formatFulfillmentDate(date: string) {
-  const [year, month, day] = date.split("-").map(Number);
-  const calendar = new Date(Date.UTC(year, month - 1, day));
-  const weekdays = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-  return `${weekdays[calendar.getUTCDay()]}, ${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.`;
+export function formatFulfillmentDate(date: string, locale = "de") {
+  const settings: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  };
+  if (locale.toLowerCase().startsWith("de")) {
+    const parts = new Intl.DateTimeFormat(locale, settings).formatToParts(
+      new Date(`${date}T12:00:00Z`),
+    );
+    const part = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((value) => value.type === type)?.value ?? "";
+    return `${part("weekday").replace(/\.$/, "")}, ${part("day")}.${part("month")}.`;
+  }
+  return localeDate(date, locale, { ...settings, year: undefined });
 }
 /** Identify a fulfilment schedule and its eligible dates so stale selections can be invalidated. */
 export function fulfillmentDateKey(option?: Fulfillment | null) {
@@ -40,11 +57,9 @@ export function checkoutFulfillmentFields(
     ...(option?.schedule ? { fulfillment_date: date || null } : {}),
   };
 }
-/** Format integer euro cents for German display; totals remain server-authoritative. */
-export const formatPrice = (amount: number) =>
-  new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(
-    amount / 100,
-  );
+/** Format integer euro cents for the selected locale; totals remain server-authoritative. */
+export const formatPrice = (amount: number, locale = "de") =>
+  localeMoney(amount, locale);
 /** Persisted cart request; totals and prices are calculated by the server. */
 export type ShopCart = {
   items: CartItem[];
@@ -133,7 +148,7 @@ export interface ShopSectionFilter {
   queryKey: string;
   /** Public article attribute to compare, including array-valued attributes. */
   attribute: keyof NonNullable<Article["attributes"]>;
-  /** Facet heading. Omit for a chip row without a heading. */
+  /** Optional facet heading. Omit to render chip rows or sidebar controls without a heading. */
   label?: string;
   /** Facet order among the neutral defaults: origin 0/1, price 3, flags 5/6/7. */
   order?: number;
@@ -221,14 +236,18 @@ export function facetCount(
 }
 
 /** Describe single- and multi-purpose vouchers from the public catalogue. */
-export function voucherLabel(article: Article): string {
+export function voucherLabel(
+  article: Article,
+  options: LocaleOptions = {},
+): string {
+  const text = getMessages("voucher", options);
   if (article.type !== "VOUCHER") return "";
   const kind = article.voucher_kind ?? article.kind;
   if (kind === "MULTI_PURPOSE")
-    return "Mehrzweckgutschein, einlösbar für das komplette Sortiment";
+    return text("Mehrzweckgutschein, einlösbar für das komplette Sortiment");
   if (kind === "SINGLE_PURPOSE")
-    return `Einzweckgutschein${article.redeemable_for_text ? `, ${article.redeemable_for_text}` : ""}`;
-  return article.redeemable_for_text || "Gutschein";
+    return `${text("Einzweckgutschein")}${article.redeemable_for_text ? `, ${article.redeemable_for_text}` : ""}`;
+  return article.redeemable_for_text || text("Gutschein");
 }
 // Catalogue nutrition values retain units in their keys; legacy keys remain readable.
 const nutritionLabels: Record<string, string> = {
@@ -242,12 +261,14 @@ const nutritionLabels: Record<string, string> = {
 /** Format public nutrition values with their units, retaining zero values. */
 export function nutritionRows(
   nutrition?: Record<string, number> | null,
+  options: LocaleOptions = {},
 ): Array<{
   /** Nutrient name. */
   label: string;
   /** Formatted amount and unit. */
   value: string;
 }> {
+  const text = getMessages("shop", options);
   const values = nutrition || {};
   const valid = (value: unknown): value is number =>
     typeof value === "number" && Number.isFinite(value);
@@ -256,11 +277,11 @@ export function nutritionRows(
     ["energy_kcal", "kcal"],
   ].flatMap(([key, unit]) =>
     valid(values[key])
-      ? [`${values[key].toLocaleString("de-DE")} ${unit}`]
+      ? [`${values[key].toLocaleString(options.locale ?? "de")} ${unit}`]
       : [],
   );
   const rows = energy.length
-    ? [{ label: "Energie", value: energy.join(" / ") }]
+    ? [{ label: text("Energie"), value: energy.join(" / ") }]
     : [];
   for (const [key, label] of Object.entries(nutritionLabels)) {
     const value =
@@ -268,7 +289,10 @@ export function nutritionRows(
       (key === "sugars" ? (values.sugar_g ?? values.sugar) : undefined) ??
       values[key];
     if (valid(value))
-      rows.push({ label, value: `${value.toLocaleString("de-DE")} g` });
+      rows.push({
+        label: text(label),
+        value: `${value.toLocaleString(options.locale ?? "de")} g`,
+      });
   }
   return rows;
 }
@@ -317,15 +341,32 @@ export function defaultFulfillmentId(quote: Quote, cart: ShopCart) {
   );
 }
 /** Display an exact fulfilment price or the server-provided minimum-price prefix. */
-export function fulfillmentPriceLabel(option: Fulfillment) {
-  return `${option.price_is_from ? "ab " : ""}${formatPrice(option.price)}`;
+export function fulfillmentPriceLabel(
+  option: Fulfillment,
+  options: LocaleOptions = {},
+) {
+  const text = getMessages("shop", options);
+  return `${option.price_is_from ? text("ab ") : ""}${formatPrice(option.price, options.locale)}`;
 }
 /** Describe shipping fees and the server-provided free-shipping threshold. */
-export function shippingTerms(option?: Fulfillment) {
+export function shippingTerms(
+  option?: Fulfillment,
+  options: LocaleOptions = {},
+) {
+  const text = getMessages("shop", options);
   return option?.type === "SHIPPING" && option.price === 0
-    ? "versandfrei"
+    ? text("versandfrei")
     : option
-      ? `${fulfillmentPriceLabel(option)} pro Bestellung${option.free_shipping_from != null ? `, ab ${formatPrice(option.free_shipping_from)} versandfrei` : ""}`
+      ? text(
+          "{0} pro Bestellung{1}",
+          fulfillmentPriceLabel(option, options),
+          option.free_shipping_from != null
+            ? text(
+                ", ab {0} versandfrei",
+                formatPrice(option.free_shipping_from, options.locale),
+              )
+            : "",
+        )
       : "";
 }
 /** Combine public pickup address fields without inventing missing location details. */
@@ -350,9 +391,22 @@ export function pickupAddress(option?: Fulfillment) {
   );
 }
 /** Describe pickup hold, grace and cancellation settings supplied by the server. */
-export function pickupTerms(settings?: Settings) {
+export function pickupTerms(settings?: Settings, options: LocaleOptions = {}) {
   if (settings?.pickup_hold_days == null) return "";
-  return `${settings.pickup_hold_days} Tage ab unserer Benachrichtigung${settings.pickup_grace_days != null ? `, nach unserer Erinnerung weitere ${settings.pickup_grace_days} Tage` : ""}.${settings.pickup_auto_cancel_enabled === true ? " Danach treten wir zurück und erstatten vollständig." : ""}`;
+  const text = getMessages("shop", options);
+  return text(
+    "{0} Tage ab unserer Benachrichtigung{1}.{2}",
+    settings.pickup_hold_days,
+    settings.pickup_grace_days != null
+      ? text(
+          ", nach unserer Erinnerung weitere {0} Tage",
+          settings.pickup_grace_days,
+        )
+      : "",
+    settings.pickup_auto_cancel_enabled === true
+      ? text(" Danach treten wir zurück und erstatten vollständig.")
+      : "",
+  );
 }
 /** Determine whether any cart line requires physical fulfilment. */
 export function hasPhysicalItems(cart: ShopCart, articles: Article[]) {

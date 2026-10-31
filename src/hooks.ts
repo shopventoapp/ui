@@ -14,6 +14,7 @@ import {
   type Timewindow,
   windowStarted,
 } from "./client";
+import { useMessages, useShopventoLocale } from "./locale";
 
 /** Load event variants, windows, settings and locations; abort obsolete requests and expose reload state.
  * @param client - Stable client instance used for API requests.
@@ -24,6 +25,8 @@ export function useBookingData(
   eventId: number,
   locationId?: number,
 ) {
+  const options = useShopventoLocale();
+
   const [data, setData] = useState<{
     /** Public event variants and integer-cent prices. */
     variants: ShopEvent[];
@@ -71,7 +74,8 @@ export function useBookingData(
           });
       })
       .catch((error) => {
-        if (!controller.signal.aborted) setError(bookingErrorMessage(error));
+        if (!controller.signal.aborted)
+          setError(bookingErrorMessage(error, options));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -189,6 +193,10 @@ export function useSubmitBooking(
   onAccepted?: (response: BookingResponse) => void,
   onFailure?: (error: unknown) => void,
 ) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("booking");
+
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BookingResponse | null>(null);
@@ -245,8 +253,14 @@ export function useSubmitBooking(
         setResult({ ...response, checkout_url: null });
         setError(
           response.success
-            ? `Deine Buchung ${response.order_number} wurde übermittelt, aber der Abschluss konnte nicht bestätigt werden. Bitte kontaktiere uns mit dieser Buchungsnummer, bevor Du erneut buchst.`
-            : `Deine Buchung konnte nicht abgeschlossen werden. Bitte kontaktiere uns mit der Buchungsnummer ${response.order_number}, bevor Du erneut buchst.`,
+            ? text(
+                "Deine Buchung {0} wurde übermittelt, aber der Abschluss konnte nicht bestätigt werden. Bitte kontaktiere uns mit dieser Buchungsnummer, bevor Du erneut buchst.",
+                response.order_number,
+              )
+            : text(
+                "Deine Buchung konnte nicht abgeschlossen werden. Bitte kontaktiere uns mit der Buchungsnummer {0}, bevor Du erneut buchst.",
+                response.order_number,
+              ),
         );
         return;
       }
@@ -254,8 +268,8 @@ export function useSubmitBooking(
       return response;
     } catch (error) {
       onFailure?.(error);
-      setFieldErrors(bookingFieldErrors(error));
-      setError(bookingErrorMessage(error));
+      setFieldErrors(bookingFieldErrors(error, options));
+      setError(bookingErrorMessage(error, options));
     } finally {
       busy.current = false;
       setPending(false);
@@ -283,6 +297,10 @@ export function useSubmitBooking(
 
 /** Independent public list hook for host-owned event navigation. */
 export function useEvents(client: BookingClient) {
+  const options = useShopventoLocale();
+  const messages = useRef(options.messages);
+  messages.current = options.messages;
+
   const [events, setEvents] = useState<ShopEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -296,13 +314,19 @@ export function useEvents(client: BookingClient) {
         if (!controller.signal.aborted) setEvents(rows);
       })
       .catch((error) => {
-        if (!controller.signal.aborted) setError(bookingErrorMessage(error));
+        if (!controller.signal.aborted)
+          setError(
+            bookingErrorMessage(error, {
+              locale: options.locale,
+              messages: messages.current,
+            }),
+          );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [client]);
+  }, [client, options.locale]);
   return {
     /** Loaded public event variants. */
     events,

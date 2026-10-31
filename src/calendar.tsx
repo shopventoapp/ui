@@ -20,6 +20,14 @@ import {
   windowStarted,
   windowTooSoon,
 } from "./client";
+import {
+  getMessages,
+  type LocaleOptions,
+  localeTime,
+  ShopventoProvider,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 /** Formatting options for booking money and dates. */
 export interface BookingFormat {
   /** Date/number locale. Defaults to de-DE. Optional; omitted unless supplied by the host or backend. */
@@ -45,8 +53,24 @@ export const bookingDate = (date: string, short = false, locale = "de-DE") =>
     timeZone: "UTC",
   }).format(new Date(`${date}T12:00:00Z`));
 /** Format the start and end time of a slot. */
-export const bookingTime = (w: Pick<Timewindow, "start_time" | "end_time">) =>
-  `${w.start_time.slice(0, 5)}${w.end_time ? ` bis ${w.end_time.slice(0, 5)}` : ""} Uhr`;
+export function bookingTime(
+  w: Pick<Timewindow, "start_time" | "end_time">,
+  language: LocaleOptions | string = {},
+) {
+  const options =
+    typeof language === "string" ? { locale: language } : language;
+  const locale = options.locale ?? "de";
+  const text = getMessages("booking", options);
+  const start = localeTime(w.start_time, locale, {
+    messages: options.messages,
+  });
+  const end = w.end_time
+    ? localeTime(w.end_time, locale, { messages: options.messages })
+    : "";
+  return locale.startsWith("de")
+    ? `${w.start_time.slice(0, 5)}${w.end_time ? text(" bis {0}", w.end_time.slice(0, 5)) : ""}${getMessages("forms", options)(" Uhr")}`
+    : `${start}${end ? text(" bis {0}", end) : ""}`;
+}
 /** Effective online booking mode derived from the installation flags. */
 export type BookingMode = "full" | "account" | "voucher" | "paused";
 /** Resolve guest, account-only, voucher-only or paused mode from the installation flags.
@@ -72,7 +96,11 @@ export function BookingModeNotice({
   /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
 }) {
-  const copy = mergeBookingLabels(labels);
+  const options = useShopventoLocale();
+
+  const text = useMessages("booking");
+
+  const copy = mergeBookingLabels(labels, options);
   const mode = bookingMode(settings);
   if (mode === "full") return null;
   return (
@@ -85,25 +113,25 @@ export function BookingModeNotice({
         <p>
           <strong>
             {mode === "paused"
-              ? "Online-Buchung ist gerade pausiert."
+              ? text("Online-Buchung ist gerade pausiert.")
               : mode === "voucher"
-                ? "Online buchst Du gerade nur mit Gutschein."
-                : "Online buchst Du gerade mit Deinem Konto."}
+                ? text("Online buchst Du gerade nur mit Gutschein.")
+                : text("Online buchst Du gerade mit Deinem Konto.")}
           </strong>
         </p>
         {mode === "paused" && (
           <p className="small">
-            Die Termine siehst Du trotzdem. Buchen kannst Du{" "}
+            {text("Die Termine siehst Du trotzdem. Buchen kannst Du")}{" "}
             {phone ? (
               <>
-                telefonisch unter{" "}
+                {text("telefonisch unter")}{" "}
                 <a href={`tel:${phone.replace(/\s/g, "")}`}>
                   {phoneLabel ?? phone}
                 </a>{" "}
-                oder{" "}
+                {text("oder")}{" "}
               </>
             ) : null}
-            direkt bei uns im Laden.
+            {text("direkt bei uns im Laden.")}
           </p>
         )}
         {mode === "voucher" && (
@@ -192,7 +220,10 @@ export function availability(
   seats = 1,
   leadHours = 24,
   now = Date.now(),
+  options: LocaleOptions = {},
 ) {
+  const text = getMessages("booking", options);
+
   if (windowStarted(w, now))
     return {
       /** Availability state used for visual treatment. */
@@ -200,7 +231,7 @@ export function availability(
       /** Availability icon name. */
       icon: "◷",
       /** Customer-visible German availability message. */
-      text: "Vorbei",
+      text: text("Vorbei"),
       /** Whether this slot can be selected for the requested seats. */
       bookable: false,
     };
@@ -211,7 +242,7 @@ export function availability(
       /** Availability icon name. */
       icon: "⊘",
       /** Customer-visible German availability message. */
-      text: "Ausgebucht",
+      text: text("Ausgebucht"),
       /** Whether this slot can be selected for the requested seats. */
       bookable: false,
     };
@@ -224,7 +255,7 @@ export function availability(
       icon: "☎",
 
       /** Customer-visible German availability message. */
-      text: "Nur telefonisch",
+      text: text("Nur telefonisch"),
 
       /** Whether this slot can be selected for the requested seats. */
       bookable: false,
@@ -238,7 +269,11 @@ export function availability(
       icon: "♙",
 
       /** Customer-visible German availability message. */
-      text: `Nur ${w.free_spots} ${w.free_spots === 1 ? "Platz" : "Plätze"} frei`,
+      text: text(
+        "Nur {0} {1} frei",
+        w.free_spots,
+        text(w.free_spots === 1 ? "Platz" : "Plätze"),
+      ),
 
       /** Whether this slot can be selected for the requested seats. */
       bookable: false,
@@ -251,8 +286,12 @@ export function availability(
     /** Text returned by availability. */
     text:
       w.free_spots <= 4
-        ? `Nur noch ${w.free_spots} ${w.free_spots === 1 ? "Platz" : "Plätze"}`
-        : "Plätze frei",
+        ? text(
+            "Nur noch {0} {1}",
+            w.free_spots,
+            text(w.free_spots === 1 ? "Platz" : "Plätze"),
+          )
+        : text("Plätze frei"),
     /** Bookable returned by availability. */
     bookable: true,
   };
@@ -272,7 +311,9 @@ export function AvailabilityBadge({
    * @defaultValue 24 */
   leadHours?: number;
 }) {
-  const a = availability(w, seats, leadHours);
+  const options = useShopventoLocale();
+
+  const a = availability(w, seats, leadHours, Date.now(), options);
   return (
     <span className={`avail s-${a.state}`}>
       <BookingIcon
@@ -298,7 +339,7 @@ export function SeatStepper({
   onChange,
   min = 1,
   max = 8,
-  label = "Plätze",
+  label: labelOverride,
   hint,
 }: {
   /** Current controlled value. */
@@ -317,6 +358,9 @@ export function SeatStepper({
   /** Optional customer-visible helper text. Optional; omitted unless supplied by the host or backend. */
   hint?: string;
 }) {
+  const text = useMessages("booking");
+
+  const label = labelOverride ?? text("Plätze");
   const id = useId();
   return (
     <div className="bp-row">
@@ -327,7 +371,7 @@ export function SeatStepper({
       <fieldset className="stepper" aria-labelledby={id}>
         <button
           type="button"
-          aria-label={`Einen Platz weniger: ${label}`}
+          aria-label={text("Einen Platz weniger: {0}", label)}
           aria-disabled={value <= min}
           onClick={() => value > min && onChange(value - 1)}
         >
@@ -336,7 +380,7 @@ export function SeatStepper({
         <output aria-live="polite">{value}</output>
         <button
           type="button"
-          aria-label={`Einen Platz mehr: ${label}`}
+          aria-label={text("Einen Platz mehr: {0}", label)}
           aria-disabled={value >= max}
           onClick={() => value < max && onChange(value + 1)}
         >
@@ -383,6 +427,8 @@ export function useCalendar({
   /** Optional last ISO date to load. Optional; omitted unless supplied by the host or backend. */
   to?: string;
 }) {
+  const options = useShopventoLocale();
+
   const [data, setData] = useState<CalendarData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -424,7 +470,8 @@ export function useCalendar({
           });
       })
       .catch((e) => {
-        if (!controller.signal.aborted) setError(bookingErrorMessage(e));
+        if (!controller.signal.aborted)
+          setError(bookingErrorMessage(e, options));
       });
     return () => controller.abort();
   }, [client, locationId, from, to, revision]);
@@ -443,7 +490,7 @@ export function useCalendar({
 export function DateTile({
   window: w,
   color,
-  locale = "de-DE",
+  locale: suppliedLocale,
 }: {
   /** Selected dated timewindow. */
   window: Timewindow;
@@ -453,6 +500,8 @@ export function DateTile({
    * @defaultValue "de-DE" */
   locale?: string;
 }) {
+  const inherited = useShopventoLocale();
+  const locale = suppliedLocale ?? inherited.locale;
   const d = new Date(`${w.date}T12:00:00Z`);
   return (
     <span className="date-tile" style={eventStyle(color)} aria-hidden="true">
@@ -467,7 +516,7 @@ export function DateTile({
   );
 }
 /** Render bookable dates with optional month grouping, event colors and host selection callback. */
-export function DateList({
+function DateListContent({
   windows,
   events,
   locations = [],
@@ -501,12 +550,17 @@ export function DateList({
    * @defaultValue true */
   groupMonths?: boolean;
 } & EventCollection) {
+  const options = useShopventoLocale();
+  format = { ...format, locale: format.locale ?? options.locale };
+
+  const text = useMessages("booking");
+
   const eventRows = eventsFrom({ events });
   let month = "";
   return (
     <div className="agenda">
       {windows.length === 0 && (
-        <p role="status">Gerade sind keine Termine geplant.</p>
+        <p role="status">{text("Gerade sind keine Termine geplant.")}</p>
       )}
       {windows.map((w) => {
         const group = w.date.slice(0, 7);
@@ -542,7 +596,8 @@ export function DateList({
               <span className="ag-main">
                 <strong>{t?.tasting_name ?? w.event_name}</strong>
                 <span className="muted">
-                  {bookingDate(w.date, true, format.locale)}, {bookingTime(w)}
+                  {bookingDate(w.date, true, format.locale)},{" "}
+                  {bookingTime(w, options)}
                   {l && ` · ${l.location_street ?? l.location_name}`}
                 </span>
               </span>
@@ -562,7 +617,7 @@ export function DateList({
   );
 }
 /** Render a month grid and delegate date selection and month navigation to the host. */
-export function MonthCalendar({
+function MonthCalendarContent({
   month,
   windows,
   events,
@@ -602,6 +657,11 @@ export function MonthCalendar({
    * @defaultValue {} */
   format?: BookingFormat;
 } & EventCollection) {
+  const options = useShopventoLocale();
+  format = { ...format, locale: format.locale ?? options.locale };
+
+  const text = useMessages("booking");
+
   const eventRows = eventsFrom({ events });
   const first = new Date(`${month}-01T12:00:00Z`);
   const offset = (first.getUTCDay() + 6) % 7;
@@ -671,11 +731,26 @@ export function MonthCalendar({
     <>
       <section
         className={`cal ${compact ? "mini-cal" : ""}`}
-        aria-label={`Monatskalender ${first.toLocaleDateString(format.locale ?? "de-DE", { month: "long", year: "numeric", timeZone: "UTC" })}`}
+        aria-label={text(
+          "Monatskalender {0}",
+          first.toLocaleDateString(format.locale ?? "de-DE", {
+            month: "long",
+            year: "numeric",
+            timeZone: "UTC",
+          }),
+        )}
       >
         <div className="cal-dow" aria-hidden="true">
-          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
-            <div key={d}>{d}</div>
+          {[
+            text("Mo"),
+            text("Di"),
+            text("Mi"),
+            text("Do"),
+            text("Fr"),
+            text("Sa"),
+            text("So"),
+          ].map((d) => (
+            <div key={d}>{text(d)}</div>
           ))}
         </div>
         <div ref={grid} className="cal-grid">
@@ -702,7 +777,7 @@ export function MonthCalendar({
                     onFocus={() => setDay(key)}
                     tabIndex={key === focusDay ? 0 : -1}
                     aria-pressed={key === focusDay}
-                    aria-label={`${bookingDate(key, false, format.locale)}: ${list.length ? list.map((w) => `${eventRows.find((t) => t.tasting_id === w.tasting_id)?.tasting_name ?? w.event_name}, ${w.start_time.slice(0, 5)}, ${availability(w, seats, leadHours).text}`).join("; ") : "kein Termin"}`}
+                    aria-label={`${bookingDate(key, false, format.locale)}: ${list.length ? list.map((w) => `${eventRows.find((t) => t.tasting_id === w.tasting_id)?.tasting_name ?? w.event_name}, ${localeTime(w.start_time, format.locale, { suffix: false })}, ${availability(w, seats, leadHours, Date.now(), options).text}`).join("; ") : text("kein Termin")}`}
                     onClick={() => selectDay(key)}
                   >
                     <span className="cal-num">{n}</span>
@@ -711,7 +786,7 @@ export function MonthCalendar({
                         <span
                           key={w.timewindow_id}
                           style={eventStyle(colors[w.tasting_id])}
-                          className={`cal-dot s-${availability(w, seats, leadHours).state}`}
+                          className={`cal-dot s-${availability(w, seats, leadHours, Date.now(), options).state}`}
                         />
                       ))}
                     </span>
@@ -722,12 +797,16 @@ export function MonthCalendar({
                       <button
                         type="button"
                         style={eventStyle(colors[w.tasting_id])}
-                        className={`cal-ev s-${availability(w, seats, leadHours).state}`}
+                        className={`cal-ev s-${availability(w, seats, leadHours, Date.now(), options).state}`}
                         key={w.timewindow_id}
                         onClick={() => onSelect(w)}
-                        aria-label={`${bookingDate(key, false, format.locale)}, ${bookingTime(w)}: ${eventRows.find((t) => t.tasting_id === w.tasting_id)?.tasting_name ?? w.event_name}. ${availability(w, seats, leadHours).text}`}
+                        aria-label={`${bookingDate(key, false, format.locale)}, ${bookingTime(w, options)}: ${eventRows.find((t) => t.tasting_id === w.tasting_id)?.tasting_name ?? w.event_name}. ${availability(w, seats, leadHours, Date.now(), options).text}`}
                       >
-                        <strong>{w.start_time.slice(0, 5)}</strong>{" "}
+                        <strong>
+                          {localeTime(w.start_time, format.locale, {
+                            suffix: false,
+                          })}
+                        </strong>{" "}
                         {eventRows.find((t) => t.tasting_id === w.tasting_id)
                           ?.tasting_name ?? w.event_name}
                         <AvailabilityBadge
@@ -746,13 +825,13 @@ export function MonthCalendar({
       </section>
       <div className="cal-legend">
         <span className="legend-item">
-          <BookingIcon name="check" /> Plätze frei
+          <BookingIcon name="check" /> {text(" Plätze frei")}
         </span>
         <span className="legend-item">
-          <BookingIcon name="alert" /> Wenige Plätze / ausgebucht
+          <BookingIcon name="alert" /> {text(" Wenige Plätze / ausgebucht")}
         </span>
         <span className="legend-item">
-          <BookingIcon name="phone" /> Nur telefonisch
+          <BookingIcon name="phone" /> {text(" Nur telefonisch")}
         </span>
       </div>
       <div className={compact ? "day-panel" : "day-panel mobile-only"}>
@@ -769,7 +848,7 @@ export function MonthCalendar({
               >
                 {eventRows.find((t) => t.tasting_id === w.tasting_id)
                   ?.tasting_name ?? w.event_name}
-                , {bookingTime(w)}{" "}
+                , {bookingTime(w, options)}{" "}
                 <AvailabilityBadge
                   window={w}
                   seats={seats}
@@ -795,7 +874,7 @@ export function MonthCalendar({
   );
 }
 /** Render a selected date in a modal sheet with seats, availability and booking-mode guidance. */
-export function DateSheet({
+function DateSheetContent({
   window: w,
   variants,
   location,
@@ -849,11 +928,16 @@ export function DateSheet({
    * @defaultValue {} */
   format?: BookingFormat;
 }) {
+  const options = useShopventoLocale();
+  format = { ...format, locale: format.locale ?? options.locale };
+
+  const text = useMessages("booking");
+
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useId();
   const max = Math.min(settings.guest_max_seats ?? 8, w.free_spots || 1);
   const [seats, setSeats] = useState(Math.max(1, Math.min(initialSeats, max)));
-  const copy = mergeBookingLabels(labels);
+  const copy = mergeBookingLabels(labels, options);
   const mode = bookingMode(settings);
   const alternative =
     windows.find(
@@ -861,13 +945,31 @@ export function DateSheet({
         candidate.tasting_id === w.tasting_id &&
         candidate.timewindow_id !== w.timewindow_id &&
         candidate.date >= w.date &&
-        availability(candidate, seats, settings.online_lead_hours).bookable,
+        availability(
+          candidate,
+          seats,
+          settings.online_lead_hours,
+          Date.now(),
+          options,
+        ).bookable,
     ) ??
     (nextWindow &&
-    availability(nextWindow, seats, settings.online_lead_hours).bookable
+    availability(
+      nextWindow,
+      seats,
+      settings.online_lead_hours,
+      Date.now(),
+      options,
+    ).bookable
       ? nextWindow
       : undefined);
-  const a = availability(w, seats, settings.online_lead_hours);
+  const a = availability(
+    w,
+    seats,
+    settings.online_lead_hours,
+    Date.now(),
+    options,
+  );
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement;
     dialog.current?.showModal();
@@ -886,14 +988,14 @@ export function DateSheet({
       <div className="sheet-inner">
         <div className="sheet-head">
           <div>
-            <p className="eyebrow">Termin</p>
+            <p className="eyebrow">{text("Termin")}</p>
             <h2 id={title}>{variants[0]?.tasting_name ?? w.event_name}</h2>
           </div>
           <button
             className="icon-btn"
             type="button"
             onClick={onClose}
-            aria-label="Schließen"
+            aria-label={text("Schließen")}
           >
             <BookingIcon name="close" />
           </button>
@@ -902,7 +1004,7 @@ export function DateSheet({
           <DateTile window={w} color={color} locale={format.locale} />
           <div>
             <strong>{bookingDate(w.date, false, format.locale)}</strong>
-            <p>{bookingTime(w)}</p>
+            <p>{bookingTime(w, options)}</p>
             <p className="muted">
               {location?.location_street ?? location?.location_name}
             </p>
@@ -922,8 +1024,8 @@ export function DateSheet({
               onChange={setSeats}
               hint={
                 max === 1
-                  ? "Noch 1 Platz verfügbar."
-                  : `Bis zu ${max} Plätze pro Buchung.`
+                  ? text("Noch 1 Platz verfügbar.")
+                  : text("Bis zu {0} Plätze pro Buchung.", max)
               }
             />
           )}
@@ -937,14 +1039,14 @@ export function DateSheet({
           <>
             <p>
               {variants.length > 1 &&
-                " Die Variante wählst Du im nächsten Schritt."}
+                text(" Die Variante wählst Du im nächsten Schritt.")}
             </p>
             <div className="bp-row">
               <span>
-                {seats} {seats === 1 ? "Platz" : "Plätze"}
+                {seats} {seats === 1 ? text("Platz") : text("Plätze")}
               </span>
               <strong>
-                {variants.length > 1 && "ab "}
+                {variants.length > 1 && text("ab ")}
                 {bookingMoney(
                   Math.min(...variants.map((v) => v.price)) * seats,
                   format,
@@ -956,21 +1058,29 @@ export function DateSheet({
               type="button"
               onClick={() => onContinue(w, seats)}
             >
-              Weiter zur Buchung <BookingIcon name="arrow" />
+              {text("Weiter zur Buchung ")}
+              <BookingIcon name="arrow" />
             </button>
           </>
         ) : (
           <div className="notice">
             <p>
               {mode === "paused"
-                ? "Kontaktiere uns für Deine Buchung."
+                ? text("Kontaktiere uns für Deine Buchung.")
                 : a.state === "full"
-                  ? "Manchmal wird kurzfristig ein Platz frei. Ruf uns gern an."
+                  ? text(
+                      "Manchmal wird kurzfristig ein Platz frei. Ruf uns gern an.",
+                    )
                   : a.state === "short"
                     ? a.text
                     : a.state === "closed"
-                      ? `Bis ${settings.online_lead_hours ?? 24} Stunden vor Beginn buchst Du online, danach telefonisch.`
-                      : "Dieser Termin kann nicht online gebucht werden. Wähle einen anderen Termin oder kontaktiere uns."}
+                      ? text(
+                          "Bis {0} Stunden vor Beginn buchst Du online, danach telefonisch.",
+                          settings.online_lead_hours ?? 24,
+                        )
+                      : text(
+                          "Dieser Termin kann nicht online gebucht werden. Wähle einen anderen Termin oder kontaktiere uns.",
+                        )}
             </p>
             {a.state === "short" && (
               <button
@@ -978,8 +1088,10 @@ export function DateSheet({
                 type="button"
                 onClick={() => setSeats(Math.max(1, w.free_spots ?? 0))}
               >
-                Auf {w.free_spots} {w.free_spots === 1 ? "Platz" : "Plätze"}{" "}
-                reduzieren
+                {text("Auf ")}
+                {w.free_spots}{" "}
+                {w.free_spots === 1 ? text("Platz") : text("Plätze")}{" "}
+                {text("reduzieren")}
               </button>
             )}
             {mode !== "paused" && alternative && onSelect && (
@@ -988,11 +1100,13 @@ export function DateSheet({
                 type="button"
                 onClick={() => onSelect(alternative)}
               >
-                Nächster Termin:{" "}
+                {text("Nächster Termin:")}{" "}
                 {bookingDate(alternative.date, true, format.locale)}
               </button>
             )}
-            {phone && <a href={`tel:${phone}`}>Telefonisch anfragen</a>}
+            {phone && (
+              <a href={`tel:${phone}`}>{text("Telefonisch anfragen")}</a>
+            )}
           </div>
         )}
         {detailUrl && (
@@ -1018,6 +1132,8 @@ export function BookingDialog({
   /** Host-supplied child content. */
   children: import("react").ReactNode;
 }) {
+  const text = useMessages("booking");
+
   const dialog = useRef<HTMLDialogElement>(null);
   const id = useId();
   useEffect(() => {
@@ -1039,7 +1155,7 @@ export function BookingDialog({
           <button
             type="button"
             className="icon-btn"
-            aria-label="Schließen"
+            aria-label={text("Schließen")}
             onClick={onClose}
           >
             <BookingIcon name="close" />
@@ -1048,5 +1164,47 @@ export function BookingDialog({
         {children}
       </div>
     </dialog>
+  );
+}
+
+/** Render DateList in a per-visitor or per-route language scope. */
+export function DateList(
+  props: Parameters<typeof DateListContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider
+      locale={props.locale ?? props.format?.locale}
+      messages={props.messages}
+    >
+      <DateListContent {...props} />
+    </ShopventoProvider>
+  );
+}
+
+/** Render MonthCalendar in a per-visitor or per-route language scope. */
+export function MonthCalendar(
+  props: Parameters<typeof MonthCalendarContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider
+      locale={props.locale ?? props.format?.locale}
+      messages={props.messages}
+    >
+      <MonthCalendarContent {...props} />
+    </ShopventoProvider>
+  );
+}
+
+/** Render DateSheet in a per-visitor or per-route language scope. */
+export function DateSheet(
+  props: Parameters<typeof DateSheetContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider
+      locale={props.locale ?? props.format?.locale}
+      messages={props.messages}
+    >
+      <DateSheetContent {...props} />
+    </ShopventoProvider>
   );
 }

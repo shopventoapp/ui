@@ -254,11 +254,11 @@ describe("account review regressions", () => {
       ]),
     );
   });
-  test("string business errors survive while token and auth messages remain protected", () => {
+  test("unknown business errors use generic copy while token and auth messages remain protected", () => {
     for (const status of [409, 422]) {
       expect(
         accountErrorMessage(new AccountApiError(status, "Nur noch 3 Plätze")),
-      ).toBe("Nur noch 3 Plätze");
+      ).toBe("Bitte prüfe Deine Eingaben und versuche es erneut.");
     }
     expect(accountErrorMessage(new AccountApiError(422, []))).toContain(
       "Eingaben",

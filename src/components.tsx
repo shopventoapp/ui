@@ -28,20 +28,24 @@ import {
   useBookingDraft,
   useSubmitBooking,
 } from "./hooks";
+import {
+  type LocaleOptions,
+  localeMoney,
+  localeTime,
+  ShopventoProvider,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 import { Turnstile } from "./turnstile";
 
-const money = (cents: number) =>
-  new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(
-    cents / 100,
-  );
-function slotLabel(slot: Timewindow) {
-  const date = new Intl.DateTimeFormat("de-DE", {
+function slotLabel(slot: Timewindow, options: LocaleOptions = {}) {
+  const date = new Intl.DateTimeFormat(options.locale ?? "de", {
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(`${slot.date}T12:00:00`));
-  return `${date}, ${slot.start_time.slice(0, 5)} Uhr`;
+  return `${date}, ${localeTime(slot.start_time, options.locale, { messages: options.messages })}`;
 }
 /** Select an eligible timewindow, respecting capacity, deadlines and the 24-hour lead time. */
 export function DateTimePicker({
@@ -67,11 +71,15 @@ export function DateTimePicker({
    * @defaultValue [] */
   locations?: Location[];
 }) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("booking");
+
   const id = useId();
   return (
     <div>
       <label htmlFor={id}>
-        Termin
+        {text("Termin")}
         <select
           id={id}
           aria-describedby={`${id}-hint`}
@@ -79,7 +87,7 @@ export function DateTimePicker({
           value={value}
           onChange={(e) => onChange(e.target.value)}
         >
-          <option value="">Bitte wähle einen Termin</option>
+          <option value="">{text("Bitte wähle einen Termin")}</option>
           {windows
             .filter((slot) => !windowTooSoon(slot, now))
             .map((slot) => (
@@ -88,22 +96,24 @@ export function DateTimePicker({
                 value={slot.timewindow_id}
                 disabled={!windowBookable(slot, seats, now)}
               >
-                {slotLabel(slot)} ·{" "}
+                {slotLabel(slot, options)} ·{" "}
                 {locations.find((l) => l.id === slot.franchise_location_id)
                   ?.location_name ??
                   (slot.franchise_location_id
-                    ? `Standort ${slot.franchise_location_id}`
-                    : "Standort bitte erfragen")}{" "}
+                    ? text("Standort {0}", slot.franchise_location_id)
+                    : text("Standort bitte erfragen"))}{" "}
                 ·{" "}
                 {deadlinePassed(slot, now)
-                  ? "Buchungsfrist abgelaufen"
-                  : `${slot.free_spots ?? 0} freie Plätze`}
+                  ? text("Buchungsfrist abgelaufen")
+                  : text("{0} freie Plätze", slot.free_spots ?? 0)}
               </option>
             ))}
         </select>
       </label>
       <small id={`${id}-hint`}>
-        Online kannst Du Termine mindestens 24 Stunden im Voraus buchen.
+        {text(
+          "Online kannst Du Termine mindestens 24 Stunden im Voraus buchen.",
+        )}
       </small>
     </div>
   );
@@ -128,6 +138,11 @@ export function SeatSelector({
    * @defaultValue Math.max(20, seats.length) */
   maxSeats?: number;
 }) {
+  const options = useShopventoLocale();
+  const money = (cents: number) => localeMoney(cents, options.locale);
+
+  const text = useMessages("booking");
+
   const id = useId();
   function update(index: number, change: Partial<Seat>) {
     onChange(
@@ -136,9 +151,9 @@ export function SeatSelector({
   }
   return (
     <fieldset>
-      <legend>Deine Plätze</legend>
+      <legend>{text("Deine Plätze")}</legend>
       <label htmlFor={`${id}-count`}>
-        Anzahl Plätze
+        {text("Anzahl Plätze")}
         <select
           id={`${id}-count`}
           value={seats.length}
@@ -166,9 +181,12 @@ export function SeatSelector({
       {seats.map((seat, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: Seats are only appended or removed from the end.
         <fieldset key={`${id}-${index}`}>
-          <legend>Platz {index + 1}</legend>
+          <legend>
+            {text("Platz ")}
+            {index + 1}
+          </legend>
           <label htmlFor={`${id}-variant-${index}`}>
-            Variante
+            {text("Variante")}
             <select
               id={`${id}-variant-${index}`}
               required={variants.every((v) => Boolean(v.variant_id))}
@@ -189,7 +207,8 @@ export function SeatSelector({
             </select>
           </label>
           <label htmlFor={`${id}-voucher-${index}`}>
-            Gutscheincode {directBookingEnabled ? "(optional)" : ""}
+            {text("Gutscheincode ")}
+            {directBookingEnabled ? text("(optional)") : ""}
             <input
               id={`${id}-voucher-${index}`}
               value={seat.voucher_code ?? ""}
@@ -218,6 +237,8 @@ export function GuestFields({
   /** Receive the updated controlled value. */
   onChange: (value: GuestContact) => void;
 }) {
+  const text = useMessages("booking");
+
   const id = useId();
   const [dismissed, setDismissed] = useState<{
     errors: GuestFieldErrors;
@@ -231,13 +252,13 @@ export function GuestFields({
       delete visibleErrors[key];
   return (
     <fieldset>
-      <legend>Deine Kontaktdaten</legend>
+      <legend>{text("Deine Kontaktdaten")}</legend>
       {(
         [
-          ["first_name", "Vorname", "text", "given-name"],
-          ["last_name", "Nachname", "text", "family-name"],
-          ["email", "E-Mail-Adresse", "email", "email"],
-          ["phone", "Telefon (optional)", "tel", "tel"],
+          ["first_name", text("Vorname"), "text", "given-name"],
+          ["last_name", text("Nachname"), "text", "family-name"],
+          ["email", text("E-Mail-Adresse"), "email", "email"],
+          ["phone", text("Telefon (optional)"), "tel", "tel"],
         ] as const
       ).map(([key, label, type, complete]) => (
         <div key={key}>
@@ -274,7 +295,9 @@ export function GuestFields({
               className={visibleErrors[key] ? "sv-field-error" : undefined}
             >
               {visibleErrors[key] ??
-                "Bitte gib Deine Telefonnummer mit internationaler Vorwahl an, z. B. +49 151 23456789."}
+                text(
+                  "Bitte gib Deine Telefonnummer mit internationaler Vorwahl an, z. B. +49 151 23456789.",
+                )}
             </small>
           )}
         </div>
@@ -298,6 +321,11 @@ export function BookingSummary({
   /** Selected installation location. Optional; omitted unless supplied by the host or backend. */
   location?: Location;
 }) {
+  const options = useShopventoLocale();
+  const money = (cents: number) => localeMoney(cents, options.locale);
+
+  const text = useMessages("booking");
+
   const prices = draft.seats.map(
     (seat) =>
       variants.find((v) => (v.variant_id ?? undefined) === seat.variant_id)
@@ -305,34 +333,36 @@ export function BookingSummary({
   );
   const complete = prices.every((p): p is number => p !== undefined);
   return (
-    <section className="sv-summary" aria-label="Zusammenfassung">
-      <h3>Deine Buchung</h3>
+    <section className="sv-summary" aria-label={text("Zusammenfassung")}>
+      <h3>{text("Deine Buchung")}</h3>
       {window && (
         <p>
-          {slotLabel(window)}
+          {slotLabel(window, options)}
           {location ? ` · ${location.location_name}` : ""}
         </p>
       )}
       <p>
-        {draft.seats.length} {draft.seats.length === 1 ? "Platz" : "Plätze"}
+        {draft.seats.length}{" "}
+        {draft.seats.length === 1 ? text("Platz") : text("Plätze")}
       </p>
       {complete && (
         <p>
-          Gesamtpreis vor Gutscheinanrechnung:{" "}
+          {text("Gesamtpreis vor Gutscheinanrechnung:")}{" "}
           <strong>{money(prices.reduce((sum, p) => sum + p, 0))}</strong>
         </p>
       )}
       {draft.seats.some((s) => s.voucher_code?.trim()) && (
         <p>
-          Deine Gutscheine werden bei der Buchung geprüft. Der verbleibende
-          Zahlbetrag wird Dir im Checkout angezeigt.
+          {text(
+            "Deine Gutscheine werden bei der Buchung geprüft. Der verbleibende Zahlbetrag wird Dir im Checkout angezeigt.",
+          )}
         </p>
       )}
     </section>
   );
 }
 /** Host configuration for the compact booking form. */
-export interface EventBookingOptions extends ClientOptions {
+export interface EventBookingOptions extends ClientOptions, LocaleOptions {
   /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
   /** Positive installation location identifier used to filter availability. Optional; omitted unless supplied by the host or backend. */
@@ -361,8 +391,12 @@ export type EventBookingProps = EventBookingOptions & {
 };
 /** Render a compact event booking form with date, seats, vouchers, guest contact, consent and payment redirect.
  * @param props - Props supplied by the host. */
-export function EventBooking(props: EventBookingProps) {
-  const labels = mergeBookingLabels(props.labels);
+function EventBookingContent(props: EventBookingProps) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("booking");
+
+  const labels = mergeBookingLabels(props.labels, options);
   const eventId = props.eventId;
   const callbacks = useRef(props);
   callbacks.current = props;
@@ -433,28 +467,34 @@ export function EventBooking(props: EventBookingProps) {
     if (!slot || !windowBookable(slot, draft.seats.length)) {
       setValidation(
         slot && windowTooSoon(slot)
-          ? "Online kannst Du Termine mindestens 24 Stunden im Voraus buchen. Bitte wähle einen späteren Termin."
+          ? text(
+              "Online kannst Du Termine mindestens 24 Stunden im Voraus buchen. Bitte wähle einen späteren Termin.",
+            )
           : slot && deadlinePassed(slot)
-            ? "Die Buchungsfrist ist abgelaufen. Bitte wähle einen anderen Termin."
-            : "Bitte wähle einen Termin mit genügend freien Plätzen.",
+            ? text(
+                "Die Buchungsfrist ist abgelaufen. Bitte wähle einen anderen Termin.",
+              )
+            : text("Bitte wähle einen Termin mit genügend freien Plätzen."),
       );
       return;
     }
     if (guest && draft.seats.length > 8) {
       setValidation(
-        "Du kannst als Gast höchstens 8 Plätze pro Buchung reservieren.",
+        text("Du kannst als Gast höchstens 8 Plätze pro Buchung reservieren."),
       );
       return;
     }
     if (!consent) {
-      setValidation("Bitte bestätige die Bedingungen und den Datenschutz.");
+      setValidation(
+        text("Bitte bestätige die Bedingungen und den Datenschutz."),
+      );
       return;
     }
     if (
       !data.settings.direct_booking_enabled &&
       draft.seats.some((s) => !s.voucher_code?.trim())
     ) {
-      setValidation("Bitte gib für jeden Platz einen Gutschein ein.");
+      setValidation(text("Bitte gib für jeden Platz einen Gutschein ein."));
       return;
     }
     if (
@@ -463,7 +503,7 @@ export function EventBooking(props: EventBookingProps) {
         !data.settings.direct_booking_enabled ||
         !token)
     ) {
-      setValidation("Bitte bestätige die Sicherheitsprüfung.");
+      setValidation(text("Bitte bestätige die Sicherheitsprüfung."));
       return;
     }
     const response = await submit(draft, guest, token, consent);
@@ -484,7 +524,7 @@ export function EventBooking(props: EventBookingProps) {
       <div className="sv-booking">
         <p role="alert">{loadError}</p>
         <button type="button" onClick={reload}>
-          Erneut laden
+          {text("Erneut laden")}
         </button>
       </div>
     );
@@ -510,16 +550,19 @@ export function EventBooking(props: EventBookingProps) {
         )}
         <h2>
           {result.checkout_url
-            ? "Weiter zur Zahlung"
+            ? text("Weiter zur Zahlung")
             : error
-              ? "Bitte prüfe Deine Buchung"
-              : "Deine Buchung wurde angenommen"}
+              ? text("Bitte prüfe Deine Buchung")
+              : text("Deine Buchung wurde angenommen")}
         </h2>
-        <p>Buchungsnummer: {result.order_number}</p>
+        <p>
+          {text("Buchungsnummer: ")}
+          {result.order_number}
+        </p>
         {result.checkout_url ? (
-          <a href={result.checkout_url}>Checkout öffnen</a>
+          <a href={result.checkout_url}>{text("Checkout öffnen")}</a>
         ) : (
-          !error && <p>Die Bestätigung erhältst Du per Mail.</p>
+          !error && <p>{text("Die Bestätigung erhältst Du per Mail.")}</p>
         )}
       </div>
     );
@@ -541,7 +584,7 @@ export function EventBooking(props: EventBookingProps) {
           }
         />
         {data.windows.length === 0 && (
-          <p>Zurzeit sind keine Termine verfügbar.</p>
+          <p>{text("Zurzeit sind keine Termine verfügbar.")}</p>
         )}
         <SeatSelector
           seats={draft.seats}
@@ -573,15 +616,15 @@ export function EventBooking(props: EventBookingProps) {
             onChange={(e) => setConsent(e.target.checked)}
           />
           <span>
-            Ich akzeptiere die{" "}
+            {text("Ich akzeptiere die")}{" "}
             <a href={props.termsUrl} target="_blank" rel="noopener">
-              Bedingungen
+              {text("Bedingungen")}
             </a>{" "}
-            und habe die{" "}
+            {text("und habe die")}{" "}
             <a href={props.privacyUrl} target="_blank" rel="noopener">
-              Datenschutzerklärung
+              {text("Datenschutzerklärung")}
             </a>{" "}
-            gelesen.
+            {text("gelesen.")}
           </span>
         </label>
         {guest &&
@@ -592,7 +635,9 @@ export function EventBooking(props: EventBookingProps) {
               onToken={setToken}
             />
           ) : (
-            <p role="alert">Die Sicherheitsprüfung ist nicht eingerichtet.</p>
+            <p role="alert">
+              {text("Die Sicherheitsprüfung ist nicht eingerichtet.")}
+            </p>
           ))}
       </fieldset>
       {message && (
@@ -601,7 +646,9 @@ export function EventBooking(props: EventBookingProps) {
         </p>
       )}
       <button type="submit" disabled={pending}>
-        {pending ? "Deine Buchung wird gesendet…" : "Zahlungspflichtig buchen"}
+        {pending
+          ? text("Deine Buchung wird gesendet…")
+          : text("Zahlungspflichtig buchen")}
       </button>
     </form>
   );
@@ -620,6 +667,8 @@ export function BookingResult({
   /** Optional host route for retry navigation. Optional; omitted unless supplied by the host or backend. */
   retryUrl?: string;
 }) {
+  const text = useMessages("booking");
+
   let reference: string | null = null;
   try {
     const params = new URL(url, "https://return.invalid").searchParams;
@@ -628,21 +677,41 @@ export function BookingResult({
     /* A malformed URL has no reference. */
   }
   return (
-    <section className="sv-booking" aria-label="Buchungsstatus">
+    <section className="sv-booking" aria-label={text("Buchungsstatus")}>
       <h2>
         {outcome === "success"
-          ? "Danke für Deine Buchung"
-          : "Die Zahlung wurde abgebrochen"}
+          ? text("Danke für Deine Buchung")
+          : text("Die Zahlung wurde abgebrochen")}
       </h2>
       <p>
         {outcome === "success"
-          ? "Deine Zahlung wird geprüft. Die verbindliche Bestätigung erhältst Du per Mail."
-          : "Es liegt noch keine Zahlungsbestätigung vor. Du kannst Deine Buchung erneut prüfen."}
+          ? text(
+              "Deine Zahlung wird geprüft. Die verbindliche Bestätigung erhältst Du per Mail.",
+            )
+          : text(
+              "Es liegt noch keine Zahlungsbestätigung vor. Du kannst Deine Buchung erneut prüfen.",
+            )}
       </p>
-      {reference && <p>Referenz: {reference}</p>}
+      {reference && (
+        <p>
+          {text("Referenz: ")}
+          {reference}
+        </p>
+      )}
       {outcome === "cancel" && retryUrl && (
-        <a href={retryUrl}>Zurück zur Buchung</a>
+        <a href={retryUrl}>{text("Zurück zur Buchung")}</a>
       )}
     </section>
+  );
+}
+
+/** Render EventBooking in a per-visitor or per-route language scope. */
+export function EventBooking(
+  props: Parameters<typeof EventBookingContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <EventBookingContent {...props} />
+    </ShopventoProvider>
   );
 }

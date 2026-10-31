@@ -1,3 +1,4 @@
+import { getMessages, type LocaleOptions } from "./locale";
 /** Override event-specific German copy with the host's own terminology. */
 export interface BookingLabels {
   /** Events loading in the booking labels contract. */
@@ -18,28 +19,56 @@ export interface BookingLabels {
   eventDetails: string;
 }
 /** Complete German booking copy defaults. Pass a partial labels object to replace individual event messages. */
-export const defaultBookingLabels: BookingLabels = {
-  eventsLoading: "Veranstaltungen werden geladen…",
-  eventUnavailable: "Diese Veranstaltung ist nicht verfügbar.",
-  guestDisabled:
+export const defaultBookingLabels: BookingLabels = Object.freeze({
+  eventsLoading: getMessages("booking")("Veranstaltungen werden geladen…"),
+  eventUnavailable: getMessages("booking")(
+    "Diese Veranstaltung ist nicht verfügbar.",
+  ),
+  guestDisabled: getMessages("booking")(
     "Onlinebuchungen ohne Anmeldung sind derzeit nicht verfügbar. Bitte kontaktiere uns, um diese Veranstaltung zu buchen.",
-  eventVoucherRequired:
+  ),
+  eventVoucherRequired: getMessages("booking")(
     "Bitte gib für jeden Platz einen gültigen Veranstaltungsgutschein ein.",
-  eventVoucherMissing: (count) =>
-    `${count} ${count === 1 ? "Platz braucht" : "Plätze brauchen"} noch einen Veranstaltungsgutschein.`,
-  eventVoucherDescription:
+  ),
+  eventVoucherMissing: (count: number) =>
+    getMessages("booking")(
+      "{0} {1} noch einen Veranstaltungsgutschein.",
+      count,
+      getMessages("booking")(count === 1 ? "Platz braucht" : "Plätze brauchen"),
+    ),
+  eventVoucherDescription: getMessages("booking")(
     "Veranstaltungsgutschein für 1 Person, deckt 1 Platz",
-  eventVoucherNotice:
+  ),
+  eventVoucherNotice: getMessages("booking")(
     "Jeder Platz braucht einen Veranstaltungsgutschein. Dafür meldest Du Dich mit Deinem Konto an. Ältere Codes prüfen wir verbindlich beim Buchen.",
-  eventDetails: "Mehr zur Veranstaltung",
-};
+  ),
+  eventDetails: getMessages("booking")("Mehr zur Veranstaltung"),
+});
 
 /** Undefined overrides retain the default, including function-valued labels. */
 export function mergeBookingLabels(
   labels?: Partial<BookingLabels>,
+  options: LocaleOptions = {},
 ): BookingLabels {
+  const text = getMessages("booking", options);
+  const localized =
+    options.locale === undefined && options.messages === undefined
+      ? defaultBookingLabels
+      : (Object.fromEntries(
+          Object.entries(defaultBookingLabels).map(([key, value]) => [
+            key,
+            typeof value === "string"
+              ? text(value)
+              : (count: number) =>
+                  text(
+                    "{0} {1} noch einen Veranstaltungsgutschein.",
+                    count,
+                    text(count === 1 ? "Platz braucht" : "Plätze brauchen"),
+                  ),
+          ]),
+        ) as unknown as BookingLabels);
   return {
-    ...defaultBookingLabels,
+    ...localized,
     ...Object.fromEntries(
       Object.entries(labels ?? {}).filter(([, value]) => value !== undefined),
     ),

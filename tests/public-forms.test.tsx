@@ -1,7 +1,11 @@
 import { afterEach, expect, test } from "bun:test";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { NewsletterSignup } from "../src/newsletter-signup";
-import { maskReservationDate, reservationDate } from "../src/public-form-api";
+import {
+  maskReservationDate,
+  publicApiError,
+  reservationDate,
+} from "../src/public-form-api";
 import { ReservationForm } from "../src/reservation-form";
 
 const originalFetch = globalThis.fetch;
@@ -200,4 +204,51 @@ test("reservation calendar errors use the host labels", async () => {
   await waitFor(() =>
     expect(view.getByRole("alert").textContent).toBe("Invalid calendar date"),
   );
+});
+
+test("public API helpers localize their own validation and status messages", () => {
+  expect(() => reservationDate("invalid", "en-GB")).toThrow(
+    "Please enter the date as DD/MM/YYYY.",
+  );
+  for (const code of [403, 409, 422, 429, 500])
+    expect(publicApiError(code, "en-GB")).not.toMatch(
+      /Bitte|Plätze|Anfrage|Sicherheitsprüfung/,
+    );
+});
+test("reservation date confirms the parsed day and month visibly", () => {
+  for (const [locale, expected] of [
+    ["en-US", "December 11, 2026"],
+    ["en-GB", "12 November 2026"],
+    ["de", "12. November 2026"],
+  ]) {
+    const view = render(
+      <ReservationForm
+        locale={locale}
+        siteKey=""
+        publicApi={publicApi}
+        ScriptComponent={ScriptComponent}
+      />,
+    );
+    const input = view.container.querySelector('input[name="date"]');
+    if (!input) throw new Error("Missing date field");
+    fireEvent.change(input, {
+      target: { value: locale === "de" ? "12.11.2026" : "12/11/2026" },
+    });
+    expect(view.container.textContent).toContain(expected);
+    cleanup();
+  }
+});
+
+test("localized public helpers retain host message overrides", () => {
+  expect(
+    publicApiError(422, "en-GB", {
+      "Bitte prüfe Deine Angaben und die zulässige Personenzahl.":
+        "Host party error",
+    }),
+  ).toBe("Host party error");
+  expect(() =>
+    reservationDate("31/02/2026", "en-GB", {
+      "Bitte gib ein gültiges Datum ein.": "Host date error",
+    }),
+  ).toThrow("Host date error");
 });

@@ -31,6 +31,13 @@ import {
   type VoucherCheck,
 } from "./client";
 import { useSubmitBooking } from "./hooks";
+import {
+  getMessages,
+  type LocaleOptions,
+  ShopventoProvider,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 import { Turnstile } from "./turnstile";
 /** Tab-scoped booking draft. Phone, consent and challenge tokens are not persisted. */
 export interface FlowDraft {
@@ -172,6 +179,8 @@ export function LegalNotes({
    * @defaultValue false */
   overview?: boolean;
 }) {
+  const text = useMessages("booking");
+
   const items: Array<{
     /** Availability icon name. */
     icon: "id" | "calendar" | "users" | "gift" | "alert";
@@ -185,24 +194,28 @@ export function LegalNotes({
           {
             /** Availability icon name. */
             icon: "id" as const,
-            title: `Ab ${minAge} Jahren`,
+            title: text("Ab {0} Jahren", minAge),
 
             /** Customer-visible German availability message. */
-            text: `Teilnahme ab ${minAge} Jahren. Mit der Buchung bestätigst Du, dass alle Gäste mindestens ${minAge} Jahre alt sind.`,
+            text: text(
+              "Teilnahme ab {0} Jahren. Mit der Buchung bestätigst Du, dass alle Gäste mindestens {1} Jahre alt sind.",
+              minAge,
+              minAge,
+            ),
           },
         ]
       : []),
     {
       /** Availability icon name. */
       icon: "users",
-      title: "Mindestzahl Gäste",
+      title: text("Mindestzahl Gäste"),
       /** Customer-visible German availability message. */
       text: texts.minimum,
     },
     {
       /** Availability icon name. */
       icon: "calendar",
-      title: "Fester Termin, kein Widerruf",
+      title: text("Fester Termin, kein Widerruf"),
 
       /** Customer-visible German availability message. */
       text: `${texts.withdrawal} ${texts.reschedule}`,
@@ -212,7 +225,7 @@ export function LegalNotes({
           {
             /** Availability icon name. */
             icon: "gift" as const,
-            title: "Gutscheine einlösen",
+            title: text("Gutscheine einlösen"),
 
             /** Customer-visible German availability message. */
             text: texts.voucher,
@@ -224,7 +237,7 @@ export function LegalNotes({
           {
             /** Availability icon name. */
             icon: "alert" as const,
-            title: "Wünsche und besondere Hinweise",
+            title: text("Wünsche und besondere Hinweise"),
 
             /** Customer-visible German availability message. */
             text: texts.intolerance,
@@ -234,7 +247,11 @@ export function LegalNotes({
   ];
   return (
     <div className={overview ? "good-to-know" : "legal"}>
-      {heading && <h3>{review ? "Bevor Du buchst" : "Gut zu wissen"}</h3>}
+      {heading && (
+        <h3>
+          {review ? text("Bevor Du buchst") : text(text("Gut zu wissen"))}
+        </h3>
+      )}
       {overview ? (
         items.map((item) => (
           <div className="gtk-item" key={item.title}>
@@ -278,20 +295,23 @@ export function voucherProblem(
   check: VoucherCheck,
   eventId: number,
   locationId: number | null | undefined,
+  options: LocaleOptions = {},
 ) {
-  if (check.redeemed) return "Dieser Gutschein wurde bereits eingelöst.";
+  const text = getMessages("booking", options);
+
+  if (check.redeemed) return text("Dieser Gutschein wurde bereits eingelöst.");
   if (check.remaining_value !== undefined && check.remaining_value <= 0)
-    return "Dieser Gutschein hat kein Guthaben mehr.";
+    return text("Dieser Gutschein hat kein Guthaben mehr.");
   if (
     check.redeemable_tasting_ids?.length &&
     !check.redeemable_tasting_ids.includes(eventId)
   )
-    return "Dieser Gutschein gilt nicht für diesen Termin.";
+    return text("Dieser Gutschein gilt nicht für diesen Termin.");
   if (
     check.redeemable_location_ids?.length &&
     (locationId == null || !check.redeemable_location_ids.includes(locationId))
   )
-    return "Dieser Gutschein gilt nicht für diesen Standort.";
+    return text("Dieser Gutschein gilt nicht für diesen Standort.");
   return null;
 }
 /** Apply checked event vouchers to assigned seats, then value vouchers in submission order. Backend totals remain authoritative.
@@ -369,7 +389,7 @@ export function voucherCodeFromQuery(value: string | null | undefined): string {
     : "";
 }
 /** Host routing, session, availability and copy needed by the multi-step booking flow. */
-export interface BookingFlowProps {
+export interface BookingFlowProps extends LocaleOptions {
   /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
   /** Optional prefilled voucher code; still checked by the backend. Optional; omitted unless supplied by the host or backend. */
@@ -430,7 +450,7 @@ export interface BookingFlowProps {
   onRedirect?: (url: string) => void;
 }
 /** Render the host-routed booking steps with account access, vouchers, review and submission. */
-export function BookingFlow({
+function BookingFlowContent({
   labels,
   initialVoucherCode,
   client,
@@ -458,7 +478,12 @@ export function BookingFlow({
   colors = {},
   onRedirect = (url) => window.location.assign(url),
 }: BookingFlowProps) {
-  const copy = mergeBookingLabels(labels);
+  const options = useShopventoLocale();
+  format = { ...format, locale: format.locale ?? options.locale };
+
+  const text = useMessages("booking");
+
+  const copy = mergeBookingLabels(labels, options);
   const [changingDate, setChangingDate] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [draft, setDraft] = useState<FlowDraft | null>(null);
@@ -593,6 +618,7 @@ export function BookingFlow({
               result,
               restoredWindow.tasting_id,
               restoredWindow.franchise_location_id,
+              options,
             );
             if (issue) issues[c] = issue;
           } catch (e) {
@@ -607,7 +633,7 @@ export function BookingFlow({
                 voucherRateLimits.current.add(c);
               }
               limited.push(c);
-            } else issues[c] = bookingErrorMessage(e);
+            } else issues[c] = bookingErrorMessage(e, options);
           }
         }),
       );
@@ -637,14 +663,14 @@ export function BookingFlow({
   const update = (patch: Partial<FlowDraft>) =>
     setDraft((d) => (d ? { ...d, ...patch, updated: Date.now() } : d));
   if (!restored || sessionLoading)
-    return <p role="status">Deine Auswahl wird geladen.</p>;
+    return <p role="status">{text("Deine Auswahl wird geladen.")}</p>;
   if (!draft)
     return (
       <div className="empty">
-        <h1>Noch nichts ausgewählt</h1>
-        <p>Such Dir zuerst einen Termin aus.</p>
+        <h1>{text("Noch nichts ausgewählt")}</h1>
+        <p>{text("Such Dir zuerst einen Termin aus.")}</p>
         <a className="btn btn-primary" href={calendarUrl}>
-          Zu den Terminen
+          {text("Zu den Terminen")}
         </a>
       </div>
     );
@@ -657,17 +683,19 @@ export function BookingFlow({
   if (!w || !variants.length)
     return (
       <div className="notice">
-        <h1>Termin nicht mehr verfügbar</h1>
+        <h1>{text("Termin nicht mehr verfügbar")}</h1>
         <p>
-          Deine Angaben haben wir behalten. Wähle bitte einen anderen Termin.
+          {text(
+            "Deine Angaben haben wir behalten. Wähle bitte einen anderen Termin.",
+          )}
         </p>
         <a className="btn btn-primary" href={calendarUrl}>
-          Anderen Termin wählen
+          {text("Anderen Termin wählen")}
         </a>
       </div>
     );
   const max = Math.min(data.settings.guest_max_seats ?? 8, w.free_spots || 1);
-  const a = availability(w, count, lead);
+  const a = availability(w, count, lead, Date.now(), options);
   const location = data.locations.find((l) => l.id === w.franchise_location_id);
   const contact = profile
     ? {
@@ -702,38 +730,40 @@ export function BookingFlow({
     if (profile) return e;
     if (!guestAllowed || (step === 2 && who === "account")) {
       e.account = guestAllowed
-        ? "Bitte melde Dich an oder wähle die Buchung als Gast."
-        : "Bitte melde Dich an, um die Buchung fortzusetzen.";
+        ? text("Bitte melde Dich an oder wähle die Buchung als Gast.")
+        : text("Bitte melde Dich an, um die Buchung fortzusetzen.");
       return e;
     }
     if (!contact.first_name.trim())
-      e.first_name = "Bitte gib Deinen Vornamen ein.";
+      e.first_name = text("Bitte gib Deinen Vornamen ein.");
     if (!contact.last_name.trim())
-      e.last_name = "Bitte gib Deinen Nachnamen ein.";
+      e.last_name = text("Bitte gib Deinen Nachnamen ein.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contact.email))
-      e.email = "Bitte gib eine gültige E-Mail-Adresse ein.";
+      e.email = text("Bitte gib eine gültige E-Mail-Adresse ein.");
     if (
       draft.contact.phone &&
       !/^\+[1-9][0-9]{6,14}$/.test(
         normalizeBookingPhone(draft.contact.phone, countryCode),
       )
     )
-      e.phone = "Bitte gib eine gültige Telefonnummer ein.";
+      e.phone = text("Bitte gib eine gültige Telefonnummer ein.");
     return e;
   };
   const seatErrors = () => {
     const e: Record<string, string> = {};
     if (!a.bookable)
-      e.seats = "Bitte wähle einen Termin mit genügend freien Plätzen.";
+      e.seats = text("Bitte wähle einen Termin mit genügend freien Plätzen.");
     if (
       draft.seats.some(
         (s) =>
           s.variant_id && !variants.some((v) => v.variant_id === s.variant_id),
       )
     )
-      e.seats =
-        "Eine gewählte Variante ist nicht mehr verfügbar. Bitte wähle die Plätze erneut.";
-    if (mode === "paused") e.seats = "Online-Buchung ist gerade pausiert.";
+      e.seats = text(
+        "Eine gewählte Variante ist nicht mehr verfügbar. Bitte wähle die Plätze erneut.",
+      );
+    if (mode === "paused")
+      e.seats = text("Online-Buchung ist gerade pausiert.");
     if (
       !direct &&
       (draft.codes.length !== count ||
@@ -745,14 +775,16 @@ export function BookingFlow({
     )
       e.code = copy.eventVoucherRequired;
     if (code.trim() && !draft.codes.includes(code.trim()))
-      e.code =
-        "Bitte löse den eingetragenen Gutschein ein oder leere das Feld.";
-    if (checking) e.code = "Deine Gutscheine werden gerade geprüft.";
+      e.code = text(
+        "Bitte löse den eingetragenen Gutschein ein oder leere das Feld.",
+      );
+    if (checking) e.code = text("Deine Gutscheine werden gerade geprüft.");
     if (draft.codes.some((c) => voucherIssues[c]))
-      e.code = "Bitte prüfe Deine Gutscheine.";
+      e.code = text("Bitte prüfe Deine Gutscheine.");
     if (draft.codes.length > count)
-      e.code =
-        "Du kannst auf der aktuellen Buchung höchstens einen Gutschein pro Platz verwenden.";
+      e.code = text(
+        "Du kannst auf der aktuellen Buchung höchstens einen Gutschein pro Platz verwenden.",
+      );
     return e;
   };
   const next = () => {
@@ -768,21 +800,21 @@ export function BookingFlow({
     if (!entered) {
       setErrors({
         /** Voucher code used for this deduction. */
-        code: "Bitte gib Deinen Gutscheincode ein.",
+        code: text("Bitte gib Deinen Gutscheincode ein."),
       });
       return;
     }
     if (draft.codes.includes(entered)) {
       setErrors({
         /** Voucher code used for this deduction. */
-        code: "Dieser Gutschein ist schon hinzugefügt.",
+        code: text("Dieser Gutschein ist schon hinzugefügt."),
       });
       return;
     }
     if (draft.codes.length >= count) {
       setErrors({
         /** Voucher code used for this deduction. */
-        code: "Jeder Platz hat schon einen Gutschein.",
+        code: text("Jeder Platz hat schon einen Gutschein."),
       });
       return;
     }
@@ -798,6 +830,7 @@ export function BookingFlow({
         check,
         w.tasting_id,
         w.franchise_location_id,
+        options,
       );
       if (problem) {
         setErrors({
@@ -839,8 +872,8 @@ export function BookingFlow({
         /** Voucher code used for this deduction. */
         code:
           e instanceof Error && e.message === "used"
-            ? "Dieser Gutschein wurde bereits eingelöst."
-            : bookingErrorMessage(e),
+            ? text("Dieser Gutschein wurde bereits eingelöst.")
+            : bookingErrorMessage(e, options),
       });
     } finally {
       if (voucherRequest.current === controller) {
@@ -852,10 +885,10 @@ export function BookingFlow({
   const finish = async () => {
     const e = { ...seatErrors(), ...contactErrors() };
     if (!consent)
-      e.consent = "Bitte bestätige die Bedingungen und den Datenschutz.";
-    if (!profile && !guestAllowed) e.account = "Bitte melde Dich an.";
+      e.consent = text("Bitte bestätige die Bedingungen und den Datenschutz.");
+    if (!profile && !guestAllowed) e.account = text("Bitte melde Dich an.");
     if (!profile && !token)
-      e.security = "Bitte bestätige die Sicherheitsprüfung.";
+      e.security = text("Bitte bestätige die Sicherheitsprüfung.");
     setErrors(e);
     if (Object.keys(e).length) {
       setFocusErrors((n) => n + 1);
@@ -903,7 +936,7 @@ export function BookingFlow({
   );
   const errorSummary = (Object.keys(errors).length > 0 || submission.error) && (
     <div className="err-summary" ref={errorBox} tabIndex={-1} role="alert">
-      <h2>Bitte prüf Deine Angaben</h2>
+      <h2>{text("Bitte prüf Deine Angaben")}</h2>
       <ul>
         {Object.entries(errors).map(([key, text]) => (
           <li key={key}>
@@ -975,7 +1008,7 @@ export function BookingFlow({
           )}
         </p>
       )}
-      <p>Deine Angaben bleiben erhalten.</p>
+      <p>{text("Deine Angaben bleiben erhalten.")}</p>
     </div>
   );
   const priceLines = (
@@ -988,7 +1021,7 @@ export function BookingFlow({
           n > 0 && (
             <div key={v.variant_id ?? "base"}>
               <span>
-                {n} × {variants.length > 1 ? v.variant_name : "Platz"}
+                {n} × {variants.length > 1 ? v.variant_name : text("Platz")}
               </span>
               <span>{bookingMoney(n * v.price, format)}</span>
             </div>
@@ -997,29 +1030,37 @@ export function BookingFlow({
       })}
       {allocation.deductions.map(({ code, amount }) => (
         <div key={code}>
-          <span>Gutschein {code}</span>
+          <span>
+            {text("Gutschein ")}
+            {code}
+          </span>
           <span>
             {!checks[code] || checks[code].pending
-              ? "Wird bei der Buchung geprüft"
+              ? text("Wird bei der Buchung geprüft")
               : amount > 0
                 ? `−${bookingMoney(amount, format)}`
-                : "Für diese Buchung nicht benötigt"}
+                : text("Für diese Buchung nicht benötigt")}
           </span>
         </div>
       ))}
       {allocation.pending && (
         <p className="hint">
           {draft.codes.length}{" "}
-          {draft.codes.length === 1 ? "Gutschein" : "Gutscheine"}. Den
-          Restbetrag bestätigt Stripe nach der verbindlichen Gutscheinprüfung.
+          {draft.codes.length === 1 ? text("Gutschein") : text("Gutscheine")}
+          {text(
+            ". Den Restbetrag bestätigt Stripe nach der verbindlichen Gutscheinprüfung.",
+          )}
         </p>
       )}
       <div className="grand">
-        <span>{allocation.pending ? "Höchstens zu zahlen" : "Zu zahlen"}</span>
+        <span>
+          {allocation.pending ? text("Höchstens zu zahlen") : text("Zu zahlen")}
+        </span>
         <strong>{bookingMoney(allocation.amountToPay, format)}</strong>
       </div>
       <p className="hint">
-        inkl. MwSt. · {count} {count === 1 ? "Platz" : "Plätze"}
+        {text("inkl. MwSt. · ")}
+        {count} {count === 1 ? text("Platz") : text("Plätze")}
       </p>
     </div>
   );
@@ -1028,7 +1069,7 @@ export function BookingFlow({
       <div className="su-head">
         {image && <img className="su-ph" src={image} alt="" />}
         <div>
-          <p className="eyebrow">Deine Auswahl</p>
+          <p className="eyebrow">{text("Deine Auswahl")}</p>
           <h2 className="su-title">{variants[0].tasting_name}</h2>
         </div>
       </div>
@@ -1040,7 +1081,7 @@ export function BookingFlow({
           </span>
           <span>
             <BookingIcon name="clock" />
-            <span>{bookingTime(w)}</span>
+            <span>{bookingTime(w, options)}</span>
           </span>
           <span>
             <BookingIcon name="pin" />
@@ -1056,50 +1097,58 @@ export function BookingFlow({
   if (submission.result && submission.error)
     return (
       <div className="notice" role="alert">
-        <h1>Bitte prüfe Deine Buchung</h1>
+        <h1>{text("Bitte prüfe Deine Buchung")}</h1>
         <p>{submission.error}</p>
-        <p>Buchungsnummer: {submission.result.order_number}</p>
+        <p>
+          {text("Buchungsnummer: ")}
+          {submission.result.order_number}
+        </p>
       </div>
     );
   return (
     <>
       <a className="back" href={calendarUrl}>
-        ‹ Alle Termine
+        {text("‹ Alle Termine")}
       </a>
-      <p className="eyebrow">Buchung</p>
-      <ol className="progress" aria-label="Fortschritt">
-        {["Plätze", "Deine Daten", "Prüfen & buchen"].map((label, i) => (
-          <li
-            key={label}
-            className={step === i + 1 ? "now" : step > i + 1 ? "done" : ""}
-            aria-current={step === i + 1 ? "step" : undefined}
-          >
-            {step > i + 1 ? (
-              <button type="button" onClick={() => onStep(i + 1)}>
-                {i + 1}. {label}
-              </button>
-            ) : (
-              <span>
-                {i + 1}. {label}
-              </span>
-            )}
-          </li>
-        ))}
+      <p className="eyebrow">{text("Buchung")}</p>
+      <ol className="progress" aria-label={text("Fortschritt")}>
+        {[text("Plätze"), text("Deine Daten"), text("Prüfen & buchen")].map(
+          (label, i) => (
+            <li
+              key={label}
+              className={step === i + 1 ? "now" : step > i + 1 ? "done" : ""}
+              aria-current={step === i + 1 ? "step" : undefined}
+            >
+              {step > i + 1 ? (
+                <button type="button" onClick={() => onStep(i + 1)}>
+                  {i + 1}. {label}
+                </button>
+              ) : (
+                <span>
+                  {i + 1}. {label}
+                </span>
+              )}
+            </li>
+          ),
+        )}
       </ol>
       <div className="book-layout">
         <div>
           <h1 className="display h2" ref={heading} tabIndex={-1}>
             {step === 1 ? (
               <>
-                Wie viele <em>Plätze?</em>
+                {text("Wie viele ")}
+                <em>{text("Plätze?")}</em>
               </>
             ) : step === 2 ? (
               <>
-                Deine <em>Daten</em>
+                {text("Deine ")}
+                <em>{text("Daten")}</em>
               </>
             ) : (
               <>
-                Prüfen und <em>buchen</em>
+                {text("Prüfen und ")}
+                <em>{text("buchen")}</em>
               </>
             )}
           </h1>
@@ -1112,10 +1161,10 @@ export function BookingFlow({
           {(conflict || !a.bookable) && (
             <div className="notice" role="alert">
               <strong>
-                {conflict ? "Gerade war jemand schneller." : a.text}
+                {conflict ? text("Gerade war jemand schneller.") : a.text}
               </strong>
               {conflict && <p>{a.text}</p>}
-              <p>Deine Angaben haben wir behalten.</p>
+              <p>{text("Deine Angaben haben wir behalten.")}</p>
               {(w.free_spots ?? 0) > 0 && (
                 <button
                   type="button"
@@ -1137,9 +1186,13 @@ export function BookingFlow({
                     onStep(1);
                   }}
                 >
-                  Plätze anpassen
+                  {text("Plätze anpassen")}
                   {a.state === "short"
-                    ? `: Auf ${w.free_spots} ${w.free_spots === 1 ? "Platz" : "Plätze"} reduzieren`
+                    ? text(
+                        ": Auf {0} {1} reduzieren",
+                        w.free_spots,
+                        text(w.free_spots === 1 ? "Platz" : "Plätze"),
+                      )
                     : ""}
                 </button>
               )}
@@ -1148,10 +1201,12 @@ export function BookingFlow({
                 className="btn-link"
                 onClick={() => setChangingDate(true)}
               >
-                Anderen Termin wählen
+                {text("Anderen Termin wählen")}
               </button>
               {texts.phone && (
-                <a href={`tel:${texts.phone}`}>Telefonisch anfragen</a>
+                <a href={`tel:${texts.phone}`}>
+                  {text("Telefonisch anfragen")}
+                </a>
               )}
             </div>
           )}
@@ -1169,7 +1224,7 @@ export function BookingFlow({
               {step === 1 && (
                 <>
                   <section className="block">
-                    <h2>Termin</h2>
+                    <h2>{text("Termin")}</h2>
                     <div className="date-summary">
                       <DateTile
                         color={colors[w.tasting_id]}
@@ -1181,7 +1236,8 @@ export function BookingFlow({
                           {bookingDate(w.date, false, format.locale)}
                         </strong>
                         <p>
-                          {bookingTime(w)} · {location?.location_street}
+                          {bookingTime(w, options)} ·{" "}
+                          {location?.location_street}
                         </p>
                         <AvailabilityBadge
                           window={w}
@@ -1195,15 +1251,16 @@ export function BookingFlow({
                       className="btn-link"
                       onClick={() => setChangingDate(true)}
                     >
-                      <BookingIcon name="calendar" /> Termin ändern
+                      <BookingIcon name="calendar" /> {text(" Termin ändern")}
                     </button>
                   </section>
                   <section className="block" id="f-seats">
-                    <h2>Plätze</h2>
+                    <h2>{text("Plätze")}</h2>
                     {variants.length > 1 && (
                       <p>
-                        Wähl für jeden Platz die Variante. Ihr könnt gemischt
-                        buchen.
+                        {text(
+                          "Wähl für jeden Platz die Variante. Ihr könnt gemischt buchen.",
+                        )}
                       </p>
                     )}
                     {variants.map((v) => {
@@ -1214,12 +1271,15 @@ export function BookingFlow({
                       return (
                         <div className="seat-row" key={v.variant_id ?? "base"}>
                           <div>
-                            <p>{bookingMoney(v.price, format)} pro Person</p>
+                            <p>
+                              {bookingMoney(v.price, format)}{" "}
+                              {text(" pro Person")}
+                            </p>
                             <SeatStepper
                               label={
                                 variants.length > 1
-                                  ? (v.variant_name ?? "Variante")
-                                  : "Plätze"
+                                  ? (v.variant_name ?? text("Variante"))
+                                  : text("Plätze")
                               }
                               value={quantity}
                               min={variants.length === 1 ? 1 : 0}
@@ -1240,7 +1300,9 @@ export function BookingFlow({
                                 ];
                                 if (!seats.length) {
                                   setErrors({
-                                    seats: "Wähle mindestens einen Platz.",
+                                    seats: text(
+                                      "Wähle mindestens einen Platz.",
+                                    ),
                                   });
                                   return;
                                 }
@@ -1252,22 +1314,25 @@ export function BookingFlow({
                       );
                     })}
                     <p className="hint">
-                      Bis zu {data.settings.guest_max_seats ?? 8} Plätze pro
-                      Buchung.{" "}
+                      {text("Bis zu ")}
+                      {data.settings.guest_max_seats ?? 8}{" "}
+                      {text(" Plätze pro Buchung.")}{" "}
                       {texts.groupUrl && (
                         <a href={texts.groupUrl}>
-                          Mehr Personen? Frag uns als Gruppe an.
+                          {text("Mehr Personen? Frag uns als Gruppe an.")}
                         </a>
                       )}
                     </p>
                   </section>
                   <section className="block">
                     <h2>
-                      Gutschein <small>(optional)</small>
+                      {text("Gutschein ")}
+                      <small>{text("(optional)")}</small>
                     </h2>
                     <p>
-                      Mehrere Codes nacheinander eingeben. Aktuell ein Gutschein
-                      pro Platz.
+                      {text(
+                        "Mehrere Codes nacheinander eingeben. Aktuell ein Gutschein pro Platz.",
+                      )}
                     </p>
                     {mode === "voucher" && missingVouchers > 0 && (
                       <p className="hint" role="status">
@@ -1276,8 +1341,9 @@ export function BookingFlow({
                     )}
                     {rateLimited.length > 0 && (
                       <p className="hint" role="status">
-                        Bitte warte kurz. Wir prüfen Deine Gutscheine beim
-                        Bezahlen verbindlich.{" "}
+                        {text(
+                          "Bitte warte kurz. Wir prüfen Deine Gutscheine beim Bezahlen verbindlich.",
+                        )}{" "}
                         <button
                           type="button"
                           className="btn-link"
@@ -1290,13 +1356,13 @@ export function BookingFlow({
                             setRetryChecks((n) => n + 1);
                           }}
                         >
-                          In einer Minute erneut prüfen
+                          {text("In einer Minute erneut prüfen")}
                         </button>
                       </p>
                     )}
                     <div className="code-field">
                       <label className="sr-only" htmlFor="f-code">
-                        Gutscheincode
+                        {text("Gutscheincode")}
                       </label>
                       <input
                         className="input"
@@ -1323,7 +1389,7 @@ export function BookingFlow({
                         disabled={checking || draft.codes.length >= count}
                         onClick={() => void addCode()}
                       >
-                        {checking ? "Prüfen" : "Einlösen"}
+                        {checking ? text("Prüfen") : text("Einlösen")}
                       </button>
                     </div>
                     {errors.code && (
@@ -1345,14 +1411,28 @@ export function BookingFlow({
                                 (checks[c]?.kind === "SINGLE_PURPOSE"
                                   ? copy.eventVoucherDescription
                                   : checks[c]?.kind
-                                    ? `Wertgutschein, ${bookingMoney(checks[c].remaining_value ?? 0, format)} von ${bookingMoney(checks[c].value ?? checks[c].remaining_value ?? 0, format)} Guthaben`
-                                    : "Prüfen und verrechnen wir beim Bezahlen.")}
+                                    ? text(
+                                        "Wertgutschein, {0} von {1} Guthaben",
+                                        bookingMoney(
+                                          checks[c].remaining_value ?? 0,
+                                          format,
+                                        ),
+                                        bookingMoney(
+                                          checks[c].value ??
+                                            checks[c].remaining_value ??
+                                            0,
+                                          format,
+                                        ),
+                                      )
+                                    : text(
+                                        "Prüfen und verrechnen wir beim Bezahlen.",
+                                      ))}
                             </small>
                           </span>
                           <button
                             type="button"
                             className="icon-btn"
-                            aria-label={`Gutschein ${c} entfernen`}
+                            aria-label={text("Gutschein {0} entfernen", c)}
                             onClick={() => {
                               setVoucherIssues((issues) => {
                                 const next = { ...issues };
@@ -1383,21 +1463,21 @@ export function BookingFlow({
               {step === 2 && (
                 <>
                   <section className="block">
-                    <h2>Wer bucht?</h2>
+                    <h2>{text("Wer bucht?")}</h2>
                     {profile ? (
                       <div className="signed-in">
                         <strong>
                           {contact.first_name} {contact.last_name}
                         </strong>
                         <p>{contact.email}</p>
-                        <p>Die Buchung landet in Deinem Konto.</p>
+                        <p>{text("Die Buchung landet in Deinem Konto.")}</p>
                         {onSignOut && (
                           <button
                             type="button"
                             className="btn-link"
                             onClick={() => void onSignOut()}
                           >
-                            Nicht Du? Abmelden
+                            {text("Nicht Du? Abmelden")}
                           </button>
                         )}
                       </div>
@@ -1418,7 +1498,7 @@ export function BookingFlow({
                           ) : (
                             <>
                               <a className="btn btn-primary" href={loginUrl}>
-                                Anmelden
+                                {text("Anmelden")}
                               </a>
                               {guestAllowed && (
                                 <button
@@ -1426,7 +1506,7 @@ export function BookingFlow({
                                   className="btn-link"
                                   onClick={() => setWho("guest")}
                                 >
-                                  Als Gast fortfahren
+                                  {text("Als Gast fortfahren")}
                                 </button>
                               )}
                             </>
@@ -1436,10 +1516,14 @@ export function BookingFlow({
                           <div className="form-grid two">
                             {(
                               [
-                                ["first_name", "Vorname", "given-name"],
-                                ["last_name", "Nachname", "family-name"],
-                                ["email", "E-Mail-Adresse", "email"],
-                                ["phone", "Telefon (optional)", "tel-national"],
+                                ["first_name", text("Vorname"), "given-name"],
+                                ["last_name", text("Nachname"), "family-name"],
+                                ["email", text("E-Mail-Adresse"), "email"],
+                                [
+                                  "phone",
+                                  text("Telefon (optional)"),
+                                  "tel-national",
+                                ],
                               ] as const
                             ).map(([key, label, autocomplete]) => (
                               <div
@@ -1458,7 +1542,7 @@ export function BookingFlow({
                                     countryCodes.length > 0 && (
                                       <select
                                         className="select"
-                                        aria-label="Ländervorwahl"
+                                        aria-label={text("Ländervorwahl")}
                                         value={countryCode}
                                         onChange={(e) =>
                                           setCountryCode(e.target.value)
@@ -1502,9 +1586,13 @@ export function BookingFlow({
                                 >
                                   {errors[key] ??
                                     (key === "email"
-                                      ? "Hierhin schicken wir Bestätigung, Ticket und den Link zu Deiner Buchung."
+                                      ? text(
+                                          "Hierhin schicken wir Bestätigung, Ticket und den Link zu Deiner Buchung.",
+                                        )
                                       : key === "phone"
-                                        ? "Nur für kurzfristige Änderungen am Termin."
+                                        ? text(
+                                            "Nur für kurzfristige Änderungen am Termin.",
+                                          )
                                         : "")}
                                 </p>
                               </div>
@@ -1516,10 +1604,11 @@ export function BookingFlow({
                   </section>
                   <section className="block">
                     <h2>
-                      Hinweis für uns <small>(optional)</small>
+                      {text("Hinweis für uns ")}
+                      <small>{text("(optional)")}</small>
                     </h2>
                     <label className="sr-only" htmlFor="f-notes">
-                      Hinweis für uns
+                      {text("Hinweis für uns")}
                     </label>
                     <textarea
                       className="textarea"
@@ -1538,35 +1627,37 @@ export function BookingFlow({
               {step === 3 && (
                 <>
                   <section className="block">
-                    <h2 className="sr-only">Deine Angaben</h2>
+                    <h2 className="sr-only">{text("Deine Angaben")}</h2>
                     {[
                       [
-                        "Termin",
-                        `${bookingDate(w.date, false, format.locale)}, ${bookingTime(w)} · ${location?.location_street ?? location?.location_name ?? ""}`,
+                        text("Termin"),
+                        `${bookingDate(w.date, false, format.locale)}, ${bookingTime(w, options)} · ${location?.location_street ?? location?.location_name ?? ""}`,
                         1,
                       ],
                       [
-                        "Plätze",
+                        text("Plätze"),
                         variants.length === 1
-                          ? `${count} ${count === 1 ? "Platz" : "Plätze"}`
+                          ? `${count} ${count === 1 ? text("Platz") : text("Plätze")}`
                           : variants
                               .map(
                                 (v) =>
-                                  `${draft.seats.filter((s) => (s.variant_id ?? null) === (v.variant_id ?? null)).length} × ${v.variant_name ?? "Platz"}`,
+                                  `${draft.seats.filter((s) => (s.variant_id ?? null) === (v.variant_id ?? null)).length} × ${v.variant_name ?? text("Platz")}`,
                               )
                               .filter((s) => !s.startsWith("0 ×"))
                               .join(", "),
                         1,
                       ],
                       ...(draft.codes.length
-                        ? [["Gutscheine", draft.codes.join(", "), 1]]
+                        ? [[text("Gutscheine"), draft.codes.join(", "), 1]]
                         : []),
                       [
                         "Kontakt",
                         `${contact.first_name} ${contact.last_name}, ${contact.email}`,
                         2,
                       ],
-                      ...(draft.notes ? [["Hinweis", draft.notes, 2]] : []),
+                      ...(draft.notes
+                        ? [[text("Hinweis"), draft.notes, 2]]
+                        : []),
                     ].map(([label, value, target]) => (
                       <div className="seat-row" key={label}>
                         <div>
@@ -1578,7 +1669,8 @@ export function BookingFlow({
                           type="button"
                           onClick={() => onStep(Number(target))}
                         >
-                          Ändern<span className="sr-only">: {label}</span>
+                          {text("Ändern")}
+                          <span className="sr-only">: {label}</span>
                         </button>
                       </div>
                     ))}
@@ -1602,15 +1694,15 @@ export function BookingFlow({
                         onChange={(e) => setConsent(e.target.checked)}
                       />
                       <span>
-                        Ich akzeptiere die{" "}
+                        {text("Ich akzeptiere die")}{" "}
                         <a href={termsUrl} target="_blank" rel="noreferrer">
-                          AGB
+                          {text("AGB")}
                         </a>{" "}
-                        und habe die{" "}
+                        {text("und habe die")}{" "}
                         <a href={privacyUrl} target="_blank" rel="noreferrer">
-                          Datenschutzerklärung
+                          {text("Datenschutzerklärung")}
                         </a>{" "}
-                        gelesen.
+                        {text("gelesen.")}
                       </span>
                     </label>
                     {errors.consent && (
@@ -1631,7 +1723,9 @@ export function BookingFlow({
                           />
                         ) : (
                           <p role="alert">
-                            Die Sicherheitsprüfung ist nicht eingerichtet.
+                            {text(
+                              "Die Sicherheitsprüfung ist nicht eingerichtet.",
+                            )}
                           </p>
                         ))}
                       {errors.security && (
@@ -1649,13 +1743,17 @@ export function BookingFlow({
                       }
                     >
                       {submission.pending
-                        ? "Einen Moment"
-                        : "Zahlungspflichtig buchen"}
+                        ? text("Einen Moment")
+                        : text("Zahlungspflichtig buchen")}
                     </button>
                     <p className="pay-note">
                       {draft.codes.length
-                        ? "Deine Gutscheine werden verbindlich geprüft. Ist alles gedeckt, wird nichts abgebucht."
-                        : "Im nächsten Schritt bezahlst Du sicher über Stripe."}
+                        ? text(
+                            "Deine Gutscheine werden verbindlich geprüft. Ist alles gedeckt, wird nichts abgebucht.",
+                          )
+                        : text(
+                            "Im nächsten Schritt bezahlst Du sicher über Stripe.",
+                          )}
                     </p>
                   </section>
                 </>
@@ -1668,7 +1766,7 @@ export function BookingFlow({
                       type="button"
                       onClick={() => onStep(step - 1)}
                     >
-                      Zurück
+                      {text("Zurück")}
                     </button>
                   )}
                   <button
@@ -1682,8 +1780,8 @@ export function BookingFlow({
                     }
                   >
                     {step === 1
-                      ? "Weiter zu Deinen Daten"
-                      : "Weiter zur Übersicht"}{" "}
+                      ? text("Weiter zu Deinen Daten")
+                      : text("Weiter zur Übersicht")}{" "}
                     <BookingIcon name="arrow" />
                   </button>
                 </div>
@@ -1691,7 +1789,10 @@ export function BookingFlow({
             </fieldset>
           </form>
         </div>
-        <aside className="book-aside desk-only" aria-label="Deine Auswahl">
+        <aside
+          className="book-aside desk-only"
+          aria-label={text("Deine Auswahl")}
+        >
           {summary}
           {step < 3 && (
             <LegalNotes minAge={data.settings.min_customer_age} texts={texts} />
@@ -1700,15 +1801,16 @@ export function BookingFlow({
       </div>
       {changingDate && (
         <BookingDialog
-          title="Termin ändern"
+          title={text("Termin ändern")}
           onClose={() => setChangingDate(false)}
         >
-          <p>Plätze, Gutscheine und Deine Daten bleiben erhalten.</p>
+          <p>{text("Plätze, Gutscheine und Deine Daten bleiben erhalten.")}</p>
           <DateList
             windows={data.windows.filter(
               (candidate) =>
                 candidate.tasting_id === w.tasting_id &&
-                availability(candidate, count, lead).bookable,
+                availability(candidate, count, lead, Date.now(), options)
+                  .bookable,
             )}
             events={variants}
             locations={data.locations}
@@ -1719,12 +1821,12 @@ export function BookingFlow({
               setChangingDate(false);
             }}
           />
-          <a href={calendarUrl}>Alle Termine ansehen</a>
+          <a href={calendarUrl}>{text("Alle Termine ansehen")}</a>
         </BookingDialog>
       )}
       {showSummary && (
         <BookingDialog
-          title="Deine Auswahl"
+          title={text("Deine Auswahl")}
           onClose={() => setShowSummary(false)}
         >
           {summary}
@@ -1737,14 +1839,14 @@ export function BookingFlow({
             className="summary-toggle"
             type="button"
             onClick={() => setShowSummary(true)}
-            aria-label="Deine Auswahl anzeigen"
+            aria-label={text("Deine Auswahl anzeigen")}
           >
             <strong>
-              {allocation.pending && "Höchstens "}
+              {allocation.pending && text("Höchstens ")}
               {bookingMoney(allocation.amountToPay, format)}
             </strong>
             <p>
-              {count} {count === 1 ? "Platz" : "Plätze"} ·{" "}
+              {count} {count === 1 ? text("Platz") : text("Plätze")} ·{" "}
               {bookingDate(w.date, true, format.locale)}
             </p>
           </button>
@@ -1759,10 +1861,24 @@ export function BookingFlow({
             }
             onClick={next}
           >
-            Weiter
+            {text("Weiter")}
           </button>
         </div>
       )}
     </>
+  );
+}
+
+/** Render BookingFlow in a per-visitor or per-route language scope. */
+export function BookingFlow(
+  props: Parameters<typeof BookingFlowContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider
+      locale={props.locale ?? props.format?.locale}
+      messages={props.messages}
+    >
+      <BookingFlowContent {...props} />
+    </ShopventoProvider>
   );
 }

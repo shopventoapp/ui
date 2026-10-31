@@ -1,4 +1,6 @@
 "use client";
+
+export * from "./locale";
 export type { NewsletterSignupProps } from "./newsletter-signup";
 /** Standalone public form entrypoint, keeping shop checkout code out of marketing pages. */
 export { NewsletterSignup, newsletterOptInLabel } from "./newsletter-signup";

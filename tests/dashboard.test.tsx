@@ -409,3 +409,46 @@ describe("account state", () => {
     unmount3();
   });
 });
+
+test("English completed pickup status and table guest plurals use the catalogue", () => {
+  expect(
+    orderStatus(
+      order({
+        status: "COMPLETED",
+        fulfillments: [
+          {
+            type: "PICKUP",
+            status: "PICKUP_COMPLETED",
+          } as AccountOrder["fulfillments"][number],
+        ],
+      }),
+      { locale: "en" },
+    )[0],
+  ).toBe("Collected");
+  for (const [num_guests, word] of [
+    [1, "person"],
+    [2, "people"],
+  ] as const) {
+    const entries = accountEntries(
+      [],
+      [],
+      [
+        {
+          id: 1,
+          date: "2099-11-12",
+          time: "18:00:00",
+          num_guests,
+          status: "confirmed",
+          franchise_location_id: 1,
+          location_name: "Atelier",
+          notes: null,
+          created_at: "2026-01-01",
+          updated_at: "2026-01-01",
+        },
+      ],
+      now,
+      { locale: "en" },
+    );
+    expect(entries[0].title).toBe(`Table for ${num_guests} ${word}`);
+  }
+});

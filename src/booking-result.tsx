@@ -17,6 +17,13 @@ import {
   type CalendarInput,
   eventsFrom,
 } from "./calendar";
+import {
+  getMessages,
+  type LocaleOptions,
+  ShopventoProvider,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 
 /** Create a local iCalendar file with Europe/Berlin timezone rules; no external calendar service is used.
  * @param w - W supplied by the host.
@@ -28,7 +35,10 @@ export function bookingCalendarFile(
   title: string,
   reference: string,
   location?: ResultLocation,
+  options: LocaleOptions = {},
 ) {
+  const text = getMessages("booking", options);
+
   const escapeIcs = (s: string) =>
     s
       .replace(/\\/g, "\\\\")
@@ -80,7 +90,7 @@ export function bookingCalendarFile(
     ...(w.end_time ? [`DTEND;TZID=Europe/Berlin:${stamp(w.end_time)}`] : []),
     `SUMMARY:${escapeIcs(title)}`,
     `LOCATION:${escapeIcs([location?.location_name, location?.location_street].filter(Boolean).join(", "))}`,
-    `DESCRIPTION:${escapeIcs(`Buchung ${reference}. Die verbindliche Bestätigung erhältst Du per E-Mail.`)}`,
+    `DESCRIPTION:${escapeIcs(text("Buchung {0}. Die verbindliche Bestätigung erhältst Du per E-Mail.", reference))}`,
     "END:VEVENT",
     "END:VCALENDAR",
     "",
@@ -89,7 +99,7 @@ export function bookingCalendarFile(
     .join("\r\n");
 }
 /** Render the validated locally stored result, clear completed drafts and offer a calendar file. */
-export function BookingOutcome({
+function BookingOutcomeContent({
   cancelled = false,
   draftKey,
   bookingUrl,
@@ -124,6 +134,11 @@ export function BookingOutcome({
    * @defaultValue {} */
   format?: BookingFormat;
 }) {
+  const options = useShopventoLocale();
+  format = { ...format, locale: format.locale ?? options.locale };
+
+  const text = useMessages("booking");
+
   const [snapshot, setSnapshot] = useState<ResultSnapshot | null>(null);
   const [draft, setDraft] = useState<FlowDraft | null>(null);
   useEffect(() => {
@@ -160,6 +175,7 @@ export function BookingOutcome({
             snapshot.title,
             snapshot.order_number,
             snapshot.location,
+            options,
           ),
         ],
         { type: "text/calendar;charset=utf-8" },
@@ -175,41 +191,48 @@ export function BookingOutcome({
     <div className="result">
       <div className="page-head">
         <p className="eyebrow">
-          {cancelled ? "Zahlung abgebrochen" : "Buchung erhalten"}
+          {cancelled ? text("Zahlung abgebrochen") : text("Buchung erhalten")}
         </p>
         <h1 className="display h1">
           {cancelled ? (
             <>
-              Kein Problem, <em>nichts verloren</em>
+              {text("Kein Problem, ")}
+              <em>{text("nichts verloren")}</em>
             </>
           ) : (
             <>
-              Danke für <em>Deine Buchung</em>
+              {text("Danke für ")}
+              <em>{text("Deine Buchung")}</em>
             </>
           )}
         </h1>
         <p className="lead">
           {cancelled
-            ? "Die Zahlung wurde abgebrochen. Deine Auswahl ist noch da."
-            : "Bestätigung und Ticket kommen per E-Mail. Die Rückkehr auf diese Seite bestätigt noch keinen Zahlungseingang."}
+            ? text("Die Zahlung wurde abgebrochen. Deine Auswahl ist noch da.")
+            : text(
+                "Bestätigung und Ticket kommen per E-Mail. Die Rückkehr auf diese Seite bestätigt noch keinen Zahlungseingang.",
+              )}
         </p>
       </div>
       {snapshot && !cancelled && (
         <div className="card ticket">
           <div className="tk-top">
-            <p className="eyebrow">Buchung {snapshot.order_number}</p>
+            <p className="eyebrow">
+              {text("Buchung ")}
+              {snapshot.order_number}
+            </p>
             <h2 className="display h3">{snapshot.title}</h2>
             <p>
               {bookingDate(snapshot.window.date, false, format.locale)},{" "}
-              {bookingTime(snapshot.window)}
+              {bookingTime(snapshot.window, options)}
             </p>
           </div>
           <div className="perf" aria-hidden="true" />
           <div className="tk-body">
             <dl className="kv">
-              <dt>Plätze</dt>
+              <dt>{text("Plätze")}</dt>
               <dd>{snapshot.seatCount}</dd>
-              <dt>Ort</dt>
+              <dt>{text("Ort")}</dt>
               <dd>
                 {snapshot.location?.location_name},{" "}
                 {snapshot.location?.location_street}
@@ -222,7 +245,7 @@ export function BookingOutcome({
                   className="btn btn-ghost"
                   onClick={download}
                 >
-                  <BookingIcon name="calendar" /> In den Kalender
+                  <BookingIcon name="calendar" /> {text(" In den Kalender")}
                 </button>
                 {routeUrl && (
                   <a
@@ -231,7 +254,7 @@ export function BookingOutcome({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <BookingIcon name="pin" /> Route
+                    <BookingIcon name="pin" /> {text(" Route")}
                   </a>
                 )}
               </div>
@@ -241,17 +264,17 @@ export function BookingOutcome({
       )}
       {cancelled && draft && (
         <div className="card card-pad stack">
-          <p className="eyebrow">Deine Auswahl</p>
+          <p className="eyebrow">{text("Deine Auswahl")}</p>
           <h2 className="display h3">
             {(data ? eventsFrom(data) : []).find(
               (t) => t.tasting_id === selected?.tasting_id,
-            )?.tasting_name ?? "Dein Termin"}
+            )?.tasting_name ?? text("Dein Termin")}
           </h2>
           {selected ? (
             <>
               <p>
                 {bookingDate(selected.date, false, format.locale)},{" "}
-                {bookingTime(selected)}
+                {bookingTime(selected, options)}
               </p>
               <AvailabilityBadge
                 window={selected}
@@ -262,27 +285,37 @@ export function BookingOutcome({
           ) : (
             <p>
               {data
-                ? "Dieser Termin ist nicht mehr verfügbar. Wähle einen anderen Termin."
-                : "Die aktuelle Verfügbarkeit wird geladen."}
+                ? text(
+                    "Dieser Termin ist nicht mehr verfügbar. Wähle einen anderen Termin.",
+                  )
+                : text("Die aktuelle Verfügbarkeit wird geladen.")}
             </p>
           )}
           <p>
-            {draft.seats.length} {draft.seats.length === 1 ? "Platz" : "Plätze"}
+            {draft.seats.length}{" "}
+            {draft.seats.length === 1 ? text("Platz") : text("Plätze")}
           </p>
-          <p>Die Plätze sind erst mit der Zahlung fest für Dich reserviert.</p>
+          <p>
+            {text(
+              "Die Plätze sind erst mit der Zahlung fest für Dich reserviert.",
+            )}
+          </p>
         </div>
       )}
       {!cancelled && !snapshot && validBookingReference(reference) && (
-        <p>Buchungsnummer: {reference}</p>
+        <p>
+          {text("Buchungsnummer: ")}
+          {reference}
+        </p>
       )}
       <div className="btn-row">
         {cancelled && draft && (
           <a className="btn btn-primary" href={bookingUrl}>
-            Weiter buchen
+            {text("Weiter buchen")}
           </a>
         )}
         <a className="btn btn-ghost" href={calendarUrl}>
-          {cancelled ? "Anderen Termin wählen" : "Weitere Termine"}
+          {cancelled ? text("Anderen Termin wählen") : text("Weitere Termine")}
         </a>
       </div>
       {!cancelled && registerUrl && registerHint && snapshot?.guestEmail && (
@@ -291,10 +324,24 @@ export function BookingOutcome({
           <a
             href={`${registerUrl.split("#")[0]}#email=${encodeURIComponent(snapshot.guestEmail)}`}
           >
-            Konto anlegen
+            {text("Konto anlegen")}
           </a>
         </p>
       )}
     </div>
+  );
+}
+
+/** Render BookingOutcome in a per-visitor or per-route language scope. */
+export function BookingOutcome(
+  props: Parameters<typeof BookingOutcomeContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider
+      locale={props.locale ?? props.format?.locale}
+      messages={props.messages}
+    >
+      <BookingOutcomeContent {...props} />
+    </ShopventoProvider>
   );
 }

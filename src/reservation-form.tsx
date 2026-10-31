@@ -1,6 +1,15 @@
 "use client";
 
 import { useAccountContactPrefill } from "./account-contact-prefill";
+import {
+  dateInputConfirmation,
+  dateInputPattern,
+  dateInputPlaceholder,
+  localeTime,
+  ShopventoProvider,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 import { NewsletterSignup } from "./newsletter-signup";
 import {
   type OpeningSettings,
@@ -113,7 +122,7 @@ export interface ReservationFormProps extends PublicFormOptions {
   >;
 }
 /** Table reservation form with runtime party limits, opening hours, strict calendar dates and Turnstile. */
-export function ReservationForm({
+function ReservationFormContent({
   siteKey,
   publicApi = defaultPublicFormApi,
   ScriptComponent = PublicFormScript,
@@ -128,10 +137,9 @@ export function ReservationForm({
   renderGuestAccountHint,
   NewsletterComponent = NewsletterSignup,
 }: ReservationFormProps) {
-  const text = (value: string, ...args: unknown[]) =>
-    (labels[value] ?? value).replace(/\{(\d+)\}/g, (match, index: string) =>
-      Number(index) < args.length ? String(args[Number(index)]) : match,
-    );
+  const text = useMessages("reservation", labels);
+  const localeOptions = useShopventoLocale();
+  const { locale } = localeOptions;
   const [status, setStatus] = useState<Status>("idle");
   const [apiSiteKey, setApiSiteKey] = useState<string | null>(null);
   const [limits, setLimits] = useState(reservationGuests);
@@ -155,7 +163,7 @@ export function ReservationForm({
   let dateError: string | null = null;
   if (dateValue.length === 10) {
     try {
-      isoDate = reservationDate(dateValue);
+      isoDate = reservationDate(dateValue, localeOptions, labels);
     } catch (error) {
       dateError =
         error instanceof Error
@@ -176,8 +184,12 @@ export function ReservationForm({
     (opening?.kind === "open"
       ? text(
           "Reservierungen ab {0} Uhr bis vor {1} Uhr.",
-          opening.opens,
-          opening.closes,
+          locale.startsWith("de")
+            ? opening.opens
+            : localeTime(opening.opens, locale),
+          locale.startsWith("de")
+            ? opening.closes
+            : localeTime(opening.closes, locale),
         )
       : null);
   const timeInvalid =
@@ -189,8 +201,12 @@ export function ReservationForm({
     timeInvalid && timeTouched && opening?.kind === "open"
       ? text(
           "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
-          opening.opens,
-          opening.closes,
+          locale.startsWith("de")
+            ? opening.opens
+            : localeTime(opening.opens, locale),
+          locale.startsWith("de")
+            ? opening.closes
+            : localeTime(opening.closes, locale),
         )
       : null;
   const fieldMessageStyle: React.CSSProperties = {
@@ -339,7 +355,7 @@ export function ReservationForm({
 
     try {
       const config = await publicApi();
-      const date = reservationDate(payload.date);
+      const date = reservationDate(payload.date, localeOptions, labels);
       const res = await fetch(
         config.shopvento
           ? "/api/table-reservations/public"
@@ -388,13 +404,13 @@ export function ReservationForm({
         data.error ??
           (typeof data.detail === "string"
             ? data.detail
-            : text(publicApiError(res.status))),
+            : publicApiError(res.status, localeOptions, labels)),
       );
       window.turnstile?.reset(widgetIdRef.current ?? undefined);
     } catch (error) {
       setStatus("error");
       setErrorMsg(
-        error instanceof Error && error.message.startsWith("Bitte gib")
+        error instanceof Error && dateValue.length === 10 && !isoDate
           ? text(error.message)
           : text(
               "Verbindung fehlgeschlagen. Bitte versuche es erneut oder rufe uns an.",
@@ -627,18 +643,34 @@ export function ReservationForm({
               name="date"
               type="text"
               inputMode="numeric"
-              placeholder={text("TT.MM.JJJJ")}
-              pattern="[0-9]{2}[.][0-9]{2}[.][0-9]{4}"
+              placeholder={dateInputPlaceholder(locale)}
+              pattern={dateInputPattern(locale)}
               maxLength={10}
               value={dateValue}
               onChange={(e) =>
-                setDateValue(maskReservationDate(e.target.value))
+                setDateValue(maskReservationDate(e.target.value, locale))
               }
               required
               aria-invalid={Boolean(dateError)}
-              aria-describedby={dateMessage ? "resv-date-message" : undefined}
+              aria-describedby={
+                [
+                  dateMessage ? "resv-date-message" : "",
+                  isoDate ? "resv-date-confirmation" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ") || undefined
+              }
               style={inputStyle}
             />
+            {isoDate && (
+              <p
+                id="resv-date-confirmation"
+                role="status"
+                style={fieldMessageStyle}
+              >
+                {dateInputConfirmation(dateValue, locale)}
+              </p>
+            )}
             {dateMessage && (
               <p
                 id="resv-date-message"
@@ -666,7 +698,7 @@ export function ReservationForm({
               value={timeValue}
               aria-invalid={Boolean(timeError)}
               aria-describedby={timeError ? "resv-time-message" : undefined}
-              placeholder="z. B. 18:30"
+              placeholder={text("z. B. 18:30")}
               onChange={(e) => setTimeValue(e.target.value)}
               onBlur={() => {
                 setTimeValue((prev) => normalizeTimeInput(prev));
@@ -851,5 +883,14 @@ export function ReservationForm({
         </p>
       </form>
     </>
+  );
+}
+
+/** Render the reservation flow in an optional local language scope. */
+export function ReservationForm(props: ReservationFormProps) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <ReservationFormContent {...props} />
+    </ShopventoProvider>
   );
 }

@@ -17,8 +17,14 @@ import {
   accountFieldErrors,
   accountPasswordRules,
 } from "./account-client";
+import {
+  type LocaleOptions,
+  ShopventoProvider,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 
-interface FormProps {
+interface FormProps extends LocaleOptions {
   /** Stable client instance used for API requests. */
   client: AccountClient;
   /** Host sign-in route.
@@ -40,12 +46,14 @@ function Field({
   /** Optional customer-visible helper text. Optional; omitted unless supplied by the host or backend. */
   hint?: string;
 }) {
+  const text = useMessages("account");
+
   const id = useId();
   return (
     <div className="sv-account-field">
       <label htmlFor={id}>
         {label}
-        {input.required ? "" : " (optional)"}
+        {input.required ? "" : text(" (optional)")}
       </label>
       <input
         {...input}
@@ -95,6 +103,10 @@ function useFormAction(
   login = false,
   context?: "passwordSet" | "verify" | "emailChange",
 ) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<AccountFieldErrors>({});
@@ -123,9 +135,11 @@ function useFormAction(
         field.required &&
         (field.type === "checkbox" ? !field.checked : !field.value.trim())
       )
-        invalid[field.name] = "Bitte fülle dieses Feld aus.";
+        invalid[field.name] = text("Bitte fülle dieses Feld aus.");
       else if (field.type === "email" && field.value && !field.validity.valid)
-        invalid[field.name] = "Bitte gib eine gültige E-Mail-Adresse ein.";
+        invalid[field.name] = text(
+          "Bitte gib eine gültige E-Mail-Adresse ein.",
+        );
     }
     Object.assign(invalid, checks);
     focusSummary.current = false;
@@ -135,7 +149,7 @@ function useFormAction(
       (field) => field instanceof HTMLInputElement && invalid[field.name],
     );
     if (first instanceof HTMLInputElement) {
-      setError("Bitte prüfe die markierten Felder.");
+      setError(text("Bitte prüfe die markierten Felder."));
       first.focus();
       return;
     }
@@ -148,8 +162,10 @@ function useFormAction(
       const credentialsError =
         login && cause instanceof AccountApiError && cause.status === 401;
       const message = credentialsError
-        ? "E-Mail-Adresse oder Passwort stimmen nicht. Bitte prüfe Deine Eingaben."
-        : accountErrorMessage(cause, token, login ? "login" : context);
+        ? text(
+            "E-Mail-Adresse oder Passwort stimmen nicht. Bitte prüfe Deine Eingaben.",
+          )
+        : accountErrorMessage(cause, token, login ? "login" : context, options);
       setError(message);
       setFields(
         credentialsError
@@ -160,7 +176,7 @@ function useFormAction(
               cause.detail ===
                 "Dein neues Passwort muss sich von Deinem aktuellen Passwort unterscheiden."
             ? { new_password: message }
-            : accountFieldErrors(cause),
+            : accountFieldErrors(cause, options),
       );
     } finally {
       lock.current = false;
@@ -187,6 +203,8 @@ export function PasswordChecklist({
   /** Opaque backend identifier or accessible element ID. Optional; omitted unless supplied by the host or backend. */
   id?: string;
 }) {
+  const text = useMessages("account");
+
   const rules = accountPasswordRules(password);
   const minimum = Array.from(password).length >= 8;
   const maximum = new TextEncoder().encode(password).length <= 72;
@@ -194,37 +212,39 @@ export function PasswordChecklist({
     <ul
       id={id}
       className="sv-account-rules"
-      aria-label="Passwortregeln"
+      aria-label={text("Passwortregeln")}
       aria-live="polite"
     >
       <li data-met={minimum}>
-        <span aria-hidden="true">{minimum ? "✓" : "○"}</span> Mindestens 8
-        Zeichen{" "}
+        <span aria-hidden="true">{minimum ? "✓" : "○"}</span>{" "}
+        {text(" Mindestens 8 Zeichen")}{" "}
         <span className="sv-account-sr">
-          {minimum ? "erfüllt" : "noch nicht erfüllt"}
+          {minimum ? text("erfüllt") : text("noch nicht erfüllt")}
         </span>
       </li>
       <li data-met={maximum}>
-        <span aria-hidden="true">{maximum ? "✓" : "○"}</span> Höchstens 72
-        Bytes, Umlaute und Emojis zählen mehrfach
+        <span aria-hidden="true">{maximum ? "✓" : "○"}</span>{" "}
+        {text(" Höchstens 72 Bytes, Umlaute und Emojis zählen mehrfach")}
         <span className="sv-account-sr">
-          {maximum ? "erfüllt" : "noch nicht erfüllt"}
+          {maximum ? text("erfüllt") : text("noch nicht erfüllt")}
         </span>
       </li>
       <li data-met={rules.letter && rules.nonLetter}>
         <span aria-hidden="true">
           {rules.letter && rules.nonLetter ? "✓" : "○"}
         </span>{" "}
-        Ein Buchstabe und eine Zahl oder ein Sonderzeichen{" "}
+        {text("Ein Buchstabe und eine Zahl oder ein Sonderzeichen")}{" "}
         <span className="sv-account-sr">
-          {rules.letter && rules.nonLetter ? "erfüllt" : "noch nicht erfüllt"}
+          {rules.letter && rules.nonLetter
+            ? text("erfüllt")
+            : text("noch nicht erfüllt")}
         </span>
       </li>
     </ul>
   );
 }
 /** Render same-origin customer sign-in, keeping incorrect credentials inline. */
-export function LoginForm({
+function LoginFormContent({
   client,
   registerUrl = "/konto/registrieren",
   passwordResetUrl = "/konto/passwort-vergessen",
@@ -245,13 +265,15 @@ export function LoginForm({
   /** Optional customer-visible notice. Optional; omitted unless supplied by the host or backend. */
   notice?: string;
 }) {
+  const text = useMessages("account");
+
   const form = useFormAction(false, true);
   const noticeId = useId();
   return (
     <form
       className="sv-account"
       noValidate
-      aria-label="Anmelden"
+      aria-label={text("Anmelden")}
       aria-describedby={notice ? noticeId : undefined}
       onChange={(event) =>
         form.clear(
@@ -276,7 +298,7 @@ export function LoginForm({
       {form.feedback}
       <Field
         name="email"
-        label="E-Mail-Adresse"
+        label={text("E-Mail-Adresse")}
         type="email"
         autoComplete="email"
         required
@@ -284,20 +306,20 @@ export function LoginForm({
       />
       <Field
         name="password"
-        label="Passwort"
+        label={text("Passwort")}
         type="password"
         autoComplete="current-password"
         required
         error={form.fields.password}
       />
       <a href={passwordResetUrl}>
-        Passwort vergessen oder noch keines festgelegt?
+        {text("Passwort vergessen oder noch keines festgelegt?")}
       </a>
       <button type="submit" disabled={form.busy}>
-        {form.busy ? "Du wirst angemeldet…" : "Anmelden"}
+        {form.busy ? text("Du wirst angemeldet…") : text("Anmelden")}
       </button>
       <p className="sv-account-secondary">
-        Noch kein Konto?{" "}
+        {text("Noch kein Konto?")}{" "}
         <a
           href={registerUrl}
           onClick={
@@ -309,14 +331,14 @@ export function LoginForm({
               : undefined
           }
         >
-          Konto anlegen
+          {text("Konto anlegen")}
         </a>
       </p>
     </form>
   );
 }
 /** Render registration with required terms/privacy consent and optional separate newsletter consent. */
-export function RegisterForm({
+function RegisterFormContent({
   client,
   termsUrl,
   privacyUrl,
@@ -331,6 +353,8 @@ export function RegisterForm({
    * @defaultValue "" */
   initialEmail?: string;
 }) {
+  const text = useMessages("account");
+
   const form = useFormAction();
   const [password, setPassword] = useState("");
   const [done, setDone] = useState(false);
@@ -342,20 +366,20 @@ export function RegisterForm({
     return (
       <div className="sv-account">
         <Notice>
-          <strong>Bitte schau in Dein E-Mail-Postfach.</strong>
+          <strong>{text("Bitte schau in Dein E-Mail-Postfach.")}</strong>
           <p>
-            Wenn wir für diese Adresse ein Konto anlegen können, erhältst Du
-            einen Bestätigungslink. Falls Du schon ein Konto hast, kannst Du
-            Dich anmelden oder Dein Passwort festlegen.
+            {text(
+              "Wenn wir für diese Adresse ein Konto anlegen können, erhältst Du einen Bestätigungslink. Falls Du schon ein Konto hast, kannst Du Dich anmelden oder Dein Passwort festlegen.",
+            )}
           </p>
           {newsletterRequested && (
             <p>
-              Für Deine Newsletter-Anmeldung folgt eine separate
-              Bestätigungs-E-Mail. Bitte bestätige Deine Anmeldung über den Link
-              darin.
+              {text(
+                "Für Deine Newsletter-Anmeldung folgt eine separate Bestätigungs-E-Mail. Bitte bestätige Deine Anmeldung über den Link darin.",
+              )}
             </p>
           )}
-          <a href={loginUrl}>Zur Anmeldung</a>
+          <a href={loginUrl}>{text("Zur Anmeldung")}</a>
         </Notice>
       </div>
     );
@@ -363,7 +387,7 @@ export function RegisterForm({
     <form
       className="sv-account"
       noValidate
-      aria-label="Konto anlegen"
+      aria-label={text("Konto anlegen")}
       onChange={(event) =>
         form.clear(
           event.target instanceof HTMLInputElement ? event.target.name : "",
@@ -373,9 +397,11 @@ export function RegisterForm({
         const data = new FormData(event.currentTarget);
         const errors: AccountFieldErrors = {};
         if (!passwordValid(password))
-          errors.password = "Bitte beachte die Passwortregeln.";
+          errors.password = text("Bitte beachte die Passwortregeln.");
         if (value(data, "confirm_password") !== password)
-          errors.confirm_password = "Die Passwörter stimmen nicht überein.";
+          errors.confirm_password = text(
+            "Die Passwörter stimmen nicht überein.",
+          );
         void form.run(
           event,
           async (data) => {
@@ -395,21 +421,21 @@ export function RegisterForm({
         );
       }}
     >
-      <p>Felder ohne „optional“ brauchen wir für Dein Konto.</p>
+      <p>{text("Felder ohne „optional“ brauchen wir für Dein Konto.")}</p>
       {form.feedback}
       <fieldset>
-        <legend>Deine Angaben</legend>
+        <legend>{text("Deine Angaben")}</legend>
         <div className="sv-account-grid">
           <Field
             name="first_name"
-            label="Vorname"
+            label={text("Vorname")}
             autoComplete="given-name"
             required
             error={form.fields.first_name}
           />
           <Field
             name="last_name"
-            label="Nachname"
+            label={text("Nachname")}
             autoComplete="family-name"
             required
             error={form.fields.last_name}
@@ -417,7 +443,7 @@ export function RegisterForm({
         </div>
         <Field
           name="email"
-          label="E-Mail-Adresse"
+          label={text("E-Mail-Adresse")}
           type="email"
           autoComplete="email"
           required
@@ -426,10 +452,10 @@ export function RegisterForm({
         />
       </fieldset>
       <fieldset>
-        <legend>Dein Passwort</legend>
+        <legend>{text("Dein Passwort")}</legend>
         <Field
           name="password"
-          label="Passwort"
+          label={text("Passwort")}
           type="password"
           autoComplete="new-password"
           required
@@ -441,7 +467,7 @@ export function RegisterForm({
         <PasswordChecklist password={password} id={rulesId} />
         <Field
           name="confirm_password"
-          label="Passwort wiederholen"
+          label={text("Passwort wiederholen")}
           type="password"
           autoComplete="new-password"
           required
@@ -455,7 +481,9 @@ export function RegisterForm({
           type="checkbox"
           defaultChecked={false}
         />
-        Ich möchte Neuigkeiten und Angebote per E-Mail erhalten (optional).
+        {text(
+          "Ich möchte Neuigkeiten und Angebote per E-Mail erhalten (optional).",
+        )}
       </label>
       <label className="sv-account-check" htmlFor={consentId}>
         <input
@@ -469,47 +497,52 @@ export function RegisterForm({
           }
         />
         <span>
-          Ich akzeptiere die <a href={termsUrl}>AGB</a> und habe die{" "}
-          <a href={privacyUrl}>Datenschutzhinweise</a> gelesen.
+          {text("Ich akzeptiere die ")}
+          <a href={termsUrl}>{text("AGB")}</a> {text(" und habe die")}{" "}
+          <a href={privacyUrl}>{text("Datenschutzhinweise")}</a>{" "}
+          {text(" gelesen.")}
         </span>
       </label>
       {form.fields.terms && (
         <p id={`${consentId}-error`} className="sv-account-field-error">
-          Bitte akzeptiere die AGB und lies die Datenschutzhinweise.
+          {text("Bitte akzeptiere die AGB und lies die Datenschutzhinweise.")}
         </p>
       )}
       <button type="submit" disabled={form.busy}>
-        {form.busy ? "Konto wird angelegt…" : "Konto anlegen"}
+        {form.busy ? text("Konto wird angelegt…") : text("Konto anlegen")}
       </button>
       <p className="sv-account-secondary">
-        Schon dabei? <a href={loginUrl}>Anmelden</a>
+        {text("Schon dabei? ")}
+        <a href={loginUrl}>{text("Anmelden")}</a>
       </p>
     </form>
   );
 }
 /** Request a password-reset email without revealing whether the account exists. */
-export function PasswordResetRequest({
+function PasswordResetRequestContent({
   client,
   loginUrl = "/konto/anmelden",
 }: FormProps) {
+  const text = useMessages("account");
+
   const form = useFormAction();
   const [done, setDone] = useState(false);
   return (
     <div className="sv-account">
       {done ? (
         <Notice>
-          <strong>Bitte schau in Dein E-Mail-Postfach.</strong>
+          <strong>{text("Bitte schau in Dein E-Mail-Postfach.")}</strong>
           <p>
-            Wenn es zu dieser E-Mail-Adresse ein Konto gibt, erhältst Du einen
-            Link, um Dein Passwort festzulegen. Schau bitte auch im Spam-Ordner
-            nach.
+            {text(
+              "Wenn es zu dieser E-Mail-Adresse ein Konto gibt, erhältst Du einen Link, um Dein Passwort festzulegen. Schau bitte auch im Spam-Ordner nach.",
+            )}
           </p>
-          <a href={loginUrl}>Zur Anmeldung</a>
+          <a href={loginUrl}>{text("Zur Anmeldung")}</a>
         </Notice>
       ) : (
         <form
           noValidate
-          aria-label="Passwort-Link anfordern"
+          aria-label={text("Passwort-Link anfordern")}
           onChange={() => form.clear("email")}
           onSubmit={(event) =>
             form.run(event, async (data) => {
@@ -521,22 +554,23 @@ export function PasswordResetRequest({
           }
         >
           <p>
-            Du hast Dein Passwort vergessen oder noch keines festgelegt? Wir
-            schicken Dir einen Link.
+            {text(
+              "Du hast Dein Passwort vergessen oder noch keines festgelegt? Wir schicken Dir einen Link.",
+            )}
           </p>
           {form.feedback}
           <Field
             name="email"
-            label="E-Mail-Adresse"
+            label={text("E-Mail-Adresse")}
             type="email"
             autoComplete="email"
             required
             error={form.fields.email}
           />
           <button type="submit" disabled={form.busy}>
-            {form.busy ? "Link wird angefordert…" : "Link senden"}
+            {form.busy ? text("Link wird angefordert…") : text("Link senden")}
           </button>
-          <a href={loginUrl}>Zur Anmeldung</a>
+          <a href={loginUrl}>{text("Zur Anmeldung")}</a>
         </form>
       )}
     </div>
@@ -549,7 +583,7 @@ interface TokenProps extends FormProps {
   passwordResetUrl?: string;
 }
 /** Set a password using a token retained only in component memory. */
-export function PasswordSetForm({
+function PasswordSetFormContent({
   client,
   token,
   accountUrl = "/konto",
@@ -559,6 +593,8 @@ export function PasswordSetForm({
    * @defaultValue "/konto" */
   accountUrl?: string;
 }) {
+  const text = useMessages("account");
+
   const form = useFormAction(true, false, "passwordSet");
   const [password, setPassword] = useState("");
   const [done, setDone] = useState(false);
@@ -567,9 +603,9 @@ export function PasswordSetForm({
     return (
       <div className="sv-account">
         <Notice>
-          <strong>Dein Passwort ist festgelegt.</strong>
-          <p>Du bist jetzt angemeldet.</p>
-          <a href={accountUrl}>Zu Deinem Konto</a>
+          <strong>{text("Dein Passwort ist festgelegt.")}</strong>
+          <p>{text("Du bist jetzt angemeldet.")}</p>
+          <a href={accountUrl}>{text("Zu Deinem Konto")}</a>
         </Notice>
       </div>
     );
@@ -578,10 +614,11 @@ export function PasswordSetForm({
       <div className="sv-account">
         <Notice>
           <p>
-            Dieser Link ist ungültig oder fehlt. Bitte fordere einen neuen Link
-            an.
+            {text(
+              "Dieser Link ist ungültig oder fehlt. Bitte fordere einen neuen Link an.",
+            )}
           </p>
-          <a href={passwordResetUrl}>Neuen Link anfordern</a>
+          <a href={passwordResetUrl}>{text("Neuen Link anfordern")}</a>
         </Notice>
       </div>
     );
@@ -589,7 +626,7 @@ export function PasswordSetForm({
     <form
       className="sv-account"
       noValidate
-      aria-label="Passwort festlegen"
+      aria-label={text("Passwort festlegen")}
       onChange={(event) =>
         form.clear(
           event.target instanceof HTMLInputElement ? event.target.name : "",
@@ -599,9 +636,11 @@ export function PasswordSetForm({
         const data = new FormData(event.currentTarget);
         const errors: AccountFieldErrors = {};
         if (!passwordValid(password))
-          errors.new_password = "Bitte beachte die Passwortregeln.";
+          errors.new_password = text("Bitte beachte die Passwortregeln.");
         if (value(data, "confirm_password") !== password)
-          errors.confirm_password = "Die Passwörter stimmen nicht überein.";
+          errors.confirm_password = text(
+            "Die Passwörter stimmen nicht überein.",
+          );
         void form.run(
           event,
           async () => {
@@ -616,7 +655,7 @@ export function PasswordSetForm({
       {form.feedback}
       <Field
         name="new_password"
-        label="Neues Passwort"
+        label={text("Neues Passwort")}
         type="password"
         autoComplete="new-password"
         required
@@ -628,16 +667,18 @@ export function PasswordSetForm({
       <PasswordChecklist password={password} id={rulesId} />
       <Field
         name="confirm_password"
-        label="Neues Passwort wiederholen"
+        label={text("Neues Passwort wiederholen")}
         type="password"
         autoComplete="new-password"
         required
         error={form.fields.confirm_password}
       />
       <button type="submit" disabled={form.busy}>
-        {form.busy ? "Passwort wird gespeichert…" : "Passwort festlegen"}
+        {form.busy
+          ? text("Passwort wird gespeichert…")
+          : text("Passwort festlegen")}
       </button>
-      <a href={passwordResetUrl}>Neuen Link anfordern</a>
+      <a href={passwordResetUrl}>{text("Neuen Link anfordern")}</a>
     </form>
   );
 }
@@ -651,6 +692,8 @@ function EmailConfirmation({
    * @defaultValue false */
   change?: boolean;
 }) {
+  const text = useMessages("account");
+
   const form = useFormAction(true, false, change ? "emailChange" : "verify");
   const [done, setDone] = useState(false);
   return (
@@ -659,31 +702,34 @@ function EmailConfirmation({
         <Notice>
           <strong>
             {change
-              ? "Deine neue E-Mail-Adresse ist bestätigt."
-              : "Deine E-Mail-Adresse ist bestätigt."}
+              ? text("Deine neue E-Mail-Adresse ist bestätigt.")
+              : text("Deine E-Mail-Adresse ist bestätigt.")}
           </strong>
           <p>
             {change
-              ? "Bitte melde Dich mit Deiner neuen E-Mail-Adresse erneut an."
-              : "Du kannst Dich jetzt anmelden."}
+              ? text(
+                  "Bitte melde Dich mit Deiner neuen E-Mail-Adresse erneut an.",
+                )
+              : text("Du kannst Dich jetzt anmelden.")}
           </p>
-          <a href={loginUrl}>Anmelden</a>
+          <a href={loginUrl}>{text("Anmelden")}</a>
         </Notice>
       ) : !token || token.length > 4096 ? (
         <Notice>
           <p>
-            Dieser Link ist ungültig oder fehlt. Bitte öffne den vollständigen
-            Link aus Deiner E-Mail.
+            {text(
+              "Dieser Link ist ungültig oder fehlt. Bitte öffne den vollständigen Link aus Deiner E-Mail.",
+            )}
           </p>
-          <a href={loginUrl}>Zur Anmeldung</a>
+          <a href={loginUrl}>{text("Zur Anmeldung")}</a>
         </Notice>
       ) : (
         <form
           noValidate
           aria-label={
             change
-              ? "Neue E-Mail-Adresse bestätigen"
-              : "E-Mail-Adresse bestätigen"
+              ? text("Neue E-Mail-Adresse bestätigen")
+              : text("E-Mail-Adresse bestätigen")
           }
           onSubmit={(event) =>
             form.run(event, async () => {
@@ -697,13 +743,19 @@ function EmailConfirmation({
           {form.feedback}
           <p>
             {change
-              ? "Bestätige Deine neue E-Mail-Adresse. Danach meldest Du Dich erneut an."
-              : "Bestätige Deine E-Mail-Adresse, um Dein Konto zu nutzen."}
+              ? text(
+                  "Bestätige Deine neue E-Mail-Adresse. Danach meldest Du Dich erneut an.",
+                )
+              : text(
+                  "Bestätige Deine E-Mail-Adresse, um Dein Konto zu nutzen.",
+                )}
           </p>
           <button type="submit" disabled={form.busy}>
-            {form.busy ? "Wird bestätigt…" : "E-Mail-Adresse bestätigen"}
+            {form.busy
+              ? text("Wird bestätigt…")
+              : text("E-Mail-Adresse bestätigen")}
           </button>
-          <a href={loginUrl}>Zur Anmeldung</a>
+          <a href={loginUrl}>{text("Zur Anmeldung")}</a>
         </form>
       )}
     </div>
@@ -711,11 +763,77 @@ function EmailConfirmation({
 }
 /** Confirm an email token only after an explicit button press.
  * @param props - Props supplied by the host. */
-export function EmailVerify(props: TokenProps) {
+function EmailVerifyContent(props: TokenProps) {
   return <EmailConfirmation {...props} />;
 }
 /** Confirm an email change only after an explicit button press.
  * @param props - Props supplied by the host. */
-export function EmailChangeConfirm(props: TokenProps) {
+function EmailChangeConfirmContent(props: TokenProps) {
   return <EmailConfirmation {...props} change />;
+}
+
+/** Render LoginForm in an optional per-render locale scope. */
+export function LoginForm(
+  props: Parameters<typeof LoginFormContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <LoginFormContent {...props} />
+    </ShopventoProvider>
+  );
+}
+
+/** Render RegisterForm in an optional per-render locale scope. */
+export function RegisterForm(
+  props: Parameters<typeof RegisterFormContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <RegisterFormContent {...props} />
+    </ShopventoProvider>
+  );
+}
+
+/** Render PasswordResetRequest in an optional per-render locale scope. */
+export function PasswordResetRequest(
+  props: Parameters<typeof PasswordResetRequestContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <PasswordResetRequestContent {...props} />
+    </ShopventoProvider>
+  );
+}
+
+/** Render PasswordSetForm in an optional per-render locale scope. */
+export function PasswordSetForm(
+  props: Parameters<typeof PasswordSetFormContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <PasswordSetFormContent {...props} />
+    </ShopventoProvider>
+  );
+}
+
+/** Render EmailVerify in an optional per-render locale scope. */
+export function EmailVerify(
+  props: Parameters<typeof EmailVerifyContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <EmailVerifyContent {...props} />
+    </ShopventoProvider>
+  );
+}
+
+/** Render EmailChangeConfirm in an optional per-render locale scope. */
+export function EmailChangeConfirm(
+  props: Parameters<typeof EmailChangeConfirmContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <EmailChangeConfirmContent {...props} />
+    </ShopventoProvider>
+  );
 }

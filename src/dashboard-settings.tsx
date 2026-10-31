@@ -24,6 +24,11 @@ import {
   AccountState,
   useAccountResource,
 } from "./dashboard-ui";
+import {
+  dateInputPlaceholder,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 
 const get = (data: FormData, key: string) => String(data.get(key) ?? "").trim();
 /** Normalize an account phone field using the host dialing prefix.
@@ -91,6 +96,10 @@ function Field({
   );
 }
 function useSave() {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const form = useRef<HTMLFormElement>(null);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -112,8 +121,9 @@ function useSave() {
     setError,
     run: async (
       fn: () => Promise<unknown>,
-      success = "Gespeichert.",
-      errorMessage = accountErrorMessage,
+      success = text("Gespeichert."),
+      errorMessage = (error: unknown) =>
+        accountErrorMessage(error, false, undefined, options),
     ) => {
       setBusy(true);
       setError("");
@@ -124,7 +134,7 @@ function useSave() {
         setMessage(success);
         return true;
       } catch (e) {
-        setFields(accountFieldErrors(e));
+        setFields(accountFieldErrors(e, options));
         setError(errorMessage(e));
         return false;
       } finally {
@@ -156,11 +166,17 @@ function Personal({
   /** Refresh authoritative host data after a successful mutation. */
   onChanged: () => void;
 }) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const { profile, client, labels } = props;
   const save = useSave();
   const [prefix, setPrefix] = useState("+49"),
     [phone, setPhone] = useState(profile.phone ?? "");
-  const [birth, setBirth] = useState(birthDateFromISO(profile.birth_date));
+  const [birth, setBirth] = useState(
+    birthDateFromISO(profile.birth_date, options.locale),
+  );
   const id = useId();
   const normalizedPhone = normalizeAccountPhone(phone, prefix);
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -168,20 +184,20 @@ function Personal({
     const form = e.currentTarget;
     const data = new FormData(form);
     const errors: Record<string, string> = {};
-    const isoBirth = birthDateToISO(birth);
+    const isoBirth = birthDateToISO(birth, options.locale);
     const birthError =
       isoBirth === null
-        ? "Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein."
-        : accountBirthDateError(isoBirth, minimumAge);
+        ? text("Bitte gib ein gültiges Datum im Format TT.MM.JJJJ ein.")
+        : accountBirthDateError(isoBirth, minimumAge, undefined, options);
     if (birthError) errors.birth_date = birthError;
     const normalized = normalizeAccountPhone(phone, prefix);
     if (normalized === null)
-      errors.phone = "Bitte gib eine gültige Telefonnummer ein.";
+      errors.phone = text("Bitte gib eine gültige Telefonnummer ein.");
     for (const key of ["first_name", "last_name"])
-      if (!get(data, key)) errors[key] = "Bitte füll dieses Feld aus.";
+      if (!get(data, key)) errors[key] = text("Bitte füll dieses Feld aus.");
     save.setFields(errors);
     if (Object.keys(errors).length) {
-      save.setError("Bitte prüfe Deine Eingaben.");
+      save.setError(text("Bitte prüfe Deine Eingaben."));
       setTimeout(
         () => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
         0,
@@ -210,20 +226,22 @@ function Personal({
       <div className="form-grid two">
         <Field
           name="first_name"
-          label="Vorname"
+          label={text("Vorname")}
           value={profile.first_name}
           autoComplete="given-name"
           error={save.fields.first_name}
         />
         <Field
           name="last_name"
-          label="Nachname"
+          label={text("Nachname")}
           value={profile.last_name}
           autoComplete="family-name"
           error={save.fields.last_name}
         />
         <div className="field">
-          <label htmlFor={`${id}-birth-input`}>Geburtsdatum (optional)</label>
+          <label htmlFor={`${id}-birth-input`}>
+            {text("Geburtsdatum (optional)")}
+          </label>
           <BirthDateInput
             id={`${id}-birth-input`}
             className="input"
@@ -234,7 +252,7 @@ function Personal({
             aria-describedby={`${id}-birth-format ${id}-birth`}
           />
           <span id={`${id}-birth-format`} className="hint">
-            Format: TT.MM.JJJJ.
+            {text(text("Format: {0}."), dateInputPlaceholder(options.locale))}
           </span>
           <span
             id={`${id}-birth`}
@@ -242,15 +260,17 @@ function Personal({
           >
             {save.fields.birth_date ??
               labels.birthDateHint ??
-              "Dein Geburtsdatum ist optional. Wenn Du es angibst, muss es das konfigurierte Mindestalter erfüllen."}
+              text(
+                "Dein Geburtsdatum ist optional. Wenn Du es angibst, muss es das konfigurierte Mindestalter erfüllen.",
+              )}
           </span>
         </div>
         <div className="field">
-          <label htmlFor={`${id}-phone`}>Telefon (optional)</label>
+          <label htmlFor={`${id}-phone`}>{text("Telefon (optional)")}</label>
           <div className="phone-group">
             <select
               className="select"
-              aria-label="Ländervorwahl"
+              aria-label={text("Ländervorwahl")}
               value={prefix}
               onChange={(e) => setPrefix(e.target.value)}
             >
@@ -273,13 +293,16 @@ function Personal({
             {save.fields.phone ??
               (normalizedPhone === ""
                 ? ""
-                : `Wird gespeichert als ${normalizedPhone ?? "bitte prüfen"}`)}
+                : text(
+                    "Wird gespeichert als {0}",
+                    normalizedPhone ?? text("bitte prüfen"),
+                  ))}
           </span>
         </div>
       </div>
       <SaveStatus save={save} />
       <button className="btn btn-primary" disabled={save.busy} type="submit">
-        Speichern
+        {text("Speichern")}
       </button>
     </form>
   );
@@ -307,11 +330,15 @@ function AddressForm({
     label: string;
   }[];
 }) {
+  const text = useMessages("account");
+
   const save = useSave();
   const countryId = useId();
   return (
     <AccountSheet
-      title={address ? "Lieferadresse ändern" : "Neue Lieferadresse"}
+      title={
+        address ? text("Lieferadresse ändern") : text("Neue Lieferadresse")
+      }
       onClose={onClose}
     >
       <form
@@ -341,20 +368,20 @@ function AddressForm({
         <div className="form-grid two">
           <Field
             name="name"
-            label="Vor- und Nachname"
+            label={text("Vor- und Nachname")}
             value={address?.name}
             required
             autoComplete="name"
           />
           <Field
             name="company_name"
-            label="Firma (optional)"
+            label={text("Firma (optional)")}
             value={address?.company_name}
             autoComplete="organization"
           />
           <Field
             name="address1"
-            label="Straße und Hausnummer"
+            label={text("Straße und Hausnummer")}
             value={address?.address1}
             error={save.fields.address1}
             required
@@ -362,13 +389,13 @@ function AddressForm({
           />
           <Field
             name="address2"
-            label="Adresszusatz (optional)"
+            label={text("Adresszusatz (optional)")}
             value={address?.address2}
             autoComplete="address-line2"
           />
           <Field
             name="postal_code"
-            label="PLZ"
+            label={text("PLZ")}
             value={address?.postal_code}
             error={save.fields.postal_code}
             required
@@ -376,14 +403,14 @@ function AddressForm({
           />
           <Field
             name="city"
-            label="Ort"
+            label={text("Ort")}
             value={address?.city}
             error={save.fields.city}
             required
             autoComplete="address-level2"
           />
           <div className="field">
-            <label htmlFor={countryId}>Land</label>
+            <label htmlFor={countryId}>{text("Land")}</label>
             <CountrySelect
               id={countryId}
               className="select"
@@ -395,7 +422,7 @@ function AddressForm({
           </div>
           <Field
             name="phone"
-            label="Telefon für die Zustellung (optional)"
+            label={text("Telefon für die Zustellung (optional)")}
             type="tel"
             value={address?.phone}
             autoComplete="tel"
@@ -403,7 +430,7 @@ function AddressForm({
         </div>
         <SaveStatus save={save} />
         <button type="submit" disabled={save.busy} className="btn btn-primary">
-          Adresse speichern
+          {text("Adresse speichern")}
         </button>
       </form>
     </AccountSheet>
@@ -424,6 +451,8 @@ function Addresses({
   /** Refresh authoritative host data after a successful mutation. */
   onChanged: () => void;
 }) {
+  const text = useMessages("account");
+
   const { client, profile } = props;
   const countryId = useId();
   const addresses = useAccountResource((s) => client.addresses(s), [client]);
@@ -451,17 +480,17 @@ function Addresses({
           });
         }}
       >
-        <h2 className="eyebrow">Rechnungsadresse</h2>
+        <h2 className="eyebrow">{text("Rechnungsadresse")}</h2>
         <div className="form-grid two">
           <Field
             name="companyname"
-            label="Firma (optional)"
+            label={text("Firma (optional)")}
             value={profile.companyname}
             autoComplete="organization"
           />
           <Field
             name="address1"
-            label="Straße und Hausnummer"
+            label={text("Straße und Hausnummer")}
             value={profile.address1}
             error={save.fields.address1}
             required
@@ -469,13 +498,13 @@ function Addresses({
           />
           <Field
             name="address2"
-            label="Adresszusatz (optional)"
+            label={text("Adresszusatz (optional)")}
             value={profile.address2}
             autoComplete="address-line2"
           />
           <Field
             name="postal_code"
-            label="PLZ"
+            label={text("PLZ")}
             value={profile.postal_code}
             error={save.fields.postal_code}
             required
@@ -483,14 +512,14 @@ function Addresses({
           />
           <Field
             name="city"
-            label="Ort"
+            label={text("Ort")}
             value={profile.city}
             error={save.fields.city}
             required
             autoComplete="address-level2"
           />
           <div className="field">
-            <label htmlFor={countryId}>Land</label>
+            <label htmlFor={countryId}>{text("Land")}</label>
             <CountrySelect
               id={countryId}
               className="select"
@@ -503,11 +532,11 @@ function Addresses({
         </div>
         <SaveStatus save={save} />
         <button className="btn btn-primary" disabled={save.busy} type="submit">
-          Speichern
+          {text("Speichern")}
         </button>
       </form>
       <div className="section-title">
-        <h2>Lieferadressen</h2>
+        <h2>{text("Lieferadressen")}</h2>
       </div>
       {(addresses.loading || addresses.error) && (
         <AccountState
@@ -538,24 +567,26 @@ function Addresses({
                 className="btn-link"
                 onClick={() => setEditing(a)}
               >
-                Ändern
+                {text("Ändern")}
               </button>
               <button
                 type="button"
                 className="btn-link"
                 onClick={() => setDeleting(a)}
               >
-                Löschen
+                {text("Löschen")}
               </button>
             </div>
           </section>
         ))}
       </div>
       {addresses.data?.length === 0 && (
-        <p>Noch keine Lieferadresse. Wir nutzen Deine Rechnungsadresse.</p>
+        <p>
+          {text("Noch keine Lieferadresse. Wir nutzen Deine Rechnungsadresse.")}
+        </p>
       )}
       <button className="btn" type="button" onClick={() => setEditing("new")}>
-        Neue Lieferadresse
+        {text("Neue Lieferadresse")}
       </button>
       {editing && (
         <AddressForm
@@ -571,7 +602,7 @@ function Addresses({
       )}
       {deleting && (
         <AccountSheet
-          title="Adresse wirklich löschen?"
+          title={text("Adresse wirklich löschen?")}
           onClose={() => setDeleting(null)}
         >
           <p>{deleting.name}</p>
@@ -588,7 +619,7 @@ function Addresses({
               })
             }
           >
-            Ja, löschen
+            {text("Ja, löschen")}
           </button>
         </AccountSheet>
       )}
@@ -596,6 +627,8 @@ function Addresses({
   );
 }
 function Security({ client, profile, routes }: DashboardProps) {
+  const text = useMessages("account");
+
   const email = useSave(),
     password = useSave();
   const [pending, setPending] = useState(""),
@@ -612,26 +645,30 @@ function Security({ client, profile, routes }: DashboardProps) {
           const d = new FormData(e.currentTarget);
           const address = get(d, "new_email");
           if (address.toLowerCase() === (profile.email ?? "").toLowerCase()) {
-            email.setError("Das ist schon Deine aktuelle E-Mail-Adresse.");
+            email.setError(
+              text("Das ist schon Deine aktuelle E-Mail-Adresse."),
+            );
             return;
           }
           void email.run(async () => {
             await client.updateEmail({ new_email: address });
             setPending(address);
-          }, "Bestätigungslink verschickt.");
+          }, text("Bestätigungslink verschickt."));
         }}
       >
-        <h2 className="eyebrow">E-Mail-Adresse</h2>
+        <h2 className="eyebrow">{text("E-Mail-Adresse")}</h2>
         <p>{profile.email}</p>
         {pending && (
           <p className="notice">
-            Bitte bestätige {pending}. Bis Du den Link öffnest, bleibt{" "}
-            {profile.email} aktiv.
+            {text("Bitte bestätige ")}
+            {pending}
+            {text(". Bis Du den Link öffnest, bleibt")} {profile.email}{" "}
+            {text(" aktiv.")}
           </p>
         )}
         <Field
           name="new_email"
-          label="Neue E-Mail-Adresse"
+          label={text("Neue E-Mail-Adresse")}
           type="email"
           required
           autoComplete="email"
@@ -639,7 +676,7 @@ function Security({ client, profile, routes }: DashboardProps) {
         />
         <SaveStatus save={email} />
         <button type="submit" className="btn btn-outline" disabled={email.busy}>
-          Bestätigungslink senden
+          {text("Bestätigungslink senden")}
         </button>
       </form>
       {profile.has_password ? (
@@ -655,7 +692,9 @@ function Security({ client, profile, routes }: DashboardProps) {
               next !== repeat
             ) {
               password.setError(
-                "Bitte beachte die Passwortregeln und bestätige Dein neues Passwort.",
+                text(
+                  "Bitte beachte die Passwortregeln und bestätige Dein neues Passwort.",
+                ),
               );
               return;
             }
@@ -667,12 +706,12 @@ function Security({ client, profile, routes }: DashboardProps) {
               setOld("");
               setNext("");
               setRepeat("");
-            }, "Passwort geändert.");
+            }, text("Passwort geändert."));
           }}
         >
-          <h2 className="eyebrow">Passwort</h2>
+          <h2 className="eyebrow">{text("Passwort")}</h2>
           <label className="field">
-            Aktuelles Passwort
+            {text("Aktuelles Passwort")}
             <input
               className="input"
               type="password"
@@ -683,7 +722,7 @@ function Security({ client, profile, routes }: DashboardProps) {
             />
           </label>
           <label className="field">
-            Neues Passwort
+            {text("Neues Passwort")}
             <input
               className="input"
               type="password"
@@ -694,7 +733,7 @@ function Security({ client, profile, routes }: DashboardProps) {
             />
           </label>
           <label className="field">
-            Neues Passwort wiederholen
+            {text("Neues Passwort wiederholen")}
             <input
               className="input"
               type="password"
@@ -706,16 +745,16 @@ function Security({ client, profile, routes }: DashboardProps) {
           </label>
           <ul className="small">
             <li>
-              {rules.length ? "✓" : "○"} Mindestens 8 Zeichen, höchstens 72
-              UTF-8-Bytes
+              {rules.length ? "✓" : "○"}{" "}
+              {text(" Mindestens 8 Zeichen, höchstens 72 UTF-8-Bytes")}
             </li>
             <li>
-              {rules.letter && rules.nonLetter ? "✓" : "○"} Ein Buchstabe und
-              eine Zahl oder ein Sonderzeichen
+              {rules.letter && rules.nonLetter ? "✓" : "○"}{" "}
+              {text(" Ein Buchstabe und eine Zahl oder ein Sonderzeichen")}
             </li>
             <li>
-              {next && next !== old ? "✓" : "○"} Anders als Dein aktuelles
-              Passwort
+              {next && next !== old ? "✓" : "○"}{" "}
+              {text(" Anders als Dein aktuelles Passwort")}
             </li>
           </ul>
           <SaveStatus save={password} />
@@ -724,17 +763,18 @@ function Security({ client, profile, routes }: DashboardProps) {
             type="submit"
             disabled={password.busy}
           >
-            Passwort ändern
+            {text("Passwort ändern")}
           </button>
         </form>
       ) : (
-        <AccountCard title="Passwort">
+        <AccountCard title={text("Passwort")}>
           <p>
-            Du hast noch kein Passwort. Du kannst Dir einen Link zum Festlegen
-            schicken lassen.
+            {text(
+              "Du hast noch kein Passwort. Du kannst Dir einen Link zum Festlegen schicken lassen.",
+            )}
           </p>
           <a className="btn" href={routes.passwordSet}>
-            Passwort festlegen
+            {text("Passwort festlegen")}
           </a>
         </AccountCard>
       )}
@@ -750,6 +790,10 @@ function Newsletter({
   /** Copy in the newsletter contract. */
   copy: string;
 }) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const resource = useAccountResource(() => adapter.status(), [adapter]);
   const save = useSave();
   const pending = resource.data === "pending";
@@ -762,11 +806,13 @@ function Newsletter({
       success,
       (error) =>
         error instanceof AccountApiError && error.status === 429
-          ? "Bitte warte fünf Minuten nach der letzten E-Mail, bevor Du einen neuen Bestätigungslink anforderst."
-          : accountErrorMessage(error),
+          ? text(
+              "Bitte warte fünf Minuten nach der letzten E-Mail, bevor Du einen neuen Bestätigungslink anforderst.",
+            )
+          : accountErrorMessage(error, false, undefined, options),
     );
   return (
-    <AccountCard title="Newsletter">
+    <AccountCard title={text("Newsletter")}>
       {(resource.loading || resource.error) && (
         <AccountState
           loading={resource.loading}
@@ -775,7 +821,7 @@ function Newsletter({
         />
       )}
       <label className="switch-row">
-        Newsletter
+        {text("Newsletter")}
         <input
           type="checkbox"
           role="switch"
@@ -789,8 +835,10 @@ function Newsletter({
             void run(
               () => (value ? adapter.subscribe() : adapter.unsubscribe()),
               value
-                ? "Bitte bestätige Deine Anmeldung über den Link in unserer E-Mail."
-                : "Du bist abgemeldet.",
+                ? text(
+                    "Bitte bestätige Deine Anmeldung über den Link in unserer E-Mail.",
+                  )
+                : text("Du bist abgemeldet."),
             );
           }}
         />
@@ -798,11 +846,14 @@ function Newsletter({
       {pending && (
         <div>
           <p>
-            Bitte bestätige Deine Anmeldung über den Link in unserer E-Mail.
+            {text(
+              "Bitte bestätige Deine Anmeldung über den Link in unserer E-Mail.",
+            )}
           </p>
           <p className="tiny muted">
-            Der Link ist 24 Stunden gültig. Du kannst alle fünf Minuten eine
-            neue E-Mail anfordern. Ein neuer Link macht den bisherigen ungültig.
+            {text(
+              "Der Link ist 24 Stunden gültig. Du kannst alle fünf Minuten eine neue E-Mail anfordern. Ein neuer Link macht den bisherigen ungültig.",
+            )}
           </p>
           <div className="btn-row">
             <button
@@ -812,11 +863,13 @@ function Newsletter({
               onClick={() =>
                 void run(
                   () => adapter.subscribe(),
-                  "Wir haben Dir eine neue Bestätigungs-E-Mail geschickt.",
+                  text(
+                    "Wir haben Dir eine neue Bestätigungs-E-Mail geschickt.",
+                  ),
                 )
               }
             >
-              Bestätigungs-E-Mail erneut senden
+              {text("Bestätigungs-E-Mail erneut senden")}
             </button>
             <button
               className="btn"
@@ -825,19 +878,20 @@ function Newsletter({
               onClick={() =>
                 void run(
                   () => adapter.unsubscribe(),
-                  "Deine Anmeldung wurde abgebrochen.",
+                  text("Deine Anmeldung wurde abgebrochen."),
                 )
               }
             >
-              Anmeldung abbrechen
+              {text("Anmeldung abbrechen")}
             </button>
           </div>
         </div>
       )}
       <p>{copy}</p>
       <p className="tiny muted">
-        Bestätigungen, Rechnungen und Hinweise zu Deinen Bestellungen schicken
-        wir immer, die gehören zum Vertrag.
+        {text(
+          "Bestätigungen, Rechnungen und Hinweise zu Deinen Bestellungen schicken wir immer, die gehören zum Vertrag.",
+        )}
       </p>
       <SaveStatus save={save} />
     </AccountCard>
@@ -868,26 +922,38 @@ export function AccountSettings({
   /** Perform the host logout action. */
   onLogout: () => void;
 }) {
+  const text = useMessages("account");
+
   const [section, setSection] = useState("");
   const sections = [
-    ["persoenlich", "Persönliche Daten", "Name, Geburtsdatum, Telefon"],
-    ["adressen", "Adressen", "Rechnungsadresse und Lieferadressen"],
-    ["anmeldung", "Anmeldung & Sicherheit", "E-Mail-Adresse und Passwort"],
-    ["newsletter", "Newsletter", "Was wir Dir per E-Mail schicken"],
+    [
+      "persoenlich",
+      text("Persönliche Daten"),
+      text("Name, Geburtsdatum, Telefon"),
+    ],
+    ["adressen", text("Adressen"), text("Rechnungsadresse und Lieferadressen")],
+    [
+      "anmeldung",
+      text("Anmeldung & Sicherheit"),
+      text("E-Mail-Adresse und Passwort"),
+    ],
+    ["newsletter", text("Newsletter"), text("Was wir Dir per E-Mail schicken")],
   ];
   return (
     <>
       <AccountHead
         title={
           section
-            ? (sections.find((s) => s[0] === section)?.[1] ?? "Konto")
-            : "Konto"
+            ? (sections.find((s) => s[0] === section)?.[1] ?? text("Konto"))
+            : text("Konto")
         }
         accent={section ? undefined : "& Einstellungen"}
         lead={
           section
             ? undefined
-            : "Persönliche Daten, Adressen, Anmeldung und was wir Dir schicken dürfen."
+            : text(
+                "Persönliche Daten, Adressen, Anmeldung und was wir Dir schicken dürfen.",
+              )
         }
       />
       {section && (
@@ -896,11 +962,14 @@ export function AccountSettings({
           type="button"
           onClick={() => setSection("")}
         >
-          ‹ Konto
+          {text("‹ Konto")}
         </button>
       )}
       <div className={`konto-grid ${section ? "has-section" : ""}`}>
-        <nav className="card settings-nav" aria-label="Kontoeinstellungen">
+        <nav
+          className="card settings-nav"
+          aria-label={text("Kontoeinstellungen")}
+        >
           <ul className="settings-list">
             {sections.map(([key, title, sub]) => (
               <li key={key}>
@@ -935,7 +1004,7 @@ export function AccountSettings({
             ))}
             <li>
               <button type="button" onClick={onLogout}>
-                Abmelden
+                {text("Abmelden")}
               </button>
             </li>
           </ul>
@@ -954,17 +1023,17 @@ export function AccountSettings({
           ) : section === "newsletter" ? (
             <Newsletter adapter={newsletter} copy={props.labels.newsletter} />
           ) : (
-            <AccountCard title="Kontoübersicht">
+            <AccountCard title={text("Kontoübersicht")}>
               <p>
                 {props.profile.first_name} {props.profile.last_name}
               </p>
               <p>{props.profile.email}</p>
               <p>
                 {props.profile.birth_date
-                  ? "Geburtsdatum hinterlegt"
-                  : "Geburtsdatum noch nicht hinterlegt"}
+                  ? text("Geburtsdatum hinterlegt")
+                  : text("Geburtsdatum noch nicht hinterlegt")}
               </p>
-              <p>Wähl einen Bereich, um Deine Daten zu ändern.</p>
+              <p>{text("Wähl einen Bereich, um Deine Daten zu ändern.")}</p>
             </AccountCard>
           )}
         </div>

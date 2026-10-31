@@ -11,16 +11,26 @@ import {
   createDashboardClient,
   profileNewsletterAdapter,
 } from "./dashboard-client";
+import {
+  getMessages,
+  type LocaleOptions,
+  localeMoney,
+  useShopventoLocale,
+} from "./locale";
 import type { NewsletterSignupProps } from "./newsletter-signup";
 import { NewsletterSignup } from "./newsletter-signup";
 import { createShopClient } from "./shop-client";
 import type { ShopProduct } from "./shop-components";
-import { defaultShopFlowLabels } from "./shop-flow-labels";
 import {
   type Article,
   filterShopArticles,
+  formatFulfillmentDate,
+  fulfillmentPriceLabel,
+  nutritionRows,
+  pickupTerms,
   readCart,
   type ShopSectionFilter,
+  shippingTerms,
   writeCart,
 } from "./shop-model";
 import {
@@ -87,7 +97,7 @@ export interface ShopFlowStorage {
   cartEvent?: string;
 }
 /** Host composition for the complete shop flow. Keep object and client identities stable across renders. */
-export interface ShopFlowProps {
+export interface ShopFlowProps extends LocaleOptions {
   /** Initial canonical route, useful for server rendering a static route shell. */
   initialPath?: string;
   /** Partial German copy overrides, keyed by default text. */
@@ -202,6 +212,10 @@ const DefaultCheck = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
+  const locale = config.locale ?? "de";
+  const text = getMessages("shop", config, config.labels);
+  const paymentText = getMessages("payment", config);
+  const newsletterText = getMessages("newsletter", config);
   const routes = { ...defaultRoutes, ...config.routes };
   const pairs = Object.entries(defaultRoutes)
     .map(
@@ -229,20 +243,54 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
       ? disabledAccountClient
       : defaultAccountClient);
   const dashboardClient = config.dashboardClient || defaultDashboardClient;
-  const sections = config.sections || defaultShopSections;
+  const sections =
+    config.sections ||
+    defaultShopSections.map((section) => ({
+      ...section,
+      label: text(section.label),
+      description: text(section.description),
+    }));
   const shopSectionEnabled = config.sectionEnabled || (() => true);
   const visibleSections = sections.filter((section) =>
     shopSectionEnabled(section.key),
   );
-  const text = (value: string, ...args: unknown[]) => {
-    const template =
-      config.labels?.[value] ?? defaultShopFlowLabels[value] ?? value;
-    return template.replace(/\{(\d+)\}/g, (match, index: string) =>
-      Number(index) < args.length ? String(args[Number(index)]) : match,
-    );
-  };
   return {
     text,
+    locale,
+    formatPrice: (amount: number) => localeMoney(amount, locale),
+    formatFilterPrice: (amount: number) =>
+      new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(amount / 100),
+    formatFilterRange: (minimum: number, maximum: number) => {
+      const number = new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 0,
+      });
+      const currency =
+        new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" })
+          .formatToParts(0)
+          .find((part) => part.type === "currency")?.value ?? "EUR";
+      return text(
+        "{0} bis {1} {2}",
+        number.format(minimum / 100),
+        number.format(maximum / 100),
+        currency,
+      );
+    },
+    formatFulfillmentDate: (date: string) =>
+      formatFulfillmentDate(date, locale),
+    fulfillmentPriceLabel: (
+      option: Parameters<typeof fulfillmentPriceLabel>[0],
+    ) => fulfillmentPriceLabel(option, config),
+    nutritionRows: (nutrition: Parameters<typeof nutritionRows>[0]) =>
+      nutritionRows(nutrition, config),
+    pickupTerms: (settings: Parameters<typeof pickupTerms>[0]) =>
+      pickupTerms(settings, config),
+    shippingTerms: (option: Parameters<typeof shippingTerms>[0]) =>
+      shippingTerms(option, config),
     resolveHref,
     canonicalPath: (path: string) => replacePath(path, true),
     navigate: (path: string) =>
@@ -265,7 +313,7 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
     productModel: (article: Article) => {
       const product = config.productModel
         ? config.productModel(article)
-        : defaultShopProduct(article, config.labels);
+        : defaultShopProduct(article, config.labels, config);
       const section = sections.find(
         (section) =>
           section.key === (config.categoryKey || defaultCategoryKey)(article),
@@ -312,13 +360,18 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
       config.sectionPath ||
       ((slug: string, hash = "") => `/shop/${slug}${hash}`),
     shopImages: config.images || {},
-    shopPaymentMethods: config.paymentMethods || ["Kreditkarte", "Debitkarte"],
+    shopPaymentMethods: config.paymentMethods || [
+      paymentText("Kreditkarte"),
+      paymentText("Debitkarte"),
+    ],
     OPENING_HOURS: config.openingHours || [],
     giftBasketDelivery:
-      config.giftDeliveryNote || "Abholung oder Lieferung nach Verfügbarkeit.",
+      config.giftDeliveryNote ||
+      text("Abholung oder Lieferung nach Verfügbarkeit."),
     NewsletterSignup: config.NewsletterComponent || NewsletterSignup,
     newsletterOptInLabel:
-      config.newsletterOptInLabel || "Newsletter per E-Mail abonnieren",
+      config.newsletterOptInLabel ||
+      newsletterText("Newsletter per E-Mail abonnieren"),
     businessGiftSection: config.businessGiftSection,
     businessInformation: config.businessInformation,
     restrictSections: config.restrictSections,
@@ -343,7 +396,22 @@ export function ShopFlowProvider({
   config: Omit<ShopFlowProps, "initialPath">;
   children: ReactNode;
 }) {
-  const resolved = useMemo(() => resolveConfig(config), [config]);
+  const inherited = useShopventoLocale();
+  const resolved = useMemo(() => {
+    const locale = config.locale ?? inherited.locale;
+    const messages = Object.fromEntries(
+      Object.keys(inherited.messages).map((area) => [
+        area,
+        {
+          ...(locale === inherited.locale
+            ? inherited.messages[area as keyof typeof inherited.messages]
+            : {}),
+          ...config.messages?.[area as keyof typeof inherited.messages],
+        },
+      ]),
+    );
+    return resolveConfig({ ...config, locale, messages });
+  }, [config, inherited]);
   return (
     <ShopFlowContext.Provider value={resolved}>
       {children}
