@@ -1,3 +1,5 @@
+import { defaultAccountMessages } from "./account-messages";
+import { getMessages, type LocaleOptions } from "./locale";
 import type { AccountOperations } from "./wire";
 
 export type {
@@ -14,7 +16,9 @@ export type AccountLoginResponse = Omit<
 export type AccountFieldErrors = Record<string, string>;
 /** Default German message shown when an authenticated account request expires. */
 export const SESSION_EXPIRED_MESSAGE =
-  "Deine Sitzung ist abgelaufen. Bitte melde Dich erneut an.";
+  defaultAccountMessages[
+    "Deine Sitzung ist abgelaufen. Bitte melde Dich erneut an."
+  ];
 /** An unsuccessful account API response, retaining its status and parsed detail. */
 export class AccountApiError extends Error {
   constructor(
@@ -29,7 +33,12 @@ export class AccountApiError extends Error {
 }
 /** Extract field-level account validation messages.
  * @param error - Customer-visible error or error presentation flag. */
-export function accountFieldErrors(error: unknown): AccountFieldErrors {
+export function accountFieldErrors(
+  error: unknown,
+  options: LocaleOptions = {},
+): AccountFieldErrors {
+  const text = getMessages("account", options);
+
   if (
     !(error instanceof AccountApiError) ||
     error.status !== 422 ||
@@ -43,18 +52,20 @@ export function accountFieldErrors(error: unknown): AccountFieldErrors {
       const field = item.loc.at(-1);
       if (typeof field !== "string") return [];
       const messages: Record<string, string> = {
-        email: "Bitte gib eine gültige E-Mail-Adresse ein.",
-        birth_date: "Bitte prüf Dein Geburtsdatum.",
-        country: "Bitte wähle ein gültiges Land aus.",
-        password: "Bitte beachte die Passwortregeln.",
-        new_password: "Bitte beachte die Passwortregeln.",
-        phone: "Bitte gib eine Telefonnummer mit internationaler Vorwahl ein.",
+        email: text("Bitte gib eine gültige E-Mail-Adresse ein."),
+        birth_date: text("Bitte prüf Dein Geburtsdatum."),
+        country: text("Bitte wähle ein gültiges Land aus."),
+        password: text("Bitte beachte die Passwortregeln."),
+        new_password: text("Bitte beachte die Passwortregeln."),
+        phone: text(
+          "Bitte gib eine Telefonnummer mit internationaler Vorwahl ein.",
+        ),
       };
-      return [[field, messages[field] ?? "Bitte prüfe dieses Feld."]];
+      return [[field, messages[field] ?? text("Bitte prüfe dieses Feld.")]];
     }),
   );
 }
-/** Turn an account failure into customer-safe German copy for the current form context.
+/** Turn an account failure into localized customer-safe copy for the current form context.
  * @param error - Customer-visible error or error presentation flag.
  * @param token - One-time token retained only in component memory; null enables recovery navigation. Defaults to false.
  * @param context - Context supplied by the host. */
@@ -62,43 +73,54 @@ export function accountErrorMessage(
   error: unknown,
   token = false,
   context?: "login" | "passwordSet" | "verify" | "emailChange",
+  options: LocaleOptions = {},
 ): string {
+  const text = getMessages("account", options);
+
   if (!(error instanceof AccountApiError))
-    return "Die Verbindung ist fehlgeschlagen. Bitte versuche es erneut.";
+    return text("Die Verbindung ist fehlgeschlagen. Bitte versuche es erneut.");
   if (error.status === 429)
-    return "Zu viele Anfragen. Bitte versuche es später erneut.";
-  if (error.status === 401) return SESSION_EXPIRED_MESSAGE;
+    return text("Zu viele Anfragen. Bitte versuche es später erneut.");
+  if (error.status === 401) return text(SESSION_EXPIRED_MESSAGE);
   if (
     context === "login" &&
     error.status === 403 &&
     typeof error.detail === "string"
   )
-    return "Bitte bestätige zuerst Deine E-Mail-Adresse. Über „Passwort vergessen“ erhältst Du einen neuen Bestätigungslink.";
+    return text(
+      "Bitte bestätige zuerst Deine E-Mail-Adresse. Über „Passwort vergessen“ erhältst Du einen neuen Bestätigungslink.",
+    );
   if (context === "verify" && error.status === 400)
-    return "Dieser Bestätigungslink ist ungültig oder wurde bereits verwendet. Falls Du Deine E-Mail-Adresse schon bestätigt hast, kannst Du Dich direkt anmelden.";
+    return text(
+      "Dieser Bestätigungslink ist ungültig oder wurde bereits verwendet. Falls Du Deine E-Mail-Adresse schon bestätigt hast, kannst Du Dich direkt anmelden.",
+    );
   if (
     context === "emailChange" &&
     error.status === 400 &&
     error.detail ===
       "Diese E-Mail-Adresse wird bereits für ein anderes Konto verwendet. Bitte gib eine andere E-Mail-Adresse ein."
   )
-    return error.detail;
+    return text(error.detail);
   if (
     context === "passwordSet" &&
     error.status === 400 &&
     error.detail ===
       "Dein neues Passwort muss sich von Deinem aktuellen Passwort unterscheiden."
   )
-    return error.detail;
+    return text(error.detail);
   if (error.status === 403)
-    return "Die Anfrage wurde abgelehnt. Bitte prüfe Deine E-Mail-Bestätigung oder lade die Seite neu.";
+    return text(
+      "Die Anfrage wurde abgelehnt. Bitte prüfe Deine E-Mail-Bestätigung oder lade die Seite neu.",
+    );
   if (token && [400, 404, 422].includes(error.status))
-    return "Dieser Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.";
+    return text(
+      "Dieser Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.",
+    );
   if ([409, 422].includes(error.status) && typeof error.detail === "string")
-    return error.detail;
+    return text(error.detail);
   if (error.status === 422)
-    return "Bitte prüfe Deine Eingaben und versuche es erneut.";
-  return "Das hat gerade nicht geklappt. Bitte versuche es erneut.";
+    return text("Bitte prüfe Deine Eingaben und versuche es erneut.");
+  return text("Das hat gerade nicht geklappt. Bitte versuche es erneut.");
 }
 /** Public account fetch contract used by the storefront clients. */
 export type AccountFetch = (
@@ -278,7 +300,7 @@ export function accountPasswordRules(password: string) {
     nonLetter: /[^\p{L}]/u.test(password),
   };
 }
-/** Validate a German date input and the runtime minimum age against the Berlin calendar date.
+/** Validate an ISO date and the runtime minimum age against the Berlin calendar date.
  * @param value - Current controlled value.
  * @param minimumAge - Runtime minimum age supplied by the host.
  * @param today - ISO calendar date used for age validation; defaults to today in Europe/Berlin. Defaults to new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin", }).format(new Date()). */
@@ -288,7 +310,10 @@ export function accountBirthDateError(
   today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Berlin",
   }).format(new Date()),
+  options: LocaleOptions = {},
 ): string | null {
+  const text = getMessages("account", options);
+
   if (!value) return null;
   const date = new Date(`${value}T00:00:00Z`);
   if (
@@ -298,14 +323,22 @@ export function accountBirthDateError(
     value < "1900-01-01" ||
     value > today
   )
-    return "Bitte prüf das Datum, es liegt außerhalb des möglichen Bereichs.";
+    return text(
+      "Bitte prüf das Datum, es liegt außerhalb des möglichen Bereichs.",
+    );
   const age =
     Number(today.slice(0, 4)) -
     Number(value.slice(0, 4)) -
     (today.slice(5) < value.slice(5) ? 1 : 0);
   if (age > 120)
-    return "Bitte prüf das Datum, es liegt außerhalb des möglichen Bereichs.";
+    return text(
+      "Bitte prüf das Datum, es liegt außerhalb des möglichen Bereichs.",
+    );
   return age < minimumAge
-    ? `Mit diesem Datum wärst Du ${age} Jahre alt. Ein angegebenes Geburtsdatum muss das Mindestalter von ${minimumAge} Jahren erfüllen. Bitte prüf Dein Geburtsdatum.`
+    ? text(
+        "Mit diesem Datum wärst Du {0} Jahre alt. Ein angegebenes Geburtsdatum muss das Mindestalter von {1} Jahren erfüllen. Bitte prüf Dein Geburtsdatum.",
+        age,
+        minimumAge,
+      )
     : null;
 }

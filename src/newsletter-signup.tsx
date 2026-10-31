@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { ShopventoProvider, useMessages } from "./locale";
 import {
   defaultPublicFormApi,
   type PublicFormOptions,
@@ -36,7 +37,7 @@ export type NewsletterSignupProps = PublicFormOptions & {
   };
 };
 /** Accessible newsletter signup with lazy Turnstile, account adapters and one-shot checkout consent. */
-export function NewsletterSignup({
+function NewsletterSignupContent({
   siteKey,
   initialEmail = "",
   initialFirstName = "",
@@ -50,10 +51,7 @@ export function NewsletterSignup({
   labels = {},
   privacyUrl = "/datenschutz",
 }: NewsletterSignupProps) {
-  const text = (value: string, ...args: unknown[]) =>
-    (labels[value] ?? value).replace(/\{(\d+)\}/g, (match, index: string) =>
-      Number(index) < args.length ? String(args[Number(index)]) : match,
-    );
+  const text = useMessages("newsletter", labels);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [scriptEnabled, setScriptEnabled] = useState(false);
@@ -399,13 +397,13 @@ export function NewsletterSignup({
                 <input
                   name="email"
                   type="email"
-                  placeholder="E-Mail-Adresse"
+                  placeholder={text("E-Mail-Adresse")}
                   required
                   maxLength={200}
                   autoComplete="email"
                   defaultValue={initialEmail}
                   style={inputStyle}
-                  aria-label="E-Mail"
+                  aria-label={text("E-Mail")}
                 />
               </div>
             )}
@@ -503,5 +501,14 @@ export function NewsletterSignup({
         )}
       </div>
     </section>
+  );
+}
+
+/** Render the newsletter flow in an optional local language scope. */
+export function NewsletterSignup(props: NewsletterSignupProps) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <NewsletterSignupContent {...props} />
+    </ShopventoProvider>
   );
 }

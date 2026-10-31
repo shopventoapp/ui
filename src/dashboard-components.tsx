@@ -26,8 +26,15 @@ import {
   accountDate,
   useAccountResource,
 } from "./dashboard-ui";
+import {
+  type LocaleOptions,
+  localeTime,
+  ShopventoProvider,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 /** Shared authenticated profile, transport, labels, routes and help used by dashboard components. */
-export interface DashboardProps {
+export interface DashboardProps extends LocaleOptions {
   /** Stable client instance used for API requests. */
   client: DashboardClient;
   /** Authoritative authenticated profile; null represents a guest. */
@@ -42,7 +49,7 @@ export interface DashboardProps {
   eventImage?: (id: number) => string | undefined;
 }
 /** Render account navigation, counts, help and host-owned logout around dashboard content. */
-export function AccountLayout({
+function AccountLayoutContent({
   profile,
   routes,
   active,
@@ -67,12 +74,14 @@ export function AccountLayout({
    * @defaultValue {} */
   counts?: Partial<Record<string, number>>;
 }) {
+  const text = useMessages("account");
+
   const { phone, email, phoneLabel } = accountContact(help);
   const nav = [
-    ["overview", "Übersicht", "Übersicht", "calendar"],
-    ["bookings", "Bestellungen & Buchungen", "Buchungen", "id"],
-    ["vouchers", "Gutscheine", "Gutscheine", "gift"],
-    ["settings", "Konto", "Konto", "users"],
+    ["overview", text("Übersicht"), text("Übersicht"), "calendar"],
+    ["bookings", text("Bestellungen & Buchungen"), text("Buchungen"), "id"],
+    ["vouchers", text("Gutscheine"), text("Gutscheine"), "gift"],
+    ["settings", text("Konto"), text("Konto"), "users"],
   ] as const;
   const links = (mobile = false) => (
     <ul>
@@ -93,7 +102,7 @@ export function AccountLayout({
   return (
     <div className="sv-account sv-dashboard">
       <a className="skip-link" href="#account-main">
-        Zum Inhalt springen
+        {text("Zum Inhalt springen")}
       </a>
       <div className="account">
         <aside className="account-side">
@@ -107,11 +116,11 @@ export function AccountLayout({
               <span className="tiny muted">{profile.email}</span>
             </span>
           </div>
-          <nav className="side-nav" aria-label="Konto">
+          <nav className="side-nav" aria-label={text("Konto")}>
             {links()}
           </nav>
           <div className="side-card">
-            {(phone || email) && <p>Wir helfen gern:</p>}
+            {(phone || email) && <p>{text("Wir helfen gern:")}</p>}
             {phone && (
               <>
                 <a href={`tel:${phone}`}>{phoneLabel}</a>
@@ -125,7 +134,7 @@ export function AccountLayout({
               </>
             )}
             <button className="btn-link" type="button" onClick={onLogout}>
-              Abmelden
+              {text("Abmelden")}
             </button>
           </div>
         </aside>
@@ -133,7 +142,7 @@ export function AccountLayout({
           {children}
         </div>
       </div>
-      <nav className="tabbar" aria-label="Konto">
+      <nav className="tabbar" aria-label={text("Konto")}>
         {links(true)}
       </nav>
     </div>
@@ -142,6 +151,8 @@ export function AccountLayout({
 /** Load dashboard orders, bookings and reservations together.
  * @param client - Stable client instance used for API requests. */
 export function useDashboardData(client: DashboardClient) {
+  const options = useShopventoLocale();
+
   const orders = useAccountResource((s) => client.orders(s), [client]);
   const bookings = useAccountResource((s) => client.bookings(s), [client]);
   const reservations = useAccountResource(
@@ -163,6 +174,8 @@ export function useDashboardData(client: DashboardClient) {
       orders.data ?? [],
       bookings.data ?? [],
       reservations.data ?? [],
+      undefined,
+      options,
     ),
   };
 }
@@ -190,9 +203,13 @@ function ModuleState({
 /** Render prioritized upcoming account activity with host labels and routes.
  * @param props - Props supplied by the host. */
 export function AccountOverview(props: DashboardProps) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const { client, profile, labels, routes, help, eventImage } = props;
   const data = useDashboardData(client);
-  const priorities = overviewPriorities(data.entries);
+  const priorities = overviewPriorities(data.entries, undefined, options);
   const upcoming = data.entries
     .filter(
       (e) =>
@@ -210,7 +227,7 @@ export function AccountOverview(props: DashboardProps) {
     .filter((v) => v.type === "VALUE")
     .reduce((s, v) => s + v.remaining_value, 0);
   const hour = Number(
-    new Intl.DateTimeFormat("de-DE", {
+    new Intl.DateTimeFormat(options.locale, {
       timeZone: "Europe/Berlin",
       hour: "numeric",
       hourCycle: "h23",
@@ -226,15 +243,15 @@ export function AccountOverview(props: DashboardProps) {
       <AccountHead
         title={
           empty
-            ? "Willkommen,"
+            ? text("Willkommen,")
             : hour < 11
-              ? "Guten Morgen,"
+              ? text("Guten Morgen,")
               : hour >= 18
-                ? "Guten Abend,"
-                : "Hallo,"
+                ? text("Guten Abend,")
+                : text("Hallo,")
         }
         accent={`${profile.first_name ?? ""}.`}
-        lead="Hier siehst Du auf einen Blick, was als Nächstes ansteht."
+        lead={text("Hier siehst Du auf einen Blick, was als Nächstes ansteht.")}
       />
       <div className="ov-grid">
         <div className="stack-lg">
@@ -243,10 +260,10 @@ export function AccountOverview(props: DashboardProps) {
           {priorities.length > 0 && (
             <section>
               <div className="section-title">
-                <h2>Jetzt wichtig</h2>
+                <h2>{text("Jetzt wichtig")}</h2>
                 <span className="label">
                   {priorities.length}{" "}
-                  {priorities.length === 1 ? "Hinweis" : "Hinweise"}
+                  {priorities.length === 1 ? text("Hinweis") : text("Hinweise")}
                 </span>
               </div>
               <ul className="todo">
@@ -265,9 +282,12 @@ export function AccountOverview(props: DashboardProps) {
                     </span>
                     <h3>
                       {priority === 2
-                        ? `Bestellung ${entry.number} liegt zur Abholung bereit`
+                        ? text(
+                            "Bestellung {0} liegt zur Abholung bereit",
+                            entry.number,
+                          )
                         : priority === 5
-                          ? "Widerruf für einzelne Artikel prüfen"
+                          ? text("Widerruf für einzelne Artikel prüfen")
                           : `${entry.status}: ${entry.title}`}
                     </h3>
                     <p>
@@ -275,17 +295,29 @@ export function AccountOverview(props: DashboardProps) {
                       entry.order?.fulfillments.find(
                         (f) => f.status === "PICKUP_READY",
                       )?.pickup_deadline_at
-                        ? `Abholen bis ${accountDate(entry.order.fulfillments.find((f) => f.status === "PICKUP_READY")?.pickup_deadline_at ?? "")}`
+                        ? text(
+                            "Abholen bis {0}",
+                            accountDate(
+                              entry.order.fulfillments.find(
+                                (f) => f.status === "PICKUP_READY",
+                              )?.pickup_deadline_at ?? "",
+                              options,
+                            ),
+                          )
                         : priority === 5
-                          ? "Die Fristen und zulässigen Artikel findest Du in den Details."
-                          : "Alle Informationen findest Du in den Details."}
+                          ? text(
+                              "Die Fristen und zulässigen Artikel findest Du in den Details.",
+                            )
+                          : text(
+                              "Alle Informationen findest Du in den Details.",
+                            )}
                     </p>
                     <div className="btn-row">
                       <a
                         className="btn btn-ghost"
                         href={`${routes.bookings}/${entry.id}`}
                       >
-                        Details
+                        {text("Details")}
                       </a>
                     </div>
                   </li>
@@ -306,26 +338,33 @@ export function AccountOverview(props: DashboardProps) {
                 </div>
               )}
               <div className="body">
-                <p className="eyebrow">Dein nächstes {labels.event}</p>
+                <p className="eyebrow">
+                  {text("Dein nächstes ")}
+                  {labels.event}
+                </p>
                 <h2 className="display h3">{next.title}</h2>
                 <p>
-                  {accountDate(next.date)},{" "}
-                  {next.booking.start_time.slice(0, 5)} Uhr ·{" "}
-                  {next.booking.participants}{" "}
-                  {next.booking.participants === 1 ? "Platz" : "Plätze"}
+                  {accountDate(next.date, options)},{" "}
+                  {localeTime(next.booking.start_time, options.locale, {
+                    messages: options.messages,
+                  })}{" "}
+                  · {next.booking.participants}{" "}
+                  {next.booking.participants === 1
+                    ? text("Platz")
+                    : text("Plätze")}
                 </p>
                 <div className="btn-row">
                   <a
                     className="btn btn-primary"
                     href={`${routes.bookings}/${next.id}`}
                   >
-                    Ticket zeigen
+                    {text("Ticket zeigen")}
                   </a>
                   <a
                     className="btn-link"
                     href={`${routes.bookings}/${next.id}`}
                   >
-                    Details
+                    {text("Details")}
                   </a>
                 </div>
               </div>
@@ -334,7 +373,7 @@ export function AccountOverview(props: DashboardProps) {
           {upcoming.length > 1 && (
             <section>
               <div className="section-title">
-                <h2>Weitere Termine</h2>
+                <h2>{text("Weitere Termine")}</h2>
               </div>
               <ul className="list">
                 {upcoming.slice(1).map((entry) => (
@@ -349,15 +388,15 @@ export function AccountOverview(props: DashboardProps) {
             </section>
           )}
           {empty && (
-            <AccountCard title="Wie möchtest Du starten?">
+            <AccountCard title={text("Wie möchtest Du starten?")}>
               <a className="btn btn-primary" href={routes.events}>
-                {labels.event} buchen
+                {labels.event} {text(" buchen")}
               </a>
               <a className="btn" href={routes.reserve}>
-                Tisch reservieren
+                {text("Tisch reservieren")}
               </a>
               <a className="btn" href={routes.shop}>
-                Im Shop stöbern
+                {text("Im Shop stöbern")}
               </a>
             </AccountCard>
           )}
@@ -365,16 +404,19 @@ export function AccountOverview(props: DashboardProps) {
         <div className="stack-lg">
           <ModuleState resource={data.vouchers} />
           {data.vouchers.data && (
-            <AccountCard title="Gutscheine">
-              <p className="display balance">{bookingMoney(balance)}</p>
+            <AccountCard title={text("Gutscheine")}>
+              <p className="display balance">
+                {bookingMoney(balance, options)}
+              </p>
               <p className="muted">
-                Guthaben
+                {text("Guthaben")}
                 {active.some((v) => v.type === "TASTING") && (
                   <>
                     {" "}
-                    und {active.filter((v) => v.type === "TASTING").length}{" "}
+                    {text("und ")}
+                    {active.filter((v) => v.type === "TASTING").length}{" "}
                     {active.filter((v) => v.type === "TASTING").length === 1
-                      ? (labels.eventVoucherSingular ?? "Gutschein")
+                      ? (labels.eventVoucherSingular ?? text("Gutschein"))
                       : labels.eventVoucher}
                   </>
                 )}
@@ -383,14 +425,14 @@ export function AccountOverview(props: DashboardProps) {
                 {active.slice(0, 3).map((v) => (
                   <li key={v.id ?? v.voucher_code}>
                     <a href={`${routes.vouchers}/${v.id}`}>
-                      {v.article?.title ?? "Gutschein"}
+                      {v.article?.title ?? text("Gutschein")}
                     </a>
-                    <span>{bookingMoney(v.remaining_value)}</span>
+                    <span>{bookingMoney(v.remaining_value, options)}</span>
                   </li>
                 ))}
               </ul>
               <a className="btn btn-ghost" href={routes.vouchers}>
-                Alle Gutscheine
+                {text("Alle Gutscheine")}
               </a>
             </AccountCard>
           )}
@@ -403,8 +445,10 @@ export function AccountOverview(props: DashboardProps) {
           {data.orders.data && (
             <section>
               <div className="section-title">
-                <h2>Letzte Bestellungen</h2>
-                <a href={`${routes.bookings}?typ=bestellungen`}>Alle</a>
+                <h2>{text("Letzte Bestellungen")}</h2>
+                <a href={`${routes.bookings}?typ=bestellungen`}>
+                  {text("Alle")}
+                </a>
               </div>
               <ul className="list">
                 {data.entries
@@ -431,6 +475,10 @@ export function AccountOverview(props: DashboardProps) {
 /** Render bookings, orders and reservations with date and type filters.
  * @param props - Props supplied by the host. */
 export function AccountBookings(props: DashboardProps) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const { client, labels, routes } = props;
   const data = useDashboardData(client);
   const [filters, setFilters] = useState(accountFilters(""));
@@ -451,8 +499,8 @@ export function AccountBookings(props: DashboardProps) {
   );
   const list = filterEntries(data.entries, filters.zeit, filters.typ);
   const types = [
-    ["alle", "Alle"],
-    ["bestellungen", "Bestellungen"],
+    ["alle", text("Alle")],
+    ["bestellungen", text("Bestellungen")],
     ["tastings", labels.events],
     ["reservierungen", "Reservierungen"],
   ];
@@ -460,12 +508,15 @@ export function AccountBookings(props: DashboardProps) {
   return (
     <>
       <AccountHead
-        title="Bestellungen"
-        accent="& Buchungen"
-        lead={`Shop-Bestellungen, ${labels.event}-Tickets und Tischreservierungen an einem Ort.`}
+        title={text("Bestellungen")}
+        accent={text("& Buchungen")}
+        lead={text(
+          "Shop-Bestellungen, {0}-Tickets und Tischreservierungen an einem Ort.",
+          labels.event,
+        )}
       />
       <div className="filters">
-        <fieldset className="seg" aria-label="Zeitraum">
+        <fieldset className="seg" aria-label={text("Zeitraum")}>
           {["aktuell", "vergangen"].map((v) => (
             <button
               type="button"
@@ -473,11 +524,11 @@ export function AccountBookings(props: DashboardProps) {
               aria-pressed={filters.zeit === v}
               onClick={() => change("zeit", v)}
             >
-              {v === "aktuell" ? "Aktuell" : "Vergangen"}
+              {v === "aktuell" ? text("Aktuell") : text("Vergangen")}
             </button>
           ))}
         </fieldset>
-        <fieldset className="chips" aria-label="Art">
+        <fieldset className="chips" aria-label={text("Art")}>
           {types.map(([key, label]) => (
             <button
               className="chip"
@@ -505,19 +556,19 @@ export function AccountBookings(props: DashboardProps) {
             <AccountState
               empty={
                 filters.zeit === "aktuell"
-                  ? "Gerade nichts geplant"
-                  : "Noch nichts Vergangenes"
+                  ? text("Gerade nichts geplant")
+                  : text("Noch nichts Vergangenes")
               }
             />
           )}
         <p className="small muted">
           {filters.zeit === "aktuell"
-            ? "Sortiert nach dem, was als Nächstes ansteht."
-            : "Neueste Einträge zuerst."}
+            ? text("Sortiert nach dem, was als Nächstes ansteht.")
+            : text("Neueste Einträge zuerst.")}
         </p>
         <ul className="list">
           {list.map((entry) => {
-            const nextMonth = new Intl.DateTimeFormat("de-DE", {
+            const nextMonth = new Intl.DateTimeFormat(options.locale, {
               month: "long",
               year: "numeric",
               timeZone: "UTC",
@@ -561,23 +612,32 @@ export function AccountVoucherCard({
    * @defaultValue false */
   detail?: boolean;
 }) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const body = (
     <>
       <div className="v-top">
         <div>
           <div className="v-kind">
             {v.type === "TASTING"
-              ? (labels.eventVoucherSingular ?? "Gutschein")
-              : "Wertgutschein"}
+              ? (labels.eventVoucherSingular ?? text("Gutschein"))
+              : text("Wertgutschein")}
           </div>
-          <div className="v-title">{v.article?.title ?? "Gutschein"}</div>
+          <div className="v-title">{v.article?.title ?? text("Gutschein")}</div>
         </div>
-        {!voucherActive(v) && <span className="v-flag">Eingelöst</span>}
+        {!voucherActive(v) && (
+          <span className="v-flag">{text("Eingelöst")}</span>
+        )}
       </div>
       <div>
         <span className="v-amount">
-          {bookingMoney(v.remaining_value)}
-          <small>von {bookingMoney(v.value)}</small>
+          {bookingMoney(v.remaining_value, options)}
+          <small>
+            {text("von ")}
+            {bookingMoney(v.value, options)}
+          </small>
         </span>
         <div className="v-bar">
           <i
@@ -603,58 +663,66 @@ export function AccountVoucherCard({
 }
 /** Render the authenticated customer voucher list. */
 export function AccountVouchers({ client, labels, routes }: DashboardProps) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const resource = useAccountResource((s) => client.vouchers(s), [client]);
   const active = (resource.data ?? []).filter(voucherActive),
     done = (resource.data ?? []).filter((v) => !voucherActive(v));
   return (
     <>
       <AccountHead
-        title="Deine"
-        accent="Gutscheine"
-        lead="Guthaben, Codes und Verlauf an einem Ort."
+        title={text("Deine")}
+        accent={text("Gutscheine")}
+        lead={text("Guthaben, Codes und Verlauf an einem Ort.")}
       />
       <ModuleState resource={resource} />
       {resource.data && (
         <>
-          <AccountCard title="Verfügbar">
+          <AccountCard title={text("Verfügbar")}>
             <p className="display balance">
               {bookingMoney(
                 active
                   .filter((v) => v.type === "VALUE")
                   .reduce((s, v) => s + v.remaining_value, 0),
+                options,
               )}
             </p>
             <p className="muted">
               {active.some((v) => v.type === "VALUE") && (
                 <>
-                  aus {active.filter((v) => v.type === "VALUE").length}{" "}
+                  {text("aus ")}
+                  {active.filter((v) => v.type === "VALUE").length}{" "}
                   {active.filter((v) => v.type === "VALUE").length === 1
-                    ? "Wertgutschein"
-                    : "Wertgutscheinen"}
+                    ? text("Wertgutschein")
+                    : text("Wertgutscheinen")}
                 </>
               )}
               {active.some((v) => v.type === "TASTING") ? (
                 <>
-                  {active.some((v) => v.type === "VALUE") ? ", dazu " : ""}
+                  {active.some((v) => v.type === "VALUE")
+                    ? text(", dazu ")
+                    : ""}
                   {active.filter((v) => v.type === "TASTING").length}{" "}
                   {active.filter((v) => v.type === "TASTING").length === 1
-                    ? (labels.eventVoucherSingular ?? "Gutschein")
+                    ? (labels.eventVoucherSingular ?? text("Gutschein"))
                     : labels.eventVoucher}
                 </>
               ) : (
                 <>
-                  {active.some((v) => v.type === "VALUE") ? " · " : ""}keine{" "}
-                  {labels.eventVoucher}
+                  {active.some((v) => v.type === "VALUE") ? " · " : ""}
+                  {text("keine")} {labels.eventVoucher}
                 </>
               )}
             </p>
           </AccountCard>
           <div className="section-title">
-            <h2>Aktiv</h2>
+            <h2>{text("Aktiv")}</h2>
             <span className="label">{active.length}</span>
           </div>
           {!active.length ? (
-            <AccountState empty="Noch keine aktiven Gutscheine" />
+            <AccountState empty={text("Noch keine aktiven Gutscheine")} />
           ) : (
             <div className="voucher-grid three stack">
               {active.map((v) => (
@@ -669,7 +737,10 @@ export function AccountVouchers({ client, labels, routes }: DashboardProps) {
           )}
           {done.length > 0 && (
             <details className="card">
-              <summary className="card-pad">Eingelöst ({done.length})</summary>
+              <summary className="card-pad">
+                {text("Eingelöst (")}
+                {done.length})
+              </summary>
               <div className="card-pad voucher-grid">
                 {done.map((v) => (
                   <AccountVoucherCard
@@ -683,13 +754,14 @@ export function AccountVouchers({ client, labels, routes }: DashboardProps) {
             </details>
           )}
           <div className="section-title">
-            <h2>So löst Du ein</h2>
+            <h2>{text("So löst Du ein")}</h2>
           </div>
-          <AccountCard title="Einlösen">
+          <AccountCard title={text("Einlösen")}>
             <p>{labels.voucherUse}</p>
             <p>
-              Im Shop und bei der Buchung erscheinen Deine Gutscheine zur
-              Auswahl.
+              {text(
+                "Im Shop und bei der Buchung erscheinen Deine Gutscheine zur Auswahl.",
+              )}
             </p>
           </AccountCard>
         </>
@@ -708,6 +780,10 @@ export function AccountVoucherDetail({
   /** Opaque backend identifier or accessible element ID. */
   id: string;
 }) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const resource = useAccountResource(
     (s) => client.voucher(id, s),
     [client, id],
@@ -721,27 +797,29 @@ export function AccountVoucherDetail({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(v?.voucher_code ?? "");
-      setMessage("Gutscheincode kopiert.");
+      setMessage(text("Gutscheincode kopiert."));
     } catch {
-      setMessage("Kopieren nicht möglich. Bitte markiere den Code.");
+      setMessage(text("Kopieren nicht möglich. Bitte markiere den Code."));
     }
   };
   const actions: Record<string, string> = {
-    ISSUED: "Ausgestellt",
-    PURCHASE: "Gekauft",
-    REDEMPTION: "Eingelöst",
-    MANUAL_REDEMPTION: "Eingelöst",
-    ADD_CREDIT: "Guthaben hinzugefügt",
-    RECHARGE: "Guthaben zurückgeladen",
-    REFUND: "Gutschrift",
-    INVALIDATED: "Gutschein gesperrt",
+    ISSUED: text("Ausgestellt"),
+    PURCHASE: text("Gekauft"),
+    REDEMPTION: text("Eingelöst"),
+    MANUAL_REDEMPTION: text("Eingelöst"),
+    ADD_CREDIT: text("Guthaben hinzugefügt"),
+    RECHARGE: text("Guthaben zurückgeladen"),
+    REFUND: text("Gutschrift"),
+    INVALIDATED: text("Gutschein gesperrt"),
   };
   return (
     <>
       <AccountHead
-        title={v ? bookingMoney(v.remaining_value) : "Dein Gutschein"}
-        accent="Guthaben"
-        back={[routes.vouchers, "Gutscheine"]}
+        title={
+          v ? bookingMoney(v.remaining_value, options) : text("Dein Gutschein")
+        }
+        accent={text("Guthaben")}
+        back={[routes.vouchers, text("Gutscheine")]}
       />
       <ModuleState resource={resource} />
       {v && (
@@ -753,28 +831,32 @@ export function AccountVoucherDetail({
               routes={routes}
               detail
             />
-            <AccountCard title="Einlösen">
+            <AccountCard title={text("Einlösen")}>
               <div className="pickup-code">
                 <div className="qr-box">
-                  <AccountQr code={v.voucher_code} label="Gutscheincode" />
+                  <AccountQr
+                    code={v.voucher_code}
+                    label={text("Gutscheincode")}
+                  />
                 </div>
                 <div className="stack">
-                  <span className="label">Code</span>
+                  <span className="label">{text("Code")}</span>
                   <span className="code-big">{v.voucher_code}</span>
                   <button
                     className="btn btn-ghost"
                     type="button"
                     onClick={copy}
                   >
-                    Kopieren
+                    {text("Kopieren")}
                   </button>
                 </div>
               </div>
               <p className="small muted">{labels.voucherUse}</p>
               {!v.article && (
                 <p className="notice">
-                  Dieser Gutschein lässt sich gerade nicht online einlösen.
-                  Bitte kontaktiere uns.
+                  {text(
+                    "Dieser Gutschein lässt sich gerade nicht online einlösen. Bitte kontaktiere uns.",
+                  )}
                 </p>
               )}
               <div className="btn-row">
@@ -784,8 +866,8 @@ export function AccountVoucherDetail({
                     href={v.type === "TASTING" ? routes.events : routes.shop}
                   >
                     {v.type === "TASTING"
-                      ? "Termin wählen"
-                      : "Im Shop einlösen"}
+                      ? text("Termin wählen")
+                      : text("Im Shop einlösen")}
                   </a>
                 )}
                 <a
@@ -794,25 +876,25 @@ export function AccountVoucherDetail({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Drucken
+                  {text("Drucken")}
                 </a>
               </div>
               <p role="status">{message}</p>
             </AccountCard>
           </div>
           <div className="stack">
-            <AccountCard title="Details">
+            <AccountCard title={text("Details")}>
               <dl className="kv">
-                <dt>Wert</dt>
-                <dd>{bookingMoney(v.value)}</dd>
-                <dt>Restguthaben</dt>
-                <dd>{bookingMoney(v.remaining_value)}</dd>
-                <dt>Ausgestellt</dt>
-                <dd>{accountDate(v.created_at)}</dd>
+                <dt>{text("Wert")}</dt>
+                <dd>{bookingMoney(v.value, options)}</dd>
+                <dt>{text("Restguthaben")}</dt>
+                <dd>{bookingMoney(v.remaining_value, options)}</dd>
+                <dt>{text("Ausgestellt")}</dt>
+                <dd>{accountDate(v.created_at, options)}</dd>
               </dl>
               {v.redeemable_for_text && <p>{v.redeemable_for_text}</p>}
             </AccountCard>
-            <AccountCard title="Verlauf">
+            <AccountCard title={text("Verlauf")}>
               <ModuleState resource={history} />
               {history.data && (
                 <ul className="history">
@@ -821,21 +903,21 @@ export function AccountVoucherDetail({
                       <span className="h-what">
                         {actions[h.action] ??
                           (h.amount_cents < 0
-                            ? "Eingelöst"
-                            : "Guthabenänderung")}
+                            ? text("Eingelöst")
+                            : text("Guthabenänderung"))}
                         {h.source === "STORE"
-                          ? " vor Ort"
+                          ? text(" vor Ort")
                           : h.source === "ONLINE"
-                            ? " online"
+                            ? text(" online")
                             : ""}
                       </span>
                       <span
                         className={`h-amt ${h.amount_cents > 0 ? "plus" : ""}`}
                       >
-                        {historyMoney(h.amount_cents)}
+                        {historyMoney(h.amount_cents, options)}
                       </span>
                       <span className="h-when">
-                        {accountDate(h.created_at)}
+                        {accountDate(h.created_at, options)}
                       </span>
                     </li>
                   ))}
@@ -847,5 +929,16 @@ export function AccountVoucherDetail({
         </div>
       )}
     </>
+  );
+}
+
+/** Render AccountLayout in an optional per-render locale scope. */
+export function AccountLayout(
+  props: Parameters<typeof AccountLayoutContent>[0] & LocaleOptions,
+) {
+  return (
+    <ShopventoProvider locale={props.locale} messages={props.messages}>
+      <AccountLayoutContent {...props} />
+    </ShopventoProvider>
   );
 }

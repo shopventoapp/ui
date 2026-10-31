@@ -14,6 +14,9 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Added
 
+- Per-render `ShopventoProvider`, typed German and English catalogues for shop, booking, account, newsletter, reservation, forms, payment and voucher messages. Hosts can supply partial custom catalogues and retain their existing per-key `labels` overrides.
+- Locale-aware date, time, money and number formatting, plus numeric date input order and ISO input support outside German.
+- A source guard rejects new customer-visible literal JSX copy and message lookups missing from the catalogue.
 - Fetch/Cloudflare Worker proxy at `@shopvento/ui/proxy` and Node HTTP adapter at `@shopvento/ui/proxy/node`, ported from the storefront transport with first-party cookies, exact-origin mutation checks, credential/header redaction, trusted visitor IP forwarding and a strict branding asset allowlist.
 - Server/build/Worker/browser `loadBranding`, `brandingTokens`, `brandingTokenMap` and `brandingStylesheet` at `@shopvento/ui/branding`.
 - Reservation details without host rules, explicit `readOnly`, and optional `onChanged`. No reservation-rules endpoint exists in the bundled OpenAPI, so editing still needs host rules.
@@ -21,14 +24,18 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Fixed
 
+- Price filter chips use catalogue messages and locale money formatting. Sidebar host facets omit the heading when `label` is missing; deep-link filtering stays active when controls are hidden.
 - Forward validated browser Origin and Sec-Fetch-Site on cookie writes; the instance shop domain must match the storefront host.
 - Strip decoded upstream compression/framing and hop headers in the Node adapter.
 
 ### Breaking
 
+- Price-band copy uses the parameterized keys `bis {0}`, `{0} bis {1} {2}` and `über {0}` so currency formatting can follow the locale; replace the old `über 60 €` override.
+- Catalogue exports are now typed against their German keys; arbitrary dictionary indexing should use `getMessages`, `useMessages`, or an explicit string-record view.
+- Date inputs follow the selected locale; German keeps `TT.MM.JJJJ`, while English accepts ISO or its numeric locale order.
 - Unspecified `ShopMedia` placeholders and default product mapping now use neutral parcel artwork instead of bottles. Request artwork explicitly on the product or section.
 - Trade presentation belongs to hosts: `ShopSectionDefinition.filterChips` accepts a typed attribute/query/options group, and `placeholder` accepts built-in artwork or a host element. No category key enables trade presentation. `filterGroups` adds generic sidebar/mobile facets, derived attribute choices, ordering and host predicates for ranges or aliases; grape, bottle-size and deli filters and their legacy URL keys now require host configuration. Explicit product placeholders take priority over section fallbacks.
-- Default empty-cart and search copy is neutral; use the neutral label keys `Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.` and `Produkte und Gutscheine suchen`. This does not introduce the English catalogue planned in ui#6.
+- Default empty-cart and search copy is neutral; use the neutral label keys `Eine Entdeckung oder ein Geschenk: Such Dir etwas Schönes aus.` and `Produkte und Gutscheine suchen`. The German wording remains the default.
 
 ## [0.3.0] - 2026-10-29
 

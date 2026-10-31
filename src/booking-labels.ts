@@ -1,3 +1,4 @@
+import { getMessages, type LocaleOptions } from "./locale";
 /** Override event-specific German copy with the host's own terminology. */
 export interface BookingLabels {
   /** Events loading in the booking labels contract. */
@@ -37,9 +38,27 @@ export const defaultBookingLabels: BookingLabels = {
 /** Undefined overrides retain the default, including function-valued labels. */
 export function mergeBookingLabels(
   labels?: Partial<BookingLabels>,
+  options: LocaleOptions = {},
 ): BookingLabels {
+  const text = getMessages("booking", options);
+  const localized =
+    options.locale === undefined && options.messages === undefined
+      ? defaultBookingLabels
+      : (Object.fromEntries(
+          Object.entries(defaultBookingLabels).map(([key, value]) => [
+            key,
+            typeof value === "string"
+              ? text(value)
+              : (count: number) =>
+                  text(
+                    "{0} {1} noch einen Veranstaltungsgutschein.",
+                    count,
+                    text(count === 1 ? "Platz braucht" : "Plätze brauchen"),
+                  ),
+          ]),
+        ) as unknown as BookingLabels);
   return {
-    ...defaultBookingLabels,
+    ...localized,
     ...Object.fromEntries(
       Object.entries(labels ?? {}).filter(([, value]) => value !== undefined),
     ),

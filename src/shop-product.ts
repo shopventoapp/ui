@@ -1,6 +1,7 @@
+import { getMessages, type LocaleOptions, localeMoney } from "./locale";
 import type { ShopProduct } from "./shop-components";
 import type { ShopSectionDefinition } from "./shop-flow-context";
-import { type Article, formatPrice, voucherLabel } from "./shop-model";
+import { type Article, voucherLabel } from "./shop-model";
 /** Default category navigation. Hosts normally supply their own catalogue sections. */
 export const defaultShopSections: ShopSectionDefinition[] = [
   {
@@ -26,8 +27,10 @@ export function defaultCategoryKey(article: Article): string {
 export function defaultShopProduct(
   article: Article,
   labels: Partial<Record<string, string>> = {},
+  options: LocaleOptions = {},
 ): ShopProduct {
-  const text = (value: string) => labels[value] ?? value;
+  const text = getMessages("shop", options, labels);
+  const formatPrice = (amount: number) => localeMoney(amount, options.locale);
   const a = article.attributes;
   const available =
     article.type === "PHYSICAL" && article.stock_tracked === true
@@ -50,7 +53,9 @@ export function defaultShopProduct(
   add("Jahrgang", a?.vintage);
   add(
     "Alkohol",
-    a?.alcohol_pct ? `${a.alcohol_pct.toLocaleString("de-DE")} % vol` : null,
+    a?.alcohol_pct
+      ? `${a.alcohol_pct.toLocaleString(options.locale ?? "de")} % vol`
+      : null,
   );
   add("Inhalt", article.quantity_information);
   add("Zutaten", a?.ingredients);
@@ -71,7 +76,7 @@ export function defaultShopProduct(
     category: defaultCategoryKey(article),
     producer: a?.producer || "",
     subtitle:
-      voucherLabel(article) ||
+      voucherLabel(article, options) ||
       [a?.product_type, a?.region, a?.country].filter(Boolean).join(" · ") ||
       article.subtitle ||
       "",

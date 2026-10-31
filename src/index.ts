@@ -18,6 +18,7 @@ export * from "./dashboard-settings";
 export * from "./dashboard-state";
 export * from "./dashboard-ui";
 export * from "./hooks";
+export * from "./locale";
 export type { NewsletterSignupProps } from "./newsletter-signup";
 export { NewsletterSignup, newsletterOptInLabel } from "./newsletter-signup";
 export { defaultNewsletterLabels } from "./newsletter-signup-labels";

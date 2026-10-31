@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { type AccountClient, safeAccountReturnPath } from "./account-client";
 import { LoginForm, RegisterForm } from "./account-components";
 import { googleMark } from "./google-brand";
+import { useMessages } from "./locale";
 
 /** Fail closed until the server confirms that both Google client credentials are configured. */
 export function GoogleSignIn({
@@ -13,6 +14,8 @@ export function GoogleSignIn({
    * @defaultValue "/konto" */
   returnPath?: string;
 }) {
+  const text = useMessages("account");
+
   const iconId = useId();
   const [enabled, setEnabled] = useState(false);
   useEffect(() => {
@@ -39,7 +42,7 @@ export function GoogleSignIn({
         const query = new URLSearchParams({
           success_redirect_url: new URL(path, window.location.origin).href,
           failure_redirect_url: new URL(
-            `/konto/anmelden?${new URLSearchParams({ weiter: path, google: "fehlgeschlagen" })}`,
+            `/konto/anmelden?${new URLSearchParams({ weiter: path, google: text("fehlgeschlagen") })}`,
             window.location.origin,
           ).href,
         });
@@ -58,7 +61,7 @@ export function GoogleSignIn({
           __html: googleMark.replaceAll("1298_12516", iconId),
         }}
       />
-      <span>Mit Google anmelden</span>
+      <span>{text("Mit Google anmelden")}</span>
     </button>
   );
 }
@@ -87,6 +90,8 @@ export function AccountAccess({
    * @defaultValue "/datenschutz" */
   privacyUrl?: string;
 }) {
+  const text = useMessages("account");
+
   const [mode, setMode] = useState<"login" | "register" | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -105,8 +110,9 @@ export function AccountAccess({
     <div className="sv-account-entry">
       <div className="sv-account sv-account-entry-frame">
         <p>
-          Mit Deinem Konto hast Du Deine Buchungen und Bestellungen im Blick.
-          Deine Auswahl bleibt gespeichert.
+          {text(
+            "Mit Deinem Konto hast Du Deine Buchungen und Bestellungen im Blick. Deine Auswahl bleibt gespeichert.",
+          )}
         </p>
         <div className="sv-account-entry-actions">
           <button
@@ -116,7 +122,7 @@ export function AccountAccess({
               setMode("login");
             }}
           >
-            Anmelden
+            {text("Anmelden")}
           </button>
           <button
             type="button"
@@ -125,14 +131,14 @@ export function AccountAccess({
               setMode("register");
             }}
           >
-            Neues Konto anlegen
+            {text("Neues Konto anlegen")}
           </button>
         </div>
         <GoogleSignIn returnPath={returnPath} />
       </div>
       {onGuest && (
         <button type="button" className="sv-account-guest" onClick={onGuest}>
-          Als Gast fortfahren
+          {text("Als Gast fortfahren")}
         </button>
       )}
       {mode &&
@@ -150,10 +156,12 @@ export function AccountAccess({
                 className="sv-account-close"
                 onClick={() => setMode(null)}
               >
-                Schließen
+                {text("Schließen")}
               </button>
               <h2 id="account-entry-title">
-                {mode === "login" ? "Anmelden" : "Neues Konto anlegen"}
+                {mode === "login"
+                  ? text("Anmelden")
+                  : text("Neues Konto anlegen")}
               </h2>
               {mode === "login" ? (
                 <LoginForm

@@ -7,6 +7,7 @@ import {
   useId,
   useRef,
 } from "react";
+import { useMessages } from "./locale";
 
 /** Host presentation model for a product card. Amounts are integer cents; map catalogue data explicitly. */
 export type ShopProduct = {
@@ -668,6 +669,7 @@ export function ShopSummary({
   /** Whether the host is refreshing the summary. Optional; omitted unless supplied by the host or backend. */
   busy?: boolean;
 }) {
+  const text = useMessages("shop");
   return (
     <aside className="sv-shop-summary" aria-busy={busy}>
       <h2>{title}</h2>
@@ -676,7 +678,7 @@ export function ShopSummary({
           <p key={r.label}>
             <span>{r.label}</span>
             <span>
-              {r.isFrom ? "ab " : ""}
+              {r.isFrom ? text("ab ") : ""}
               {formatPrice(r.amount)}
             </span>
           </p>

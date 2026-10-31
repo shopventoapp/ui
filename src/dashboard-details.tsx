@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { accountErrorMessage } from "./account-client";
 import { bookingCalendarFile } from "./booking-result";
-import { bookingMoney } from "./calendar";
+import { bookingMoney, bookingTime } from "./calendar";
 import type { Location, Timewindow } from "./client";
 import { DateTimePicker } from "./components";
 import type {
@@ -33,6 +33,13 @@ import {
   accountDate,
   useAccountResource,
 } from "./dashboard-ui";
+import {
+  getMessages,
+  type LocaleOptions,
+  localeTime,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 /** Download a customer booking as a local calendar file with a three-hour reminder.
  * @param booking - Authoritative customer booking. */
 export function downloadAccountCalendar(
@@ -45,15 +52,18 @@ export function downloadAccountCalendar(
     | "order_id"
     | "franchise_location"
   >,
+  options: LocaleOptions = {},
 ) {
+  const text = getMessages("account", options);
   const file = bookingCalendarFile(
     { ...booking, timewindow_id: booking.order_id },
     booking.event_name,
     booking.order_id,
     booking.franchise_location,
+    options,
   ).replace(
     "END:VEVENT",
-    "BEGIN:VALARM\r\nTRIGGER:-PT3H\r\nACTION:DISPLAY\r\nDESCRIPTION:Dein Termin\r\nEND:VALARM\r\nEND:VEVENT",
+    `BEGIN:VALARM\r\nTRIGGER:-PT3H\r\nACTION:DISPLAY\r\nDESCRIPTION:${text("Dein Termin")}\r\nEND:VALARM\r\nEND:VEVENT`,
   );
   const url = URL.createObjectURL(
     new Blob([file], { type: "text/calendar;charset=utf-8" }),
@@ -75,32 +85,36 @@ function Payments({
   /** Payments in the payments contract. */
   payments: AccountOrder["payments"];
 }) {
+  const localeOptions = useShopventoLocale();
+
+  const text = useMessages("account");
+
   return (
     <dl className="kv">
       {payments.map((p) => (
         <div className="payment-line" key={p.id}>
           <dt>
             {p.type === "VOUCHER"
-              ? `Gutschein ${p.voucher_code ?? ""}`
+              ? text("Gutschein {0}", p.voucher_code ?? "")
               : p.type === "STRIPE"
-                ? "Kartenzahlung"
-                : "Weitere Zahlung"}
+                ? text("Kartenzahlung")
+                : text("Weitere Zahlung")}
             <span className="small muted">
               {" "}
               (
               {p.payment_status === "PAID"
-                ? "bezahlt"
+                ? text("bezahlt")
                 : p.payment_status === "REFUND_FAILED"
-                  ? "fehlgeschlagen"
-                  : "in Bearbeitung"}
+                  ? text("fehlgeschlagen")
+                  : text("in Bearbeitung")}
               )
             </span>
           </dt>
-          <dd>{bookingMoney(p.amount)}</dd>
+          <dd>{bookingMoney(p.amount, localeOptions)}</dd>
           {(p.refunded_amount ?? 0) > 0 && (
             <>
-              <dt>Erstattet</dt>
-              <dd>{bookingMoney(p.refunded_amount ?? 0)}</dd>
+              <dt>{text("Erstattet")}</dt>
+              <dd>{bookingMoney(p.refunded_amount ?? 0, localeOptions)}</dd>
             </>
           )}
         </div>
@@ -127,6 +141,10 @@ export function AccountEventDetail({
   /** Refresh authoritative host data after a successful mutation. */
   onChanged: () => void;
 }) {
+  const localeOptions = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const { client, labels, routes, help, eventImage } = props;
   const [sheet, setSheet] = useState<"ticket" | "move" | null>(null),
     [slot, setSlot] = useState(""),
@@ -146,10 +164,10 @@ export function AccountEventDetail({
       await client.moveBooking(b.order_id, { timewindow_id: slot });
       setSheet(null);
       setMovedHere(true);
-      setMessage("Dein Termin wurde verschoben.");
+      setMessage(text("Dein Termin wurde verschoben."));
       onChanged();
     } catch (e) {
-      setError(accountErrorMessage(e));
+      setError(accountErrorMessage(e, false, undefined, localeOptions));
     } finally {
       setBusy(false);
     }
@@ -163,14 +181,14 @@ export function AccountEventDetail({
             <div className="qr-box">
               <AccountQr
                 code={t.check_in_code ?? ""}
-                label={`Ticket ${i + 1}`}
+                label={text("Ticket {0}", i + 1)}
               />
             </div>
             <div className="stack">
               <span className="code-big">{t.check_in_code}</span>
               <p>
-                {t.seats} {t.seats === 1 ? "Platz" : "Plätze"} · Einfach beim
-                Ankommen zeigen.
+                {t.seats} {t.seats === 1 ? text("Platz") : text("Plätze")}{" "}
+                {text(" · Einfach beim Ankommen zeigen.")}
               </p>
             </div>
           </div>
@@ -181,25 +199,24 @@ export function AccountEventDetail({
     <>
       <AccountHead
         title={b.event_name}
-        back={[routes.bookings, "Bestellungen & Buchungen"]}
+        back={[routes.bookings, text("Bestellungen & Buchungen")]}
         eyebrow={`${labels.event} · ${b.order_number ?? ""}`}
       />
       <div className="detail-grid">
         <div className="stack">
           <section className="card ticket-card">
             <div className="t-top">
-              <p className="eyebrow">Ticket</p>
+              <p className="eyebrow">{text("Ticket")}</p>
               <h2 className="display h3">
-                {b.participants} {b.participants === 1 ? "Platz" : "Plätze"} ·{" "}
-                {accountDate(b.date)}
+                {b.participants}{" "}
+                {b.participants === 1 ? text("Platz") : text("Plätze")} ·{" "}
+                {accountDate(b.date, localeOptions)}
               </h2>
-              <p>
-                {b.start_time.slice(0, 5)} bis {b.end_time?.slice(0, 5)} Uhr
-              </p>
+              <p>{bookingTime(b, localeOptions)}</p>
               <span
                 className={`pill ${b.customer_status === "CONFIRMED" ? "ok" : b.customer_status === "PAYMENT_FAILED" ? "err" : "neutral"}`}
               >
-                {b.customer_status_label}
+                {text(b.customer_status_label ?? "Status nicht verfügbar")}
               </span>
               {active && (
                 <AccountCountdown
@@ -217,20 +234,22 @@ export function AccountEventDetail({
                     type="button"
                     onClick={() => setSheet("ticket")}
                   >
-                    Ticket zeigen
+                    {text("Ticket zeigen")}
                   </button>
                 )}
                 <button
                   className="btn btn-ghost"
                   type="button"
                   onClick={() => {
-                    downloadAccountCalendar(b);
+                    downloadAccountCalendar(b, localeOptions);
                     setMessage(
-                      "Kalenderdatei gespeichert. Öffnen, um den Termin zu übernehmen.",
+                      text(
+                        "Kalenderdatei gespeichert. Öffnen, um den Termin zu übernehmen.",
+                      ),
                     );
                   }}
                 >
-                  In den Kalender
+                  {text("In den Kalender")}
                 </button>
                 <a
                   className="btn btn-ghost"
@@ -238,7 +257,7 @@ export function AccountEventDetail({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Route
+                  {text("Route")}
                 </a>
               </div>
               {active && (
@@ -253,14 +272,27 @@ export function AccountEventDetail({
                       setSheet("move");
                     }}
                   >
-                    Termin verschieben
+                    {text("Termin verschieben")}
                   </button>
                   <p className="small muted">
                     {alreadyMoved
-                      ? "Du hast diese Buchung bereits einmal umgebucht."
+                      ? text("Du hast diese Buchung bereits einmal umgebucht.")
                       : movable
-                        ? `Verschieben ist bis ${accountDate(b.reschedulable_until ?? "")}, ${new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit" }).format(new Date(b.reschedulable_until ?? ""))} Uhr möglich.`
-                        : "Weniger als 48 Stunden bis zum Termin oder aktuell nicht verschiebbar: Verschieben geht jetzt nur noch telefonisch."}
+                        ? text(
+                            "Verschieben ist bis {0}, {1} Uhr möglich.",
+                            accountDate(
+                              b.reschedulable_until ?? "",
+                              localeOptions,
+                            ),
+                            new Intl.DateTimeFormat(localeOptions.locale, {
+                              timeZone: "Europe/Berlin",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }).format(new Date(b.reschedulable_until ?? "")),
+                          )
+                        : text(
+                            "Weniger als 48 Stunden bis zum Termin oder aktuell nicht verschiebbar: Verschieben geht jetzt nur noch telefonisch.",
+                          )}
                   </p>
                 </>
               )}
@@ -276,7 +308,7 @@ export function AccountEventDetail({
           <p role="status">{message}</p>
         </div>
         <div className="stack">
-          <AccountCard title="Ort">
+          <AccountCard title={text("Ort")}>
             <address>
               {b.franchise_location.location_name}
               <br />
@@ -285,11 +317,14 @@ export function AccountEventDetail({
               {b.franchise_location.location_postal_code}{" "}
               {b.franchise_location.location_city}
             </address>
-            <p>Bitte komm 10 Minuten vor Beginn.</p>
+            <p>{text("Bitte komm 10 Minuten vor Beginn.")}</p>
           </AccountCard>
-          <AccountCard title="Bezahlung">
+          <AccountCard title={text("Bezahlung")}>
             {b.order_number && (
-              <p className="small muted">Bestellung {b.order_number}</p>
+              <p className="small muted">
+                {text("Bestellung ")}
+                {b.order_number}
+              </p>
             )}
             <Payments payments={b.payments ?? []} />
             {b.has_invoice ? (
@@ -299,13 +334,18 @@ export function AccountEventDetail({
                 target="_blank"
                 rel="noreferrer"
               >
-                Rechnung {b.invoice_number ? `${b.invoice_number} ` : ""}
-                herunterladen
-                {b.invoice_date && <span>{accountDate(b.invoice_date)}</span>}
+                {text("Rechnung ")}
+                {b.invoice_number ? `${b.invoice_number} ` : ""}
+                {text("herunterladen")}
+                {b.invoice_date && (
+                  <span>{accountDate(b.invoice_date, localeOptions)}</span>
+                )}
               </a>
             ) : (
               <p className="small muted">
-                Deine Rechnung findest Du hier, sobald sie erstellt ist.
+                {text(
+                  "Deine Rechnung findest Du hier, sobald sie erstellt ist.",
+                )}
               </p>
             )}
             {b.credit_notes?.map((n) => (
@@ -316,9 +356,9 @@ export function AccountEventDetail({
                 target="_blank"
                 rel="noreferrer"
               >
-                Stornorechnung{" "}
+                {text("Stornorechnung")}{" "}
                 {n.credit_note_number ? `${n.credit_note_number} ` : ""}
-                herunterladen
+                {text("herunterladen")}
               </a>
             ))}
           </AccountCard>
@@ -327,14 +367,19 @@ export function AccountEventDetail({
       </div>
       {sheet && (
         <AccountSheet
-          title={sheet === "ticket" ? "Dein Ticket" : "Termin verschieben"}
+          title={
+            sheet === "ticket"
+              ? text("Dein Ticket")
+              : text("Termin verschieben")
+          }
           onClose={() => setSheet(null)}
         >
           {sheet === "ticket" ? (
             <>
               <p>
-                Zeig den Code beim Ankommen. Tipp: Bildschirm etwas heller
-                stellen.
+                {text(
+                  "Zeig den Code beim Ankommen. Tipp: Bildschirm etwas heller stellen.",
+                )}
               </p>
               {tickets}
             </>
@@ -347,8 +392,9 @@ export function AccountEventDetail({
               }}
             >
               <p>
-                Wähle einen freien Termin am selben Standort. Alle Plätze werden
-                mit verschoben.
+                {text(
+                  "Wähle einen freien Termin am selben Standort. Alle Plätze werden mit verschoben.",
+                )}
               </p>
               <DateTimePicker
                 windows={windows.filter(
@@ -361,7 +407,9 @@ export function AccountEventDetail({
                 seats={b.participants ?? 1}
                 locations={locations}
               />
-              {!windows.length && <p>Gerade keine neuen Termine verfügbar.</p>}
+              {!windows.length && (
+                <p>{text("Gerade keine neuen Termine verfügbar.")}</p>
+              )}
               {error && <p role="alert">{error}</p>}
               <button
                 className="btn btn-primary"
@@ -369,8 +417,8 @@ export function AccountEventDetail({
                 disabled={busy || !slot || !movable}
               >
                 {busy
-                  ? "Wird gespeichert..."
-                  : "Termin verbindlich verschieben"}
+                  ? text("Wird gespeichert...")
+                  : text("Termin verbindlich verschieben")}
               </button>
             </form>
           )}
@@ -397,6 +445,10 @@ function WithdrawalSheet({
   /** Stable client instance used for API requests. */
   client: DashboardProps["client"];
 }) {
+  const localeOptions = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const [quantities, setQuantities] = useState<Record<string, number>>({}),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -416,19 +468,21 @@ function WithdrawalSheet({
       const result = await client.withdraw(order.id, { items: selected });
       if (["DECLINED", "ERROR"].includes(result.status ?? "")) {
         setError(
-          "Dein Widerruf konnte nicht bestätigt werden. Bitte kontaktiere uns.",
+          text(
+            "Dein Widerruf konnte nicht bestätigt werden. Bitte kontaktiere uns.",
+          ),
         );
         return;
       }
       onDone();
     } catch (e) {
-      setError(accountErrorMessage(e));
+      setError(accountErrorMessage(e, false, undefined, localeOptions));
     } finally {
       setBusy(false);
     }
   };
   return (
-    <AccountSheet title="Was möchtest Du widerrufen?" onClose={onClose}>
+    <AccountSheet title={text("Was möchtest Du widerrufen?")} onClose={onClose}>
       <form
         className="form"
         onSubmit={(e) => {
@@ -436,7 +490,11 @@ function WithdrawalSheet({
           void submit();
         }}
       >
-        <p>Wähl die Artikel und die Menge. Einen Grund brauchst Du nicht.</p>
+        <p>
+          {text(
+            "Wähl die Artikel und die Menge. Einen Grund brauchst Du nicht.",
+          )}
+        </p>
         {options.map((o) => (
           <div className="wd-item" key={o.order_item_id}>
             <label className="check">
@@ -456,23 +514,26 @@ function WithdrawalSheet({
                 <br />
                 <span className="small muted">
                   {o.reason
-                    ? (withdrawalReasons[o.reason] ??
-                      "Für diesen Artikel ist kein Widerruf möglich")
+                    ? text(withdrawalReasons[o.reason] ?? "") ||
+                      text("Für diesen Artikel ist kein Widerruf möglich")
                     : o.return_deadline
-                      ? `Frist für diesen Artikel: ${accountDate(o.return_deadline)}`
+                      ? text(
+                          "Frist für diesen Artikel: {0}",
+                          accountDate(o.return_deadline, localeOptions),
+                        )
                       : o.is_voucher
-                        ? "Gutschein"
-                        : "Die Frist beginnt nach Erhalt."}
+                        ? text("Gutschein")
+                        : text("Die Frist beginnt nach Erhalt.")}
                 </span>
               </span>
             </label>
             {!o.reason && o.quantity > 1 && (
               <label className="field wd-quantity">
-                Menge
+                {text("Menge")}
                 <input
                   className="input"
                   type="number"
-                  aria-label={`Menge für ${o.title}`}
+                  aria-label={text("Menge für {0}", o.title)}
                   min={1}
                   max={o.quantity}
                   value={quantities[o.order_item_id] || 1}
@@ -489,15 +550,18 @@ function WithdrawalSheet({
           </div>
         ))}
         <div className="well">
-          Wert Deiner Auswahl: {bookingMoney(total)}
+          {text("Wert Deiner Auswahl: ")}
+          {bookingMoney(total, localeOptions)}
           <p className="small muted">
-            Den genauen Erstattungsbetrag bestätigen wir Dir nach der Prüfung.
-            Rabatte und bereits erstattete Beträge rechnen wir dabei ab.
+            {text(
+              "Den genauen Erstattungsbetrag bestätigen wir Dir nach der Prüfung. Rabatte und bereits erstattete Beträge rechnen wir dabei ab.",
+            )}
           </p>
         </div>
         <p className="tiny muted">
-          Mit „Widerruf bestätigen“ erklärst Du den Widerruf für die gewählten
-          Artikel. Du erhältst eine Eingangsbestätigung per E-Mail.
+          {text(
+            "Mit „Widerruf bestätigen“ erklärst Du den Widerruf für die gewählten Artikel. Du erhältst eine Eingangsbestätigung per E-Mail.",
+          )}
         </p>
         {error && <p role="alert">{error}</p>}
         <button
@@ -505,7 +569,7 @@ function WithdrawalSheet({
           className="btn btn-primary"
           disabled={busy || !selected.length}
         >
-          {busy ? "Wird gesendet..." : "Widerruf bestätigen"}
+          {busy ? text("Wird gesendet...") : text("Widerruf bestätigen")}
         </button>
       </form>
     </AccountSheet>
@@ -522,6 +586,10 @@ export function AccountOrderDetail({
   /** Refresh authoritative host data after a successful mutation. */
   onChanged: () => void;
 }) {
+  const localeOptions = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const { client, labels, routes, help } = props;
   const options = useAccountResource(
     (s) => client.withdrawalItems(o.id, s),
@@ -529,7 +597,7 @@ export function AccountOrderDetail({
   );
   const [sheet, setSheet] = useState(false),
     [message, setMessage] = useState("");
-  const [status, tone] = orderStatus(o);
+  const [status, tone] = orderStatus(o, localeOptions);
   const eligible =
     o.withdrawal?.state === "AVAILABLE" &&
     options.data?.some((i) => !i.reason && i.quantity > 0);
@@ -540,31 +608,35 @@ export function AccountOrderDetail({
           o.fulfillments.some((f) => f.type === "PICKUP")
             ? labels.pickup
             : o.fulfillments.some((f) => f.type === "SHIPPING")
-              ? "Lieferung nach Hause"
-              : "Deine Bestellung"
+              ? text("Lieferung nach Hause")
+              : text("Deine Bestellung")
         }
-        eyebrow={`Bestellung ${o.order_number}`}
-        back={[routes.bookings, "Bestellungen & Buchungen"]}
+        eyebrow={text("Bestellung {0}", o.order_number)}
+        back={[routes.bookings, text("Bestellungen & Buchungen")]}
       />
       <p className={`pill ${tone}`}>{status}</p>
-      <p className="small muted">bestellt am {accountDate(o.created_at)}</p>
+      <p className="small muted">
+        {text("bestellt am ")}
+        {accountDate(o.created_at, localeOptions)}
+      </p>
       <div className="detail-grid">
         <div className="stack">
           {o.fulfillments
             .filter((f) => f.type === "PICKUP")
             .map((f) => (
-              <AccountCard key={f.id} title="Abholung">
+              <AccountCard key={f.id} title={text("Abholung")}>
                 {f.status === "PICKUP_READY" && (
                   <>
                     <div className="pickup-code">
                       <div className="qr-box">
-                        <AccountQr code={f.code} label="Abholcode" />
+                        <AccountQr code={f.code} label={text("Abholcode")} />
                       </div>
                       <span className="code-big">{f.code}</span>
                     </div>
                     <p>
-                      Zeig den Code an der Theke. Auch jemand anderes kann damit
-                      abholen.
+                      {text(
+                        "Zeig den Code an der Theke. Auch jemand anderes kann damit abholen.",
+                      )}
                     </p>
                     {labels.ageHint && (
                       <p className="notice warn">{labels.ageHint}</p>
@@ -579,10 +651,13 @@ export function AccountOrderDetail({
                   {f.pickup_postal_code} {f.pickup_city}
                 </address>
                 {f.pickup_deadline_at && (
-                  <p>Abholbar bis {accountDate(f.pickup_deadline_at)}.</p>
+                  <p>
+                    {text("Abholbar bis ")}
+                    {accountDate(f.pickup_deadline_at, localeOptions)}.
+                  </p>
                 )}
                 <a className="btn btn-ghost" href={help.routeUrl}>
-                  Route planen
+                  {text("Route planen")}
                 </a>
                 {help.hours && <p>{help.hours}</p>}
               </AccountCard>
@@ -598,24 +673,30 @@ export function AccountOrderDetail({
                     <span className="it-name">{i.title}</span>
                     <br />
                     <span className="it-sub">
-                      {i.quantity} × {bookingMoney(i.gross_price_per_item)}
+                      {i.quantity} ×{" "}
+                      {bookingMoney(i.gross_price_per_item, localeOptions)}
                       {i.cancelled_at
-                        ? " · storniert"
+                        ? text(" · storniert")
                         : (i.returned_quantity ?? 0) > 0
-                          ? ` · ${i.returned_quantity} retourniert`
+                          ? text(" · {0} retourniert", i.returned_quantity)
                           : ""}
                     </span>
                   </span>
                   <span>
-                    {bookingMoney(i.quantity * i.gross_price_per_item)}
+                    {bookingMoney(
+                      i.quantity * i.gross_price_per_item,
+                      localeOptions,
+                    )}
                   </span>
                 </li>
               ))}
             </ul>
             <div className="totals">
               <div>
-                <span>Zwischensumme</span>
-                <span>{bookingMoney(orderBreakdown(o).subtotal)}</span>
+                <span>{text("Zwischensumme")}</span>
+                <span>
+                  {bookingMoney(orderBreakdown(o).subtotal, localeOptions)}
+                </span>
               </div>
               {o.fulfillments.map((f) => (
                 <div key={f.id}>
@@ -623,54 +704,67 @@ export function AccountOrderDetail({
                     {f.type === "PICKUP"
                       ? labels.pickup
                       : f.type === "DIGITAL"
-                        ? "Versand per E-Mail"
+                        ? text("Versand per E-Mail")
                         : f.name}
                   </span>
-                  <span>{bookingMoney(f.price)}</span>
+                  <span>{bookingMoney(f.price, localeOptions)}</span>
                 </div>
               ))}
               {orderBreakdown(o).discount > 0 && (
                 <div>
-                  <span>Rabatt</span>
-                  <span>-{bookingMoney(orderBreakdown(o).discount)}</span>
+                  <span>{text("Rabatt")}</span>
+                  <span>
+                    -{bookingMoney(orderBreakdown(o).discount, localeOptions)}
+                  </span>
                 </div>
               )}
               {orderBreakdown(o).refunded > 0 && (
                 <div>
-                  <span>Erstattet</span>
-                  <span>-{bookingMoney(orderBreakdown(o).refunded)}</span>
+                  <span>{text("Erstattet")}</span>
+                  <span>
+                    -{bookingMoney(orderBreakdown(o).refunded, localeOptions)}
+                  </span>
                 </div>
               )}
               <div className="grand">
-                <span>Gesamt</span>
-                <span>{bookingMoney(orderTotal(o))}</span>
+                <span>{text("Gesamt")}</span>
+                <span>{bookingMoney(orderTotal(o), localeOptions)}</span>
               </div>
-              <p className="vat">inkl. gesetzlicher MwSt.</p>
+              <p className="vat">{text("inkl. gesetzlicher MwSt.")}</p>
             </div>
           </AccountCard>
-          <AccountCard title="Widerruf">
+          <AccountCard title={text("Widerruf")}>
             <p>
               {o.withdrawal?.state === "REQUESTED"
-                ? "Dein Widerruf ist eingegangen und wird geprüft."
+                ? text("Dein Widerruf ist eingegangen und wird geprüft.")
                 : o.withdrawal?.state === "EXPIRED"
-                  ? "Die Widerrufsfrist ist abgelaufen. Bei Mängeln hilft Dir unser Team weiter."
+                  ? text(
+                      "Die Widerrufsfrist ist abgelaufen. Bei Mängeln hilft Dir unser Team weiter.",
+                    )
                   : o.withdrawal?.state === "ACCEPTED"
-                    ? "Dein Widerruf wurde angenommen. Die Erstattung folgt."
+                    ? text(
+                        "Dein Widerruf wurde angenommen. Die Erstattung folgt.",
+                      )
                     : o.withdrawal?.state === "ACCEPTED_REFUNDED"
-                      ? "Dein Widerruf wurde angenommen und erstattet."
+                      ? text("Dein Widerruf wurde angenommen und erstattet.")
                       : o.withdrawal?.state === "DECLINED" ||
                           (o.withdrawal?.state === "AVAILABLE" &&
                             o.withdrawal.request?.status === "DECLINED")
-                        ? "Dein Widerruf wurde abgelehnt. Die Begründung haben wir Dir per E-Mail geschickt."
+                        ? text(
+                            "Dein Widerruf wurde abgelehnt. Die Begründung haben wir Dir per E-Mail geschickt.",
+                          )
                         : o.withdrawal?.state === "DECIDED"
-                          ? "Deine Widerrufsanfrage wurde bearbeitet."
-                          : "Die zulässigen Artikel und ihre jeweiligen Fristen findest Du hier."}
+                          ? text("Deine Widerrufsanfrage wurde bearbeitet.")
+                          : text(
+                              "Die zulässigen Artikel und ihre jeweiligen Fristen findest Du hier.",
+                            )}
             </p>
             {o.withdrawal?.state === "AVAILABLE" &&
               o.withdrawal.request?.status === "DECLINED" && (
                 <p>
-                  Die zulässigen Artikel und ihre jeweiligen Fristen findest Du
-                  hier.
+                  {text(
+                    "Die zulässigen Artikel und ihre jeweiligen Fristen findest Du hier.",
+                  )}
                 </p>
               )}
             <AccountState
@@ -689,13 +783,16 @@ export function AccountOrderDetail({
                   <li key={i.order_item_id}>
                     {i.title}:{" "}
                     {i.reason
-                      ? (withdrawalReasons[i.reason] ??
-                        "Für diesen Artikel ist kein Widerruf möglich")
+                      ? text(withdrawalReasons[i.reason] ?? "") ||
+                        text("Für diesen Artikel ist kein Widerruf möglich")
                       : i.return_deadline
-                        ? `bis ${accountDate(i.return_deadline)}`
+                        ? text(
+                            "bis {0}",
+                            accountDate(i.return_deadline, localeOptions),
+                          )
                         : i.is_voucher
-                          ? "Gutschein"
-                          : "Frist beginnt nach Erhalt"}
+                          ? text("Gutschein")
+                          : text("Frist beginnt nach Erhalt")}
                   </li>
                 ))}
               </ul>
@@ -706,7 +803,7 @@ export function AccountOrderDetail({
                 className="btn btn-outline"
                 onClick={() => setSheet(true)}
               >
-                Vertrag widerrufen
+                {text("Vertrag widerrufen")}
               </button>
             )}
             <p role="status">{message}</p>
@@ -716,7 +813,7 @@ export function AccountOrderDetail({
           {o.fulfillments
             .filter((f) => f.type === "SHIPPING")
             .map((f) => (
-              <AccountCard title="Lieferung" key={f.id}>
+              <AccountCard title={text("Lieferung")} key={f.id}>
                 <address>
                   {f.shipping_name}
                   <br />
@@ -739,15 +836,15 @@ export function AccountOrderDetail({
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Sendung verfolgen
+                      {text("Sendung verfolgen")}
                     </a>
                   )}
               </AccountCard>
             ))}
-          <AccountCard title="Bezahlung">
+          <AccountCard title={text("Bezahlung")}>
             <Payments payments={o.payments} />
           </AccountCard>
-          <AccountCard title="Dokumente">
+          <AccountCard title={text("Dokumente")}>
             {o.has_invoice ? (
               <a
                 className="doc-link"
@@ -755,11 +852,14 @@ export function AccountOrderDetail({
                 target="_blank"
                 rel="noreferrer"
               >
-                Rechnung {o.invoice_number ?? ""} herunterladen
-                {o.invoice_date && <span>{accountDate(o.invoice_date)}</span>}
+                {text("Rechnung ")}
+                {o.invoice_number ?? ""} {text(" herunterladen")}
+                {o.invoice_date && (
+                  <span>{accountDate(o.invoice_date, localeOptions)}</span>
+                )}
               </a>
             ) : (
-              <p>Noch keine Rechnung verfügbar.</p>
+              <p>{text("Noch keine Rechnung verfügbar.")}</p>
             )}
             {o.credit_notes?.map((n) => (
               <a
@@ -769,9 +869,9 @@ export function AccountOrderDetail({
                 target="_blank"
                 rel="noreferrer"
               >
-                Stornorechnung{" "}
+                {text("Stornorechnung")}{" "}
                 {n.credit_note_number ? `${n.credit_note_number} ` : ""}
-                herunterladen
+                {text("herunterladen")}
               </a>
             ))}
           </AccountCard>
@@ -786,7 +886,7 @@ export function AccountOrderDetail({
           onClose={() => setSheet(false)}
           onDone={() => {
             setSheet(false);
-            setMessage("Dein Widerruf ist eingegangen.");
+            setMessage(text("Dein Widerruf ist eingegangen."));
             options.reload();
             onChanged();
           }}
@@ -829,6 +929,10 @@ export function AccountReservationDetail({
   /** Refresh authoritative host data after a successful mutation. */
   onChanged?: () => void;
 }) {
+  const localeOptions = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const { client, routes, help } = props;
   const [sheet, setSheet] = useState<"change" | "cancel" | null>(null),
     [date, setDate] = useState(r.date),
@@ -868,12 +972,12 @@ export function AccountReservationDetail({
       setSheet(null);
       setMessage(
         sheet === "cancel"
-          ? "Deine Reservierung wurde storniert."
-          : "Deine Reservierung wurde geändert.",
+          ? text("Deine Reservierung wurde storniert.")
+          : text("Deine Reservierung wurde geändert."),
       );
       onChanged();
     } catch (e) {
-      setError(accountErrorMessage(e));
+      setError(accountErrorMessage(e, false, undefined, localeOptions));
     } finally {
       setBusy(false);
     }
@@ -881,10 +985,10 @@ export function AccountReservationDetail({
   return (
     <>
       <AccountHead
-        title="Tisch für"
-        accent={`${r.num_guests} ${r.num_guests === 1 ? "Person" : "Personen"}`}
+        title={text("Tisch für")}
+        accent={`${r.num_guests} ${r.num_guests === 1 ? text("Person") : text("Personen")}`}
         eyebrow="Tischreservierung"
-        back={[routes.bookings, "Bestellungen & Buchungen"]}
+        back={[routes.bookings, text("Bestellungen & Buchungen")]}
       />
       <div className="detail-grid">
         <div className="stack">
@@ -893,20 +997,20 @@ export function AccountReservationDetail({
               <img
                 className="event-photo"
                 src={rules.image}
-                alt="Dein reservierter Tisch"
+                alt={text("Dein reservierter Tisch")}
               />
             )}
             <div className="card-pad stack">
               <span className="pill">
                 {r.status === "confirmed"
-                  ? "Bestätigt"
+                  ? text("Bestätigt")
                   : r.status === "cancelled"
-                    ? "Storniert"
+                    ? text("Storniert")
                     : r.status === "seated"
-                      ? "Angekommen"
+                      ? text("Angekommen")
                       : r.status === "no_show"
-                        ? "Nicht erschienen"
-                        : "Vergangen"}
+                        ? text("Nicht erschienen")
+                        : text("Vergangen")}
               </span>
               {editable && (
                 <AccountCountdown
@@ -914,20 +1018,22 @@ export function AccountReservationDetail({
                 />
               )}
               <dl className="kv">
-                <dt>Datum</dt>
-                <dd>{accountDate(r.date)}</dd>
-                <dt>Uhrzeit</dt>
+                <dt>{text("Datum")}</dt>
+                <dd>{accountDate(r.date, localeOptions)}</dd>
+                <dt>{text("Uhrzeit")}</dt>
                 <dd>
                   {/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(r.time)
-                    ? `${r.time} Uhr`
+                    ? localeTime(r.time, localeOptions.locale, {
+                        messages: localeOptions.messages,
+                      })
                     : r.time}
                 </dd>
-                <dt>Personen</dt>
+                <dt>{text("Personen")}</dt>
                 <dd>{r.num_guests}</dd>
-                <dt>Dein Hinweis</dt>
-                <dd>{r.notes ?? "Kein Hinweis"}</dd>
-                <dt>Reserviert am</dt>
-                <dd>{accountDate(r.created_at)}</dd>
+                <dt>{text("Dein Hinweis")}</dt>
+                <dd>{r.notes ?? text("Kein Hinweis")}</dd>
+                <dt>{text("Reserviert am")}</dt>
+                <dd>{accountDate(r.created_at, localeOptions)}</dd>
               </dl>
               <div className="btn-row">
                 {editable && (
@@ -939,31 +1045,38 @@ export function AccountReservationDetail({
                       setSheet("change");
                     }}
                   >
-                    Ändern
+                    {text("Ändern")}
                   </button>
                 )}
                 <a className="btn btn-ghost" href={help.routeUrl}>
-                  Route
+                  {text("Route")}
                 </a>
                 <button
                   type="button"
                   className="btn btn-ghost"
                   onClick={() =>
-                    downloadAccountCalendar({
-                      date: r.date,
-                      start_time: r.time,
-                      end_time: "",
-                      event_name: `Tisch für ${r.num_guests} ${r.num_guests === 1 ? "Person" : "Personen"}`,
-                      order_id: `reservation-${r.id}`,
-                      franchise_location: {
-                        id: r.franchise_location_id,
-                        location_name: r.location_name ?? "",
-                        location_street: help.address,
+                    downloadAccountCalendar(
+                      {
+                        date: r.date,
+                        start_time: r.time,
+                        end_time: "",
+                        event_name: text(
+                          "Tisch für {0} {1}",
+                          r.num_guests,
+                          r.num_guests === 1 ? "Person" : "Personen",
+                        ),
+                        order_id: `reservation-${r.id}`,
+                        franchise_location: {
+                          id: r.franchise_location_id,
+                          location_name: r.location_name ?? "",
+                          location_street: help.address,
+                        },
                       },
-                    })
+                      localeOptions,
+                    )
                   }
                 >
-                  In den Kalender
+                  {text("In den Kalender")}
                 </button>
               </div>
               {editable ? (
@@ -975,15 +1088,17 @@ export function AccountReservationDetail({
                     setSheet("cancel");
                   }}
                 >
-                  Reservierung stornieren
+                  {text("Reservierung stornieren")}
                 </button>
               ) : rules && !readOnly && r.status === "confirmed" ? (
                 <p className="notice">
-                  Ändern und Stornieren geht jetzt nur noch telefonisch.
+                  {text(
+                    "Ändern und Stornieren geht jetzt nur noch telefonisch.",
+                  )}
                 </p>
               ) : r.status !== "confirmed" ? (
                 <a className="btn" href={routes.reserve}>
-                  Wieder reservieren
+                  {text("Wieder reservieren")}
                 </a>
               ) : null}
               <p role="status">{message}</p>
@@ -992,12 +1107,15 @@ export function AccountReservationDetail({
         </div>
         <div className="stack">
           {rules && (
-            <AccountCard title="Gut zu wissen">
+            <AccountCard title={text("Gut zu wissen")}>
               <p>{rules.policy}</p>
-              <p>Mehr als {rules.maxGuests} Personen? Ruf uns bitte an.</p>
+              <p>
+                {text("Mehr als ")}
+                {rules.maxGuests} {text(" Personen? Ruf uns bitte an.")}
+              </p>
             </AccountCard>
           )}
-          <AccountCard title="Ort">
+          <AccountCard title={text("Ort")}>
             <address>
               {r.location_name}
               <br />
@@ -1011,8 +1129,8 @@ export function AccountReservationDetail({
         <AccountSheet
           title={
             sheet === "change"
-              ? "Reservierung ändern"
-              : "Reservierung stornieren?"
+              ? text("Reservierung ändern")
+              : text("Reservierung stornieren?")
           }
           onClose={() => setSheet(null)}
         >
@@ -1025,13 +1143,14 @@ export function AccountReservationDetail({
           >
             {sheet === "cancel" ? (
               <p>
-                Schade, dass es nicht klappt. Wir geben den Tisch sofort wieder
-                frei. Das kostet nichts.
+                {text(
+                  "Schade, dass es nicht klappt. Wir geben den Tisch sofort wieder frei. Das kostet nichts.",
+                )}
               </p>
             ) : (
               <div className="form-grid two">
                 <label className="field">
-                  Datum
+                  {text("Datum")}
                   <input
                     className="input"
                     type="date"
@@ -1044,7 +1163,7 @@ export function AccountReservationDetail({
                   />
                 </label>
                 <label className="field" htmlFor="account-reservation-time">
-                  Uhrzeit
+                  {text("Uhrzeit")}
                   {rules.timeInput === "free" ? (
                     <input
                       id="account-reservation-time"
@@ -1066,7 +1185,7 @@ export function AccountReservationDetail({
                       value={time}
                       onChange={(e) => setTime(e.target.value)}
                     >
-                      <option value="">Bitte wählen</option>
+                      <option value="">{text("Bitte wählen")}</option>
                       {time === r.time && !rules.times(date).includes(time) && (
                         <option value={r.time}>{r.time}</option>
                       )}
@@ -1077,7 +1196,7 @@ export function AccountReservationDetail({
                   )}
                 </label>
                 <label className="field">
-                  Personen
+                  {text("Personen")}
                   <input
                     className="input"
                     type="number"
@@ -1097,7 +1216,7 @@ export function AccountReservationDetail({
                   />
                 </label>
                 <label className="field">
-                  Wünsche, besondere Hinweise
+                  {text("Wünsche, besondere Hinweise")}
                   <textarea
                     className="textarea"
                     maxLength={2000}
@@ -1106,7 +1225,9 @@ export function AccountReservationDetail({
                   />
                 </label>
                 <p className="small muted">
-                  Beim Speichern prüfen wir, ob der Tisch verfügbar ist.
+                  {text(
+                    "Beim Speichern prüfen wir, ob der Tisch verfügbar ist.",
+                  )}
                 </p>
               </div>
             )}
@@ -1117,17 +1238,17 @@ export function AccountReservationDetail({
               disabled={busy || (sheet === "change" && !hasChanges)}
             >
               {busy
-                ? "Wird gespeichert..."
+                ? text("Wird gespeichert...")
                 : sheet === "cancel"
-                  ? "Ja, stornieren"
-                  : "Änderung speichern"}
+                  ? text("Ja, stornieren")
+                  : text("Änderung speichern")}
             </button>
             <button
               className="btn"
               type="button"
               onClick={() => setSheet(null)}
             >
-              Abbrechen
+              {text("Abbrechen")}
             </button>
           </form>
         </AccountSheet>

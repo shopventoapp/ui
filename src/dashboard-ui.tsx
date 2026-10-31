@@ -4,6 +4,13 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { AccountApiError, accountErrorMessage } from "./account-client";
 import { BookingIcon, bookingDate, bookingMoney } from "./calendar";
 import type { AccountEntry } from "./dashboard-state";
+import {
+  getMessages,
+  type LocaleOptions,
+  localeTime,
+  useMessages,
+  useShopventoLocale,
+} from "./locale";
 /** Host-owned account nouns and optional age/birth date hints. */
 export interface AccountLabels {
   /** Event in the account labels contract. */
@@ -70,8 +77,9 @@ export interface AccountHelp {
     email?: string | null;
   };
 }
-/** Format an account date for German display. */
-export const accountDate = (date: string) => bookingDate(date.slice(0, 10));
+/** Format an account date in an explicit per-call locale. */
+export const accountDate = (date: string, options: LocaleOptions = {}) =>
+  bookingDate(date.slice(0, 10), false, options.locale);
 /** Load a cancellable account resource when its host dependencies change.
  * @param load - Cancellable async resource loader.
  * @param dependencies - Host dependency values that reload the resource. Defaults to []. */
@@ -79,6 +87,10 @@ export function useAccountResource<T>(
   load: (signal: AbortSignal) => Promise<T>,
   dependencies: unknown[] = [],
 ) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const [data, setData] = useState<T | null>(null),
     [error, setError] = useState<string | null>(null),
     [loading, setLoading] = useState(true),
@@ -106,8 +118,8 @@ export function useAccountResource<T>(
         if (!c.signal.aborted)
           setError(
             e instanceof AccountApiError && e.status === 404
-              ? "Diesen Eintrag gibt es in diesem Konto nicht (mehr)."
-              : accountErrorMessage(e),
+              ? text("Diesen Eintrag gibt es in diesem Konto nicht (mehr).")
+              : accountErrorMessage(e, false, undefined, options),
           );
       })
       .finally(() => {
@@ -142,19 +154,21 @@ export function AccountState({
   /** Customer-visible empty state message. Optional; omitted unless supplied by the host or backend. */
   empty?: string;
 }) {
+  const text = useMessages("account");
+
   return (
     <div className="card card-pad empty" role={error ? "alert" : "status"}>
       {loading ? (
         <>
           <div className="skeleton" />
-          <p>Deine Daten werden geladen...</p>
+          <p>{text("Deine Daten werden geladen...")}</p>
         </>
       ) : (
         <>
           <p>{error ?? empty}</p>
           {error && (
             <button className="btn" type="button" onClick={retry}>
-              Erneut versuchen
+              {text("Erneut versuchen")}
             </button>
           )}
         </>
@@ -168,7 +182,7 @@ export function AccountHead({
   accent,
   lead,
   back,
-  eyebrow = "Mein Konto",
+  eyebrow,
 }: {
   /** Customer-visible heading or title supplied by the host. */
   title: string;
@@ -182,6 +196,8 @@ export function AccountHead({
    * @defaultValue "Mein Konto" */
   eyebrow?: string;
 }) {
+  const text = useMessages("account");
+
   const ref = useRef<HTMLHeadingElement>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: A new page title must receive focus after settings navigation.
   useEffect(() => {
@@ -194,7 +210,7 @@ export function AccountHead({
           ‹ {back[1]}
         </a>
       )}
-      <p className="eyebrow">{eyebrow}</p>
+      <p className="eyebrow">{eyebrow ?? text("Mein Konto")}</p>
       <h1 ref={ref} tabIndex={-1} className="display h1">
         {title}
         {accent && (
@@ -249,12 +265,16 @@ export function AccountHelpCard({
   /** Host contact, opening hours and directions. */
   help: AccountHelp;
 }) {
+  const text = useMessages("account");
+
   const { phone, email, phoneLabel } = accountContact(help);
   if (!phone && !email && !help.hours) return null;
   return (
-    <AccountCard title="Hilfe & Kontakt">
+    <AccountCard title={text("Hilfe & Kontakt")}>
       <p className="small muted">
-        Fragen zu Deiner Bestellung oder Buchung? Ruf an oder schreib uns.
+        {text(
+          "Fragen zu Deiner Bestellung oder Buchung? Ruf an oder schreib uns.",
+        )}
       </p>
       {phone && <a href={`tel:${phone}`}>{phoneLabel}</a>}
       {email && <a href={`mailto:${email}`}>{email}</a>}
@@ -306,6 +326,8 @@ export function AccountSheet({
   /** Close the modal in host state. */
   onClose: () => void;
 }) {
+  const text = useMessages("account");
+
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
   useEffect(() => {
@@ -330,7 +352,7 @@ export function AccountSheet({
             type="button"
             className="icon-btn"
             onClick={onClose}
-            aria-label="Schließen"
+            aria-label={text("Schließen")}
           >
             <svg
               width="14"
@@ -359,6 +381,8 @@ export function AccountCountdown({
   /** Countdown target in Unix milliseconds. */
   target: number;
 }) {
+  const text = useMessages("account");
+
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
@@ -367,15 +391,17 @@ export function AccountCountdown({
   const minutes = Math.max(0, Math.floor((target - now) / 60000));
   return (
     <div className="countdown">
-      <span className="eyebrow">Noch</span>
+      <span className="eyebrow">{text("Noch")}</span>
       <span className="cd-line">
         <span className="cd-num">{Math.floor(minutes / 1440)}</span>
         <span className="cd-unit">
-          {Math.floor(minutes / 1440) === 1 ? "Tag" : "Tage"}
+          {Math.floor(minutes / 1440) === 1 ? text("Tag") : text("Tage")}
         </span>
       </span>
       <span className="cd-sub">
-        und {Math.floor((minutes % 1440) / 60)} Std. {minutes % 60} Min.
+        {text("und ")}
+        {Math.floor((minutes % 1440) / 60)} {text(" Std. ")}
+        {minutes % 60} {text(" Min.")}
       </span>
     </div>
   );
@@ -393,12 +419,16 @@ export function AccountEntryRow({
   /** Host-owned copy overrides or account terminology. */
   labels: AccountLabels;
 }) {
+  const options = useShopventoLocale();
+
+  const text = useMessages("account");
+
   const label =
     entry.type === "tastings"
       ? labels.event
       : entry.type === "reservierungen"
-        ? "Tisch"
-        : "Bestellung";
+        ? text("Tisch")
+        : text("Bestellung");
   return (
     <li>
       <a className="row" href={`${routes.bookings}/${entry.id}`}>
@@ -412,7 +442,7 @@ export function AccountEntryRow({
             <>
               <span className="d">{entry.date.slice(8, 10)}</span>
               <span className="m">
-                {new Intl.DateTimeFormat("de-DE", {
+                {new Intl.DateTimeFormat(options.locale, {
                   month: "short",
                   timeZone: "UTC",
                 }).format(new Date(`${entry.date.slice(0, 10)}T12:00:00Z`))}
@@ -427,19 +457,57 @@ export function AccountEntryRow({
           </span>
           <span className="r-title">{entry.title}</span>
           <span className="r-sub">
-            {accountDate(entry.date)}
+            {accountDate(entry.date, options)}
             {entry.type !== "bestellungen" &&
-              `, ${entry.date.slice(11, 16)} Uhr`}
+              text(
+                ", {0} Uhr",
+                options.locale.startsWith("de")
+                  ? entry.date.slice(11, 16)
+                  : localeTime(entry.date.slice(11, 16), options.locale),
+              )}
           </span>
         </span>
         <span className="r-side">
           <span className={`pill ${entry.tone}`}>{entry.status}</span>
           {entry.amount !== undefined && (
-            <span className="r-amount">{bookingMoney(entry.amount)}</span>
+            <span className="r-amount">
+              {bookingMoney(entry.amount, options)}
+            </span>
           )}
         </span>
         <span className="chev">›</span>
       </a>
     </li>
   );
+}
+
+/** Default account terminology; hosts may override any noun or optional hint. */
+export const defaultAccountLabels: AccountLabels = {
+  event: "Veranstaltung",
+  events: "Veranstaltungen",
+  eventVoucher: "Veranstaltungsgutscheine",
+  eventVoucherSingular: "Veranstaltungsgutschein",
+  product: "Produkt",
+  products: "Produkte",
+  pickup: "Abholung",
+  voucherUse: "Gutschein einlösen",
+  newsletter: "Newsletter",
+};
+/** Resolve account terminology for an explicit locale, then apply host copy choices. */
+export function mergeAccountLabels(
+  labels: Partial<AccountLabels> = {},
+  options: LocaleOptions = {},
+): AccountLabels {
+  const text = getMessages("account", options);
+  return {
+    ...Object.fromEntries(
+      Object.entries(defaultAccountLabels).map(([key, value]) => [
+        key,
+        text(value),
+      ]),
+    ),
+    ...Object.fromEntries(
+      Object.entries(labels).filter(([, value]) => value !== undefined),
+    ),
+  } as unknown as AccountLabels;
 }

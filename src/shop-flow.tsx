@@ -16,6 +16,7 @@ import {
 } from "./checkout-draft";
 import { validateCheckoutDetails } from "./checkout-validation";
 import type { ShippingAddress } from "./dashboard-client";
+import { ShopventoProvider } from "./locale";
 import { ShopApiError, type ShopOperations } from "./shop-client";
 import {
   ShopButton,
@@ -50,22 +51,16 @@ import {
   emptyCart,
   type Fulfillment,
   filterKeys,
-  formatFulfillmentDate,
-  formatPrice,
   fulfillmentDateKey,
-  fulfillmentPriceLabel,
   hasPhysicalItems,
   lineKey,
   mergeLine,
-  nutritionRows,
   orderAmounts,
   pickupAddress,
-  pickupTerms,
   type Quote,
   quoteContainsCart,
   type Settings,
   type ShopCart,
-  shippingTerms,
 } from "./shop-model";
 import { consumeNewsletterIntent } from "./shop-newsletter-intent";
 import { Turnstile } from "./turnstile";
@@ -81,7 +76,7 @@ function FreeShippingProgress({
   remaining: number;
   ready: boolean;
 }) {
-  const { text } = useShopFlow();
+  const { text, formatPrice } = useShopFlow();
 
   const label = remaining
     ? text("Noch {0} bis zum kostenlosen Versand", formatPrice(remaining))
@@ -353,6 +348,12 @@ function ShopFlowPage({
     text,
     phoneHref,
     phoneLabel,
+    formatPrice,
+    formatFulfillmentDate,
+    fulfillmentPriceLabel,
+    nutritionRows,
+    pickupTerms,
+    shippingTerms,
   } = useShopFlow();
 
   const session = useAccountSession(accountClient);
@@ -977,7 +978,7 @@ function ShopFlowPage({
           : shopSectionPath(p.category),
       )}
       formatPrice={(amount) =>
-        `${p.customerDefinedPrice ? "ab " : ""}${formatPrice(amount)}`
+        `${p.customerDefinedPrice ? text("ab ") : ""}${formatPrice(amount)}`
       }
       taxLabel={
         p.category === "gutscheine"
@@ -1438,7 +1439,7 @@ function ShopFlowPage({
                       ),
                     })
                   }
-                  aria-label={`${p.title} entfernen`}
+                  aria-label={text("{0} entfernen", p.title)}
                 >
                   <CheckoutIcon kind="trash" />
                 </button>
@@ -1922,7 +1923,7 @@ function ShopFlowPage({
                   , <em>{orderFirstName}!</em>
                 </>
               ) : (
-                " Dir!"
+                text(" Dir!")
               )}{" "}
             </>
           ) : orderState === "confirmed" ? (
@@ -1965,7 +1966,7 @@ function ShopFlowPage({
                   <span key={f.id}>
                     {text("Wir liefern Deinen Einkauf")}
                     {f.scheduled_date
-                      ? ` am ${formatFulfillmentDate(f.scheduled_date)}`
+                      ? text(" am {0}", formatFulfillmentDate(f.scheduled_date))
                       : text(" zum bestätigten Termin")}{" "}
                     {text("und schicken Dir die Bestätigung per E-Mail.")}{" "}
                   </span>
@@ -2417,7 +2418,7 @@ function ShopFlowPage({
                             <>
                               <Field
                                 name="email"
-                                label="E-Mail-Adresse"
+                                label={text("E-Mail-Adresse")}
                                 type="email"
                                 autoComplete="email"
                                 value={draft.contact.email}
@@ -3152,7 +3153,7 @@ function VoucherField({
   onChange: (cart: ShopCart) => void;
   quote?: Quote;
 }) {
-  const { text } = useShopFlow();
+  const { text, formatPrice } = useShopFlow();
 
   const [code, setCode] = useState("");
   return (
@@ -3229,7 +3230,14 @@ function Filters({
   query: URLSearchParams;
   onQuery: (key: string, value: string) => void;
 }) {
-  const { text, filterArticles, sections, categoryKey } = useShopFlow();
+  const {
+    text,
+    filterArticles,
+    sections,
+    categoryKey,
+    formatFilterPrice,
+    formatFilterRange,
+  } = useShopFlow();
   const section = sections.find((s) =>
     articles.some((a) => categoryKey(a) === s.key),
   );
@@ -3239,15 +3247,10 @@ function Filters({
     label: string,
     values: { value: string; label: string }[],
     open = false,
-  ) => (
-    <details
-      className="vv-shop-facet-group"
-      key={key}
-      open={open || !!query.get(key)}
-    >
-      <summary>{label}</summary>
-      <fieldset className="sv-shop-facet">
-        <legend className="sv-shop-sr">{label}</legend>
+  ) => {
+    const controls = (
+      <fieldset className="sv-shop-facet" key={key}>
+        {label && <legend className="sv-shop-sr">{label}</legend>}
         {values.map(({ value, label }) => (
           <label key={value}>
             <input
@@ -3281,8 +3284,20 @@ function Filters({
           </label>
         ))}
       </fieldset>
-    </details>
-  );
+    );
+    return label ? (
+      <details
+        className="vv-shop-facet-group"
+        key={key}
+        open={open || !!query.get(key)}
+      >
+        <summary>{label}</summary>
+        {controls}
+      </details>
+    ) : (
+      controls
+    );
+  };
   const originGroups = (
     [
       ["land", text("Land"), "country"],
@@ -3331,7 +3346,7 @@ function Filters({
         node: options.length
           ? group(
               filter.queryKey,
-              text(filter.label ?? filter.queryKey),
+              filter.label ? text(filter.label) : "",
               options.map((option) => ({
                 ...option,
                 label: text(option.label),
@@ -3346,10 +3361,10 @@ function Filters({
       <summary>{text("Preis")}</summary>
       <div className="sv-shop-chips">
         {[
-          ["bis-15", "bis 15 €"],
-          ["15-30", "15 bis 30 €"],
-          ["30-60", "30 bis 60 €"],
-          ["ab-60", text("über 60 €")],
+          ["bis-15", text("bis {0}", formatFilterPrice(1500))],
+          ["15-30", formatFilterRange(1500, 3000)],
+          ["30-60", formatFilterRange(3000, 6000)],
+          ["ab-60", text("über {0}", formatFilterPrice(6000))],
         ].map(([value, label]) => (
           <button
             type="button"
@@ -3480,6 +3495,7 @@ function Catalogue({
     text,
     isGiftBasket,
     filterArticles,
+    formatPrice,
   } = useShopFlow();
 
   const section = sections.find((s) => s.key === category);
@@ -3515,7 +3531,7 @@ function Catalogue({
             `${products
               .map(
                 (p) =>
-                  `${p.title}: ${p.customerDefinedPrice ? "ab " : ""}${formatPrice(p.minimumPrice || p.price)}`,
+                  `${p.title}: ${p.customerDefinedPrice ? text("ab ") : ""}${formatPrice(p.minimumPrice || p.price)}`,
               )
               .join(" · ")}. `}
           {text("Wir packen jeden Korb für Dich von Hand.")}
@@ -3690,6 +3706,8 @@ function ProductPage({
     text,
     phoneHref,
     phoneLabel,
+    formatPrice,
+    shippingTerms,
   } = useShopFlow();
 
   const [quantity, setQuantity] = useState(1);
@@ -3903,6 +3921,9 @@ function ShippingPage({
     ageNotice,
     resolveHref,
     text,
+    formatPrice,
+    pickupTerms,
+    shippingTerms,
   } = useShopFlow();
 
   return (
@@ -3981,8 +4002,10 @@ function ShippingPage({
 /** Complete catalogue, cart, checkout and order-return flow. The host supplies routes, branding and optional editorial slots. */
 export function ShopFlow({ initialPath = "/shop", ...config }: ShopFlowProps) {
   return (
-    <ShopFlowProvider config={config}>
-      <ShopFlowPage initialPath={initialPath} />
-    </ShopFlowProvider>
+    <ShopventoProvider locale={config.locale} messages={config.messages}>
+      <ShopFlowProvider config={config}>
+        <ShopFlowPage initialPath={initialPath} />
+      </ShopFlowProvider>
+    </ShopventoProvider>
   );
 }

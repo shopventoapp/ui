@@ -276,3 +276,35 @@ describe("same-origin shop transport", () => {
     ).rejects.toThrow("limit");
   });
 });
+
+test("read proxy never forwards Origin and rejects upper case Cross-Site writes", async () => {
+  let captured: Headers | undefined;
+  const fetcher = fakeFetch((_input, init) => {
+    captured = new Headers(init?.headers);
+    return Response.json({ ok: true });
+  });
+  expect(
+    (
+      await proxyShopRequest(
+        request("/api/shop/settings", {
+          headers: { Origin: site, "Sec-Fetch-Site": "same-origin" },
+        }),
+        { apiUrl, fetcher },
+      )
+    ).status,
+  ).toBe(200);
+  expect(captured?.has("Origin")).toBe(false);
+  expect(captured?.has("Sec-Fetch-Site")).toBe(false);
+  expect(
+    (
+      await proxyShopRequest(
+        request("/api/shop/user/profile", {
+          method: "PATCH",
+          headers: { Origin: site, "Sec-Fetch-Site": "Cross-Site" },
+          body: "{}",
+        }),
+        { apiUrl, fetcher },
+      )
+    ).status,
+  ).toBe(403);
+});

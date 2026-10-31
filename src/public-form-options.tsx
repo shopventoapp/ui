@@ -1,5 +1,6 @@
 "use client";
 import { type ComponentType, useEffect } from "react";
+import type { LocaleOptions } from "./locale";
 /** Runtime routing for public forms. Legacy transports are an optional host compatibility bridge. */
 export interface PublicFormApiConfig {
   /** Use the Shopvento public endpoints when true. */
@@ -8,7 +9,7 @@ export interface PublicFormApiConfig {
   locationId: number | null;
 }
 /** Common copy, privacy and script integration for public forms. */
-export interface PublicFormOptions {
+export interface PublicFormOptions extends LocaleOptions {
   /** Runtime public configuration. Defaults to Shopvento; provide a location ID for reservations. */
   publicApi?: () => Promise<PublicFormApiConfig>;
   /** Optional host script loader, e.g. a framework-managed script component. */

@@ -5,6 +5,7 @@ These source files are typechecked by `bun run typecheck` and copied verbatim in
 - `event-booking.tsx`: compact event booking client component.
 - `booking-return.tsx`: read a checkout return URL after mount.
 - `vouchers.ts`: sanitize and check a public voucher code on demand.
+- `locales.tsx`: per-render English/German scopes, a typed French catalogue and a per-key host override.
 - `labels.tsx`: retain host Tasting terminology through label overrides.
 - `customer-account.tsx`: stable same-origin account client and login form.
 - `shop-flow.tsx`: complete shop flow with configurable storage, plus public reservation and newsletter forms.
