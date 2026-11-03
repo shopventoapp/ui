@@ -3,6 +3,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -17,7 +18,8 @@ import {
 import { validateCheckoutDetails } from "./checkout-validation";
 import type { ShippingAddress } from "./dashboard-client";
 import { ShopventoProvider } from "./locale";
-import { usePaymentStatus } from "./payment-hooks";
+import { usePaymentStatusControl } from "./payment-hooks";
+import { PaymentNotice } from "./payment-notice";
 import { paymentActionBlocked } from "./payment-status";
 import { ShopApiError, type ShopOperations } from "./shop-client";
 import {
@@ -360,9 +362,6 @@ function ShopFlowPage({
     shippingTerms,
   } = useShopFlow();
 
-  const paymentStatus = usePaymentStatus(client, suppliedPaymentStatus);
-  const currentPaymentStatus = useRef(paymentStatus);
-  currentPaymentStatus.current = paymentStatus;
   const session = useAccountSession(accountClient);
   const [guestCheckout, setGuestCheckout] = useState(false);
   const [securityToken, setSecurityToken] = useState("");
@@ -371,6 +370,15 @@ function ShopFlowPage({
     path: initialPath,
     query: new URLSearchParams(),
   });
+  const { status: paymentStatus, retry: retryPaymentStatus } =
+    usePaymentStatusControl(
+      client,
+      suppliedPaymentStatus,
+      route.path === "/kasse",
+    );
+  const paymentNoticeId = useId();
+  const currentPaymentStatus = useRef(paymentStatus);
+  currentPaymentStatus.current = paymentStatus;
   const [articles, setArticles] = useState<Article[]>([]);
   const [publicOptions, setPublicOptions] = useState<Fulfillment[]>([]);
   const [settings, setSettings] =
@@ -1688,6 +1696,12 @@ function ShopFlowPage({
   }
   async function placeOrder() {
     if (
+      suppliedPaymentStatus === undefined &&
+      paymentBlocked &&
+      (paymentStatus === "error" || paymentStatus === "unknown")
+    )
+      retryPaymentStatus();
+    if (
       paymentBlocked ||
       shopPaused() ||
       posting ||
@@ -2729,8 +2743,20 @@ function ShopFlowPage({
                       </div>
 
                       <div className="vv-shop-final-order">
+                        <PaymentNotice
+                          id={paymentNoticeId}
+                          status={paymentStatus}
+                          blocked={paymentBlocked}
+                          retry={retryPaymentStatus}
+                        />
                         <ShopButton
                           type="submit"
+                          aria-busy={paymentStatus === "loading" || posting}
+                          aria-describedby={
+                            paymentBlocked && paymentStatus !== "active"
+                              ? paymentNoticeId
+                              : undefined
+                          }
                           disabled={
                             paymentBlocked ||
                             shopPaused() ||
@@ -2743,7 +2769,7 @@ function ShopFlowPage({
                             settings?.shop_checkout_review_required !== true
                           }
                         >
-                          {paymentBlocked
+                          {paymentBlocked && paymentStatus === "inactive"
                             ? paymentUnavailableLabel
                             : posting
                               ? text("Bestellung wird aufgegeben …")

@@ -14,7 +14,7 @@ export type OpeningException = {
   /** Local Berlin datetime bounds for a half-open private-event closure. */
   closed_from?: string;
   closed_until?: string;
-  /** Event-owned opens/closes are blocked times; ordinary entries remain opening overrides. */
+  /** Optional source event identifier; only closed_from marks a timed closure. */
   private_event_id?: number | string;
 };
 /** A closure clipped to one local date; 24:00 denotes the following midnight. */
@@ -42,11 +42,7 @@ export type OpeningWindow = (
 ) & { closures?: OpeningClosure[] };
 
 function isTimedClosure(entry: OpeningException): boolean {
-  return Boolean(
-    entry.closed_from ||
-      entry.closed_until ||
-      (entry.private_event_id != null && entry.opens && entry.closes),
-  );
+  return Boolean(entry.closed_from);
 }
 
 function closureOnDate(

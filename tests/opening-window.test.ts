@@ -130,9 +130,8 @@ test("timed exceptions compose with manual opening overrides and multiple closur
       {
         from: "2026-12-22",
         until: "2026-12-22",
-        private_event_id: 4,
-        opens: "15:00",
-        closes: "15:30",
+        closed_from: "2026-12-22T15:00",
+        closed_until: "2026-12-22T15:30",
       },
     ],
   });
@@ -168,4 +167,36 @@ test("buffered closures crossing midnight are clipped without closing adjacent f
   expect(
     timeInOpeningWindow("00:30", openingWindow("2027-01-05", config)),
   ).toBe(true);
+});
+
+test("only closed_from marks an exception as a timed closure", () => {
+  for (const extra of [
+    { private_event_id: 4 },
+    { closed_until: "2026-12-22T15:30" },
+  ]) {
+    expect(
+      openingWindow("2026-12-22", {
+        opening_exceptions: [
+          {
+            from: "2026-12-22",
+            until: "2026-12-22",
+            opens: "15:00",
+            closes: "15:30",
+            ...extra,
+          },
+        ],
+      }),
+    ).toEqual({ kind: "open", opens: "15:00", closes: "15:30" });
+    expect(
+      openingWindow("2026-12-22", {
+        opening_exceptions: [
+          {
+            from: "2026-12-22",
+            until: "2026-12-22",
+            ...extra,
+          },
+        ],
+      }),
+    ).toEqual({ kind: "closed" });
+  }
 });

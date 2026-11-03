@@ -243,7 +243,12 @@ export function createBookingClient(options: ClientOptions) {
     listEvents,
     /** Read public payment capability through the configured same-origin transport. */
     getPaymentStatus: (signal?: AbortSignal) =>
-      loadPaymentStatus(transport, options.baseUrl, signal),
+      loadPaymentStatus(
+        transport,
+        options.baseUrl,
+        signal,
+        options.credentials ?? "omit",
+      ),
     /** Filter the public list by event identifier; there is no public detail endpoint. */
     getEvent,
     /** List slots for one event. Date defaults to today in Europe/Berlin; optional location filters availability. */
@@ -311,7 +316,11 @@ export function createBookingClient(options: ClientOptions) {
   };
 }
 /** Public booking client contract used by the storefront clients. */
-export type BookingClient = ReturnType<typeof createBookingClient>;
+export type BookingClient = Omit<
+  ReturnType<typeof createBookingClient>,
+  "getPaymentStatus"
+> &
+  Partial<Pick<ReturnType<typeof createBookingClient>, "getPaymentStatus">>;
 /** Backend timewindow dates and times use Europe/Berlin local time. */
 function berlinTimestamp(now: number): string {
   return new Intl.DateTimeFormat("sv-SE", {

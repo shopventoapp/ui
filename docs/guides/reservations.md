@@ -18,8 +18,7 @@ labels and blocked times, keeps the date selectable, and rejects only arrivals
 inside each half-open closure. Setup/teardown across midnight is clipped to each
 local date. Regular opening hours and manual opening overrides continue to apply;
 the backend checks the complete reservation duration and remains authoritative.
-An event-owned exception with `private_event_id` and `opens` / `closes` also
-represents a blocked interval. Ordinary `opens` / `closes` exceptions retain their
+Only `closed_from` identifies a timed closure. Ordinary `opens` / `closes` exceptions retain their
 existing meaning as replacement opening hours; entries without times still close
 the entire date range. Older clients may conservatively show timed entries as
 all-day closures until their host upgrades this package.

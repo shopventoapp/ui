@@ -7,6 +7,7 @@ import {
   renderHook,
   waitFor,
 } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { createAccountClient } from "../src/account-client";
 import {
   BookingFlow,
@@ -18,7 +19,11 @@ import { createBookingClient, type Timewindow } from "../src/client";
 import { EventBooking } from "../src/components";
 import { createDashboardClient } from "../src/dashboard-client";
 import { useSubmitBooking } from "../src/hooks";
-import { usePaymentStatus } from "../src/payment-hooks";
+import {
+  usePaymentStatus,
+  usePaymentStatusControl,
+} from "../src/payment-hooks";
+import { PaymentNotice } from "../src/payment-notice";
 import {
   type PaymentStatusInput,
   paymentActionBlocked,
@@ -160,7 +165,7 @@ for (const transport of ["shop", "booking"] as const) {
         "https://tenant.invalid/api/shop/payments/status",
       );
       expect(calls[0][1]).toMatchObject({
-        credentials: "include",
+        credentials: transport === "booking" ? "omit" : "include",
         cache: "no-store",
       });
       expect(calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
@@ -242,6 +247,7 @@ function shopFixture({
   entry = false,
   quoteWait,
   failCheckout = false,
+  statusResponse,
 }: {
   amount?: number;
   guest?: boolean;
@@ -251,6 +257,7 @@ function shopFixture({
   entry?: boolean;
   quoteWait?: Promise<void>;
   failCheckout?: boolean;
+  statusResponse?: (count: number) => Response;
 } = {}) {
   setUrl("http://localhost/kasse");
   challenge();
@@ -271,6 +278,7 @@ function shopFixture({
       const url = String(input);
       if (url.endsWith("payments/status")) {
         capabilities++;
+        if (statusResponse) return statusResponse(capabilities);
         return responseStatus === 200
           ? Response.json({
               online_payments_enabled: false,
@@ -350,7 +358,10 @@ for (const guest of [false, true]) {
     test(`${guest ? "guest" : "account"} paid checkout cannot submit or retry with ${status} capability`, async () => {
       const { view, counts } = shopFixture({ guest, status });
       const button = await view.findByRole("button", {
-        name: "Bald verfügbar",
+        name:
+          status === "inactive"
+            ? "Bald verfügbar"
+            : "Zahlungspflichtig bestellen",
       });
       await waitFor(() => expect(counts().quotes).toBeGreaterThan(0));
       expect(button.hasAttribute("disabled")).toBe(true);
@@ -383,9 +394,12 @@ for (const responseStatus of [200, 404, 503]) {
     const { view, counts } = shopFixture({ responseStatus });
     const enabled = responseStatus === 404;
     const button = await view.findByRole("button", {
-      name: enabled ? "Zahlungspflichtig bestellen" : "Bald verfügbar",
+      name:
+        responseStatus === 200
+          ? "Bald verfügbar"
+          : "Zahlungspflichtig bestellen",
     });
-    await waitFor(() => expect(counts().capabilities).toBe(1));
+    await waitFor(() => expect(counts().capabilities).toBeGreaterThan(0));
     await waitFor(() => expect(button.hasAttribute("disabled")).toBe(!enabled));
   });
 }
@@ -441,6 +455,7 @@ function bookingFixture({
   status = "inactive",
   guest = false,
   flow = false,
+  voucherResponse,
 }: {
   price?: number;
   balance?: number;
@@ -448,9 +463,11 @@ function bookingFixture({
   status?: PaymentStatusInput;
   guest?: boolean;
   flow?: boolean;
+  voucherResponse?: (count: number) => Response | Promise<Response>;
 } = {}) {
   challenge();
   let posts = 0;
+  let vouchers = 0;
   const client = createBookingClient({
     baseUrl: "",
     fetch: async (input, init) => {
@@ -467,12 +484,15 @@ function bookingFixture({
               checkout_url: null,
             });
       }
-      if (url.includes("/vouchers/"))
+      if (url.includes("/vouchers/")) {
+        vouchers++;
+        if (voucherResponse) return voucherResponse(vouchers);
         return Response.json({
           voucher_code: "COVER",
           kind: "MULTI_PURPOSE",
           remaining_value: balance,
         });
+      }
       if (url.includes("timewindows"))
         return Response.json({ timewindows: [slot], total: 1 });
       if (url.endsWith("settings")) return Response.json(settings);
@@ -516,7 +536,11 @@ function bookingFixture({
       siteKey: "test",
       onRedirect: () => {},
     };
-    return { view: render(<BookingFlow {...props} />), posts: () => posts };
+    return {
+      view: render(<BookingFlow {...props} />),
+      posts: () => posts,
+      vouchers: () => vouchers,
+    };
   }
   sessionStorage.setItem(
     `vv:booking::5:all:${guest ? "guest" : "account"}`,
@@ -545,6 +569,7 @@ function bookingFixture({
       />,
     ),
     posts: () => posts,
+    vouchers: () => vouchers,
   };
 }
 for (const flow of [false, true]) {
@@ -553,7 +578,10 @@ for (const flow of [false, true]) {
       test(`${flow ? "multi-step" : "compact"} ${guest ? "guest" : "account"} paid booking is gated for ${status}`, async () => {
         const { view, posts } = bookingFixture({ flow, guest, status });
         const button = await view.findByRole("button", {
-          name: "Bald verfügbar",
+          name:
+            status === "inactive"
+              ? "Bald verfügbar"
+              : "Zahlungspflichtig buchen",
         });
         expect(button.hasAttribute("disabled")).toBe(true);
         fireEvent.submit(required(button.closest("form")));
@@ -769,4 +797,236 @@ test("a backend payment rejection is scoped to the selection and survives contac
     await hook.result.current.submit(changed, false, "");
   });
   expect(posts).toBe(2);
+});
+
+for (const credentials of ["omit", "include", "same-origin"] as const) {
+  test(`booking status honors configured credentials ${credentials}`, async () => {
+    let seen: RequestCredentials | undefined;
+    const client = createBookingClient({
+      baseUrl: "",
+      credentials,
+      fetch: async (_url, init) => {
+        seen = init?.credentials;
+        return new Response(null, { status: 404 });
+      },
+    });
+    expect(await client.getPaymentStatus()).toBe("active");
+    expect(seen).toBe(credentials);
+  });
+}
+
+test("a custom booking client without getPaymentStatus keeps legacy active behavior", async () => {
+  const { getPaymentStatus: _removed, ...legacy } = createBookingClient({
+    baseUrl: "",
+  });
+  const client: import("../src/client").BookingClient = legacy;
+  const hook = renderHook(() => usePaymentStatus(client));
+  await waitFor(() => expect(hook.result.current).toBe("active"));
+});
+
+for (const first of ["error", "unknown"] as const) {
+  test(`payment status retries ${first} once with backoff and recovers without remount`, async () => {
+    let calls = 0;
+    const client = {
+      getPaymentStatus: async () =>
+        ++calls === 1 ? first : ("active" as const),
+    };
+    const hook = renderHook(() => usePaymentStatus(client));
+    await waitFor(() => expect(hook.result.current).toBe(first));
+    expect(calls).toBe(1);
+    await waitFor(() => expect(hook.result.current).toBe("active"));
+    expect(calls).toBe(2);
+  });
+}
+
+test("payment status re-reads when entering the final action", async () => {
+  let calls = 0;
+  const client = {
+    getPaymentStatus: async () =>
+      ++calls === 1 ? ("error" as const) : ("active" as const),
+  };
+  const hook = renderHook(
+    ({ final }) => usePaymentStatusControl(client, undefined, final),
+    { initialProps: { final: false } },
+  );
+  await waitFor(() => expect(hook.result.current.status).toBe("error"));
+  hook.rerender({ final: true });
+  await waitFor(() => expect(hook.result.current.status).toBe("active"));
+  expect(calls).toBe(2);
+});
+
+test("checkout exposes a reason and manual retry after bounded status retries fail", async () => {
+  let recover = false;
+  const { view, counts } = shopFixture({
+    statusResponse: () =>
+      recover
+        ? Response.json({
+            online_payments_enabled: true,
+            checkout_label: "Pay",
+          })
+        : new Response(null, { status: 503 }),
+  });
+  const button = await view.findByRole("button", {
+    name: "Zahlungspflichtig bestellen",
+  });
+  const retry = await view.findByRole("button", { name: "Erneut versuchen" });
+  expect(button.hasAttribute("disabled")).toBe(true);
+  const reasonId = button.getAttribute("aria-describedby");
+  expect(reasonId).toBeTruthy();
+  expect(document.getElementById(reasonId ?? "")?.textContent).toContain(
+    "Der Zahlungsstatus konnte nicht geladen werden.",
+  );
+  expect(view.queryByRole("button", { name: "Bald verfügbar" })).toBeNull();
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 850));
+  });
+  const before = counts().capabilities;
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 450));
+  });
+  expect(counts().capabilities).toBe(before);
+  recover = true;
+  fireEvent.click(retry);
+  await waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
+  accept(view);
+  fireEvent.click(button);
+  await waitFor(() => expect(counts().posts).toBe(1));
+});
+
+test("compact voucher typing sends one lookup after a pause and skips short codes", async () => {
+  const { view, vouchers } = bookingFixture({ balance: 0 });
+  const input = await view.findByLabelText(/Gutscheincode/);
+  for (const value of ["C", "CO", "COV", "COVE"])
+    fireEvent.change(input, { target: { value } });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 450));
+  });
+  expect(vouchers()).toBe(0);
+  for (const value of ["COVER", "COVER1", "COVER12", "COVER123"])
+    fireEvent.change(input, { target: { value } });
+  expect(vouchers()).toBe(0);
+  await waitFor(() => expect(vouchers()).toBe(1));
+});
+
+for (const retryBy of ["button", "submit"] as const) {
+  test(`compact booking rechecks a rate-limited voucher on ${retryBy} without editing`, async () => {
+    const { view, vouchers, posts } = bookingFixture({
+      balance: 4900,
+      voucherResponse: (count) =>
+        count === 1
+          ? Response.json(
+              { detail: "Rate limit exceeded: 12/minute" },
+              { status: 429 },
+            )
+          : Response.json({
+              voucher_code: "COVER",
+              kind: "MULTI_PURPOSE",
+              remaining_value: 4900,
+            }),
+    });
+    const retry = await view.findByRole("button", { name: "Erneut versuchen" });
+    expect(vouchers()).toBe(1);
+    fireEvent.click(view.getByRole("checkbox"));
+    if (retryBy === "button") fireEvent.click(retry);
+    else fireEvent.submit(required(view.container.querySelector("form")));
+    if (retryBy === "button") {
+      const button = await view.findByRole("button", {
+        name: "Zahlungspflichtig buchen",
+      });
+      await waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
+      fireEvent.click(button);
+    }
+    await waitFor(() => expect(posts()).toBe(1));
+    expect(vouchers()).toBe(2);
+  });
+}
+
+test("checkout recovers automatically from 503 to 200 without remount", async () => {
+  const { view, counts } = shopFixture({
+    statusResponse: (count) =>
+      count <= 2
+        ? new Response(null, { status: 503 })
+        : Response.json({
+            online_payments_enabled: true,
+            checkout_label: "Pay",
+          }),
+  });
+  const button = await view.findByRole("button", {
+    name: "Zahlungspflichtig bestellen",
+  });
+  await waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
+  expect(counts().capabilities).toBe(3);
+});
+
+test("loading markup is neutral during SSR and shows a visible reason", () => {
+  const client = { getPaymentStatus: async () => "inactive" as const };
+  function Action() {
+    const status = usePaymentStatus(client);
+    return (
+      <>
+        <PaymentNotice
+          id="payment-loading"
+          status={status}
+          blocked
+          retry={() => {}}
+        />
+        <button
+          type="submit"
+          disabled
+          aria-busy={status === "loading"}
+          aria-describedby="payment-loading"
+        >
+          {status === "inactive"
+            ? "Bald verfügbar"
+            : "Zahlungspflichtig buchen"}
+        </button>
+      </>
+    );
+  }
+  const html = renderToString(<Action />);
+  expect(html).not.toContain("Bald verfügbar");
+  expect(html).toContain("Zahlungsstatus wird geladen");
+  expect(html).toContain('aria-busy="true"');
+  expect(html).toContain('aria-describedby="payment-loading"');
+});
+
+test("compact restored vouchers wait for initial payment loading to finish", async () => {
+  const { vouchers } = bookingFixture({ status: "loading", balance: 4900 });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 450));
+  });
+  expect(vouchers()).toBe(0);
+});
+
+test("editing a voucher during its submit retry cancels the obsolete submission", async () => {
+  let release = () => {};
+  const wait = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const { view, vouchers, posts } = bookingFixture({
+    balance: 4900,
+    voucherResponse: async (count) => {
+      if (count === 1)
+        return Response.json({ detail: "Failed" }, { status: 503 });
+      if (count === 2) await wait;
+      return Response.json({
+        voucher_code: "COVER",
+        kind: "MULTI_PURPOSE",
+        remaining_value: 4900,
+      });
+    },
+  });
+  await view.findByRole("button", { name: "Erneut versuchen" });
+  fireEvent.click(view.getByRole("checkbox"));
+  fireEvent.submit(required(view.container.querySelector("form")));
+  await waitFor(() => expect(vouchers()).toBe(2));
+  fireEvent.change(view.getByLabelText(/Gutscheincode/), {
+    target: { value: "OTHER" },
+  });
+  await act(async () => {
+    release();
+  });
+  expect(posts()).toBe(0);
+  await waitFor(() => expect(vouchers()).toBe(3));
+  expect(posts()).toBe(0);
 });

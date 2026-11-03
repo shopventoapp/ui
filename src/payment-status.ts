@@ -41,6 +41,7 @@ export async function loadPaymentStatus(
   fetcher: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
   baseUrl: string,
   signal?: AbortSignal,
+  credentials: RequestCredentials = "include",
 ): Promise<PaymentStatus> {
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -53,7 +54,7 @@ export async function loadPaymentStatus(
         const response = await fetcher(
           `${baseUrl.replace(/\/+$/, "")}/api/shop/payments/status`,
           {
-            credentials: "include",
+            credentials,
             cache: "no-store",
             signal: controller.signal,
             headers: { Accept: "application/json" },

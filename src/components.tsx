@@ -37,7 +37,8 @@ import {
   useMessages,
   useShopventoLocale,
 } from "./locale";
-import { usePaymentStatus } from "./payment-hooks";
+import { usePaymentStatusControl } from "./payment-hooks";
+import { PaymentNotice } from "./payment-notice";
 import {
   type PaymentStatusInput,
   paymentActionBlocked,
@@ -435,22 +436,32 @@ function EventBookingContent(props: EventBookingProps) {
       props.onRedirect ?? ((url) => window.location.assign(url)),
       props.checkoutHosts,
     );
-  const paymentStatus = usePaymentStatus(client, props.paymentStatus);
+  const { status: paymentStatus, retry: retryPaymentStatus } =
+    usePaymentStatusControl(client, props.paymentStatus, true);
+  const paymentNoticeId = useId();
   const paymentText = useMessages("payment");
-  const payable = useBookingPayable(
+  const voucherPayment = useBookingPayable(
     client,
     draft.seats,
     data?.variants ?? [],
-    paymentStatus === "active",
+    paymentStatus !== "active" && paymentStatus !== "loading",
   );
   const paymentBlocked =
-    paymentActionBlocked(paymentStatus, payable) || paymentRejected(draft);
+    paymentActionBlocked(paymentStatus, voucherPayment.payable) ||
+    paymentRejected(draft);
   const [consent, setConsent] = useState(false);
   const [token, setToken] = useState("");
   const [challenge, setChallenge] = useState(0);
   const [validation, setValidation] = useState<string | null>(null);
   const [validationAttempt, setValidationAttempt] = useState(0);
   const [now, setNow] = useState(Date.now);
+  const currentPayment = useRef({
+    status: paymentStatus,
+    draft,
+    consent,
+    token,
+  });
+  currentPayment.current = { status: paymentStatus, draft, consent, token };
   const alert = useRef<HTMLParagraphElement>(null);
   const guest = (props.mode ?? "guest") === "guest";
   const message = validation ?? error;
@@ -479,7 +490,33 @@ function EventBookingContent(props: EventBookingProps) {
     event.preventDefault();
     setValidationAttempt((attempt) => attempt + 1);
     setValidation(null);
-    if (!data || pending || result || paymentBlocked) return;
+    if (
+      !data ||
+      pending ||
+      voucherPayment.checking ||
+      result ||
+      paymentRejected(draft)
+    )
+      return;
+    let payable = voucherPayment.payable;
+    if (voucherPayment.failed) {
+      payable = await voucherPayment.retry();
+      if (
+        payable === null ||
+        currentPayment.current.draft !== draft ||
+        currentPayment.current.consent !== consent ||
+        currentPayment.current.token !== token
+      )
+        return;
+    }
+    if (paymentActionBlocked(currentPayment.current.status, payable)) {
+      if (
+        props.paymentStatus === undefined &&
+        (paymentStatus === "error" || paymentStatus === "unknown")
+      )
+        retryPaymentStatus();
+      return;
+    }
     const slot = data.windows.find(
       (w) => w.timewindow_id === draft.timewindow_id,
     );
@@ -664,8 +701,43 @@ function EventBookingContent(props: EventBookingProps) {
           {message}
         </p>
       )}
-      <button type="submit" disabled={pending || paymentBlocked}>
-        {paymentBlocked
+      <PaymentNotice
+        id={paymentNoticeId}
+        status={paymentStatus}
+        blocked={paymentBlocked}
+        retry={retryPaymentStatus}
+      />
+      {voucherPayment.failed && (
+        <div role="status">
+          <p>
+            {paymentText(
+              "Der Gutschein konnte nicht geprüft werden. Bitte versuche es erneut.",
+            )}
+          </p>
+          <button
+            type="button"
+            disabled={voucherPayment.checking}
+            onClick={() => {
+              void voucherPayment.retry();
+            }}
+          >
+            {paymentText("Erneut versuchen")}
+          </button>
+        </div>
+      )}
+      <button
+        type="submit"
+        disabled={pending || voucherPayment.checking || paymentBlocked}
+        aria-busy={
+          paymentStatus === "loading" || voucherPayment.checking || pending
+        }
+        aria-describedby={
+          paymentBlocked && paymentStatus !== "active"
+            ? paymentNoticeId
+            : undefined
+        }
+      >
+        {paymentBlocked && paymentStatus === "inactive"
           ? paymentText("Bald verfügbar")
           : pending
             ? text("Deine Buchung wird gesendet…")

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { AccountClient, AccountProfile } from "./account-client";
 import { AccountAccess } from "./account-entry";
 import { type BookingLabels, mergeBookingLabels } from "./booking-labels";
@@ -39,7 +39,8 @@ import {
   useMessages,
   useShopventoLocale,
 } from "./locale";
-import { usePaymentStatus } from "./payment-hooks";
+import { usePaymentStatusControl } from "./payment-hooks";
+import { PaymentNotice } from "./payment-notice";
 import {
   type PaymentStatusInput,
   paymentActionBlocked,
@@ -428,7 +429,9 @@ function BookingFlowContent({
   const text = useMessages("booking");
 
   const copy = mergeBookingLabels(labels, options);
-  const paymentStatus = usePaymentStatus(client, suppliedPaymentStatus);
+  const { status: paymentStatus, retry: retryPaymentStatus } =
+    usePaymentStatusControl(client, suppliedPaymentStatus, step === 3);
+  const paymentNoticeId = useId();
   const paymentText = useMessages("payment");
   const [changingDate, setChangingDate] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -839,7 +842,14 @@ function BookingFlowContent({
     }
   };
   const finish = async () => {
-    if (paymentBlocked) return;
+    if (paymentBlocked) {
+      if (
+        suppliedPaymentStatus === undefined &&
+        (paymentStatus === "error" || paymentStatus === "unknown")
+      )
+        retryPaymentStatus();
+      return;
+    }
     const e = { ...seatErrors(), ...contactErrors() };
     if (!consent)
       e.consent = text("Bitte bestätige die Bedingungen und den Datenschutz.");
@@ -1685,9 +1695,23 @@ function BookingFlowContent({
                         <p className="error-text">{errors.security}</p>
                       )}
                     </div>
+                    <PaymentNotice
+                      id={paymentNoticeId}
+                      status={paymentStatus}
+                      blocked={paymentBlocked}
+                      retry={retryPaymentStatus}
+                    />
                     <button
                       className="btn btn-primary btn-block"
                       type="submit"
+                      aria-busy={
+                        paymentStatus === "loading" || submission.pending
+                      }
+                      aria-describedby={
+                        paymentBlocked && paymentStatus !== "active"
+                          ? paymentNoticeId
+                          : undefined
+                      }
                       disabled={
                         paymentBlocked ||
                         submission.pending ||
@@ -1696,7 +1720,7 @@ function BookingFlowContent({
                         !!submission.result
                       }
                     >
-                      {paymentBlocked
+                      {paymentBlocked && paymentStatus === "inactive"
                         ? paymentText("Bald verfügbar")
                         : submission.pending
                           ? text("Einen Moment")

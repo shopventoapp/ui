@@ -560,3 +560,65 @@ test.each(["de", "en"])(
     expect(posts[0]).toMatchObject({ date: "2027-01-04", time: "22:30" });
   },
 );
+
+test("a fully closed date with a timed closure shows the date error for a valid time", async () => {
+  challenge();
+  let posts = 0;
+  globalThis.fetch = (async (url, init) => {
+    if (String(url).includes("settings"))
+      return Response.json({
+        ready: true,
+        turnstile_site_key: "test",
+        online_party_min: 2,
+        online_party_max: 8,
+        opening_exceptions: [
+          { from: "2027-01-04", until: "2027-01-04", label: "Ruhetag" },
+          {
+            from: "2027-01-04",
+            until: "2027-01-04",
+            closed_from: "2027-01-04T17:00",
+            closed_until: "2027-01-04T22:30",
+          },
+        ],
+      });
+    if (init?.method === "POST") posts++;
+    return Response.json({ status: "confirmed" });
+  }) as typeof fetch;
+  const view = render(
+    <ReservationForm
+      siteKey="test"
+      publicApi={publicApi}
+      ScriptComponent={ScriptComponent}
+      accountEnabled={false}
+    />,
+  );
+  await waitFor(() =>
+    expect(view.container.querySelectorAll("#resv-guests option").length).toBe(
+      8,
+    ),
+  );
+  for (const [id, value] of [
+    ["#resv-name", "Alex Guest"],
+    ["#resv-email", "alex@example.invalid"],
+    ["#resv-date", "04012027"],
+    ["#resv-time", "1200"],
+  ]) {
+    const input = view.container.querySelector(id);
+    if (!input) throw new Error(`Missing input: ${id}`);
+    fireEvent.change(input, { target: { value } });
+  }
+  const form = view.container.querySelector("form");
+  if (!form) throw new Error("Missing reservation form");
+  fireEvent.submit(form);
+  expect(
+    view.container.querySelector("#resv-date")?.getAttribute("aria-invalid"),
+  ).toBe("true");
+  expect(
+    view.container.querySelector("#resv-time")?.getAttribute("aria-invalid"),
+  ).not.toBe("true");
+  expect(view.container.textContent).toContain("haben wir geschlossen");
+  expect(view.container.textContent).not.toContain(
+    "Bitte gib eine gültige Uhrzeit ein.",
+  );
+  expect(posts).toBe(0);
+});

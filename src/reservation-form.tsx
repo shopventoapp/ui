@@ -257,22 +257,21 @@ function ReservationFormContent({
     timeMalformed && (submitted || (timeTouched && Boolean(timeValue)))
       ? text("Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.")
       : timeInvalid && timeTouched && selectedClosure
-      ? text(
-          "Zu dieser Zeit ist geschlossen.{0} Bitte wähle eine andere Uhrzeit.",
-          selectedClosure.label ? ` (${selectedClosure.label})` : "",
-        )
-
-      : timeInvalid && timeTouched && opening?.kind === "open"
         ? text(
-            "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
-            locale.startsWith("de")
-              ? opening.opens
-              : localeTime(opening.opens, locale),
-            locale.startsWith("de")
-              ? opening.closes
-              : localeTime(opening.closes, locale),
+            "Zu dieser Zeit ist geschlossen.{0} Bitte wähle eine andere Uhrzeit.",
+            selectedClosure.label ? ` (${selectedClosure.label})` : "",
           )
-        : null;
+        : timeInvalid && timeTouched && opening?.kind === "open"
+          ? text(
+              "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
+              locale.startsWith("de")
+                ? opening.opens
+                : localeTime(opening.opens, locale),
+              locale.startsWith("de")
+                ? opening.closes
+                : localeTime(opening.closes, locale),
+            )
+          : null;
   const fieldMessageStyle: React.CSSProperties = {
     fontFamily: "var(--sv-font, Georgia, serif)",
     fontSize: 14,

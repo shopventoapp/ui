@@ -17,14 +17,27 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Added
 
-- Tenant payment-status gating for shop checkout and both event-booking forms, with host capability/state props or uncached client loading, exact `Bald verfügbar` disabled labels and guest/account/retry guards. Only a missing status endpoint (404) uses legacy active behavior; loading, unknown, malformed responses and other errors block paid actions.
+- Tenant payment-status gating for shop checkout and both event-booking forms, with host capability/state props or uncached client loading and guest/account/retry guards. `Bald verfügbar` is reserved for inactive payments; loading stays neutral, and failed status reads offer retry.
 - Zero-payable backend cart quotes, estimated fully voucher-funded/free event bookings and free table reservations remain usable without card payments. Event bookings use public voucher allocation estimates because there is no booking quote endpoint; backend payment-unavailable rejections show their message and lock retries for that exact selection.
-
 - Timed private-event opening exceptions preserve outside-window reservations, including buffered closures across midnight, with localized closure notices and focused time validation. Legacy all-day closures and replacement opening hours remain compatible.
-
 - English static documentation with integration guides, TypeDoc component/type reference and a locally bundled read-only Shop API reference.
 - Typechecked source and built-package examples, a host-owned session proxy recipe, a public OpenAPI exporter and static link checks.
 - SHA-pinned GitHub Pages workflow for main and version tags.
+
+### Fixed
+
+- Retry transient payment-status failures once with backoff, refresh on entering checkout or the booking summary, and expose an explicit retry with a visible disabled-action reason.
+- Debounce compact booking voucher lookups, skip incomplete codes and reuse successful checks; failed checks can be retried without editing the code and are rechecked on submit.
+- Honor booking credentials for status reads, match backend timed-closure detection using only `closed_from`, and preserve the closed-date message when timed closures overlap.
+
+### Changed
+
+- Without a host `paymentStatus` prop, shop and booking forms automatically request `/api/shop/payments/status` on mount. Paid actions are disabled while loading, on errors and unknown responses, or when inactive; zero-payable actions remain available.
+
+### Compatibility
+
+- Both client factories expose `getPaymentStatus`; it is optional on custom `BookingClient` implementations. A missing method or a 404 endpoint retains legacy active behavior.
+- `useSubmitBooking` adds `paymentRejected`, and `OpeningWindow` adds optional `closures`. `bookingVoucherAllocation` moved to a shared module and remains exported from the package root.
 
 ## [0.4.0] - 2026-10-31
 
