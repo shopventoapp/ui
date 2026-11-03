@@ -17,6 +17,9 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Added
 
+- Tenant payment-status gating for shop checkout and both event-booking forms, with host capability/state props or uncached client loading, exact `Bald verfügbar` disabled labels and guest/account/retry guards. Only a missing status endpoint (404) uses legacy active behavior; loading, unknown, malformed responses and other errors block paid actions.
+- Zero-payable backend cart quotes, estimated fully voucher-funded/free event bookings and free table reservations remain usable without card payments. Event bookings use public voucher allocation estimates because there is no booking quote endpoint; backend payment-unavailable rejections show their message and lock retries for that exact selection.
+
 - Timed private-event opening exceptions preserve outside-window reservations, including buffered closures across midnight, with localized closure notices and focused time validation. Legacy all-day closures and replacement opening hours remain compatible.
 
 - English static documentation with integration guides, TypeDoc component/type reference and a locally bundled read-only Shop API reference.

@@ -19,6 +19,7 @@ import {
 } from "./locale";
 import type { NewsletterSignupProps } from "./newsletter-signup";
 import { NewsletterSignup } from "./newsletter-signup";
+import type { PaymentStatusInput } from "./payment-status";
 import { createShopClient } from "./shop-client";
 import type { ShopProduct } from "./shop-components";
 import {
@@ -143,6 +144,8 @@ export interface ShopFlowProps extends LocaleOptions {
   accountEnabled?: boolean;
   /** Enable links to events. */
   eventsEnabled?: boolean;
+  /** Host payment capability or state; omitted loads /api/shop/payments/status. */
+  paymentStatus?: PaymentStatusInput;
   /** Browse-only mode. */
   paused?: boolean;
   /** Public Turnstile fallback key, overridden by shop settings. */
@@ -299,6 +302,8 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
         ((target: string) => window.location.assign(target))
       )(/^https?:\/\//i.test(path) ? path : resolveHref(path)),
     client: config.client || defaultClient,
+    paymentStatus: config.paymentStatus,
+    paymentUnavailableLabel: paymentText("Bald verfügbar"),
     accountClient,
     dashboardClient,
     newsletterAdapter: profileNewsletterAdapter(dashboardClient, () =>

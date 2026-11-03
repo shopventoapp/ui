@@ -1,5 +1,8 @@
 /** German booking messages define every translation key. */
 export const defaultBookingMessages = Object.freeze({
+  /** Tenant payments are unavailable. */
+  "Bald verfügbar: Online-Zahlungen sind derzeit nicht freigeschaltet. Bitte versuche es später erneut.":
+    "Bald verfügbar: Online-Zahlungen sind derzeit nicht freigeschaltet. Bitte versuche es später erneut.",
   /** {0}, {1} */
   "{0}, {1} Uhr": "{0}, {1} Uhr",
   /** Date */
@@ -557,6 +560,9 @@ export const defaultBookingMessages = Object.freeze({
 export const englishBookingMessages: {
   [K in keyof typeof defaultBookingMessages]: string;
 } = Object.freeze({
+  /** Tenant payments are unavailable. */
+  "Bald verfügbar: Online-Zahlungen sind derzeit nicht freigeschaltet. Bitte versuche es später erneut.":
+    "Coming soon: online payments are currently unavailable. Please try again later.",
   /** {0}, {1} */
   "{0}, {1} Uhr": "{0}, {1}",
   /** Date */

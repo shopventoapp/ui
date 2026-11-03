@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { type BookingLabels, mergeBookingLabels } from "./booking-labels";
+import { useBookingPayable } from "./booking-payment";
 import {
   type BookingClient,
   type ClientOptions,
@@ -36,6 +37,11 @@ import {
   useMessages,
   useShopventoLocale,
 } from "./locale";
+import { usePaymentStatus } from "./payment-hooks";
+import {
+  type PaymentStatusInput,
+  paymentActionBlocked,
+} from "./payment-status";
 import { Turnstile } from "./turnstile";
 
 function slotLabel(slot: Timewindow, options: LocaleOptions = {}) {
@@ -363,6 +369,8 @@ export function BookingSummary({
 }
 /** Host configuration for the compact booking form. */
 export interface EventBookingOptions extends ClientOptions, LocaleOptions {
+  /** Host payment capability or state; omitted loads /api/shop/payments/status. */
+  paymentStatus?: PaymentStatusInput;
   /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
   /** Positive installation location identifier used to filter availability. Optional; omitted unless supplied by the host or backend. */
@@ -421,11 +429,22 @@ function EventBookingContent(props: EventBookingProps) {
   const { draft, setDraft, ready, clear } = useBookingDraft(
     `vv:booking:${props.baseUrl}:${eventId}:${props.locationId ?? "all"}:${props.mode ?? "guest"}`,
   );
-  const { submit, pending, error, fieldErrors, result } = useSubmitBooking(
+  const { submit, pending, error, fieldErrors, result, paymentRejected } =
+    useSubmitBooking(
+      client,
+      props.onRedirect ?? ((url) => window.location.assign(url)),
+      props.checkoutHosts,
+    );
+  const paymentStatus = usePaymentStatus(client, props.paymentStatus);
+  const paymentText = useMessages("payment");
+  const payable = useBookingPayable(
     client,
-    props.onRedirect ?? ((url) => window.location.assign(url)),
-    props.checkoutHosts,
+    draft.seats,
+    data?.variants ?? [],
+    paymentStatus === "active",
   );
+  const paymentBlocked =
+    paymentActionBlocked(paymentStatus, payable) || paymentRejected(draft);
   const [consent, setConsent] = useState(false);
   const [token, setToken] = useState("");
   const [challenge, setChallenge] = useState(0);
@@ -460,7 +479,7 @@ function EventBookingContent(props: EventBookingProps) {
     event.preventDefault();
     setValidationAttempt((attempt) => attempt + 1);
     setValidation(null);
-    if (!data || pending || result) return;
+    if (!data || pending || result || paymentBlocked) return;
     const slot = data.windows.find(
       (w) => w.timewindow_id === draft.timewindow_id,
     );
@@ -645,10 +664,12 @@ function EventBookingContent(props: EventBookingProps) {
           {message}
         </p>
       )}
-      <button type="submit" disabled={pending}>
-        {pending
-          ? text("Deine Buchung wird gesendet…")
-          : text("Zahlungspflichtig buchen")}
+      <button type="submit" disabled={pending || paymentBlocked}>
+        {paymentBlocked
+          ? paymentText("Bald verfügbar")
+          : pending
+            ? text("Deine Buchung wird gesendet…")
+            : text("Zahlungspflichtig buchen")}
       </button>
     </form>
   );

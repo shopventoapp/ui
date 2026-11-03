@@ -113,6 +113,7 @@ async function account(options: Parameters<typeof fixture>[0] = {}) {
   const redirect = mock();
   render(
     <EventBooking
+      paymentStatus="active"
       baseUrl="https://api.example"
       eventId={1}
       mode="account"
@@ -268,6 +269,7 @@ describe("booking flow", () => {
     const { client } = fixture(flags);
     render(
       <EventBooking
+        paymentStatus="active"
         baseUrl="https://api.example"
         eventId={1}
         client={client}
@@ -298,6 +300,7 @@ describe("booking flow", () => {
     Object.assign(window, { turnstile: provider });
     render(
       <EventBooking
+        paymentStatus="active"
         baseUrl="https://api.example"
         eventId={1}
         client={client}
@@ -414,6 +417,7 @@ describe("draft and returns", () => {
     expect(
       renderToString(
         <EventBooking
+          paymentStatus="active"
           baseUrl="https://api.example"
           eventId={1}
           termsUrl="/terms"
@@ -495,6 +499,7 @@ describe("review regressions", () => {
     });
     render(
       <EventBooking
+        paymentStatus="active"
         baseUrl="https://api.example"
         eventId={1}
         locationId={3}
@@ -582,6 +587,7 @@ describe("review regressions", () => {
     const { client } = fixture();
     render(
       <EventBooking
+        paymentStatus="active"
         baseUrl="https://api.example"
         eventId={1}
         mode="account"
@@ -661,6 +667,7 @@ test("callback identity changes preserve a loaded form and use refreshed authent
   };
   const view = render(
     <EventBooking
+      paymentStatus="active"
       {...props}
       fetch={(...args) => fetcher(...args)}
       getAccessToken={() => "old"}
@@ -675,6 +682,7 @@ test("callback identity changes preserve a loaded form and use refreshed authent
   const count = fetcher.mock.calls.length;
   view.rerender(
     <EventBooking
+      paymentStatus="active"
       {...props}
       fetch={(...args) => fetcher(...args)}
       getAccessToken={async () => "fresh"}
@@ -1012,11 +1020,13 @@ test("event booking rerenders preserve the loaded form and stored drafts", async
     termsUrl: "/terms",
     privacyUrl: "/privacy",
   };
-  const view = render(<EventBooking {...props} eventId={1} />);
+  const view = render(
+    <EventBooking paymentStatus="active" {...props} eventId={1} />,
+  );
   const picker = await screen.findByLabelText("Termin");
   fireEvent.change(picker, { target: { value: slot.timewindow_id } });
   const before = view.container.innerHTML;
-  view.rerender(<EventBooking {...props} eventId={1} />);
+  view.rerender(<EventBooking paymentStatus="active" {...props} eventId={1} />);
   expect(view.container.innerHTML).toBe(before);
   expect(fetcher.mock.calls).toHaveLength(4);
   expect(
@@ -1054,6 +1064,7 @@ test.each([
     const { client } = fixture(options);
     render(
       <EventBooking
+        paymentStatus="active"
         baseUrl="https://api.example"
         client={client}
         eventId={1}
@@ -1070,6 +1081,7 @@ test("booking loading label is overridable during server rendering", () => {
   expect(
     renderToString(
       <EventBooking
+        paymentStatus="active"
         baseUrl="https://api.example"
         eventId={1}
         termsUrl="/terms"
@@ -1084,6 +1096,7 @@ test("undefined booking loading label keeps the default", () => {
   expect(
     renderToString(
       <EventBooking
+        paymentStatus="active"
         baseUrl="https://api.example"
         eventId={1}
         termsUrl="/terms"

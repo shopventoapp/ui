@@ -1,9 +1,14 @@
 "use client";
-import { EventBooking } from "@shopvento/ui";
+import { EventBooking, type PaymentStatusInput } from "@shopvento/ui";
 
-export function EventBookingExample() {
+export function EventBookingExample({
+  paymentStatus,
+}: {
+  paymentStatus?: PaymentStatusInput;
+} = {}) {
   return (
     <EventBooking
+      paymentStatus={paymentStatus}
       baseUrl="https://your-installation.shopvento.app"
       eventId={123}
       locationId={1}

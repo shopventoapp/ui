@@ -124,6 +124,7 @@ test("legacy lookup 404 keeps the code pending and advancing retains the draft",
   let step = 0;
   render(
     <BookingFlow
+      paymentStatus="active"
       client={client}
       data={data}
       draftKey="draft"
@@ -173,6 +174,7 @@ test("account submit includes notes, saves result before Stripe and keeps draft 
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       client={client}
       data={data}
       draftKey="draft"
@@ -232,6 +234,7 @@ test("mixed variants keep per-seat allocation while quantities change", async ()
   startFlowDraft("mixed", slot.timewindow_id, 2, "v1");
   render(
     <BookingFlow
+      paymentStatus="active"
       client={createBookingClient({ baseUrl: "https://example.invalid" })}
       data={mixed}
       draftKey="mixed"
@@ -414,6 +417,7 @@ test("untrusted checkout hosts cannot leave a result snapshot", async () => {
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       client={client}
       data={data}
       draftKey="unsafe"
@@ -460,6 +464,7 @@ test("availability conflict reloads the calendar and keeps customer input", asyn
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       client={client}
       data={data}
       draftKey="conflict"
@@ -522,6 +527,7 @@ test("unlicensed direct and guest booking still allow voucher progress", async (
   let step = 1;
   render(
     <BookingFlow
+      paymentStatus="active"
       client={client}
       data={{
         ...data,
@@ -562,6 +568,7 @@ for (const guestAllowed of [true, false]) {
     startFlowDraft("account-errors", slot.timewindow_id, 1, "v1");
     render(
       <BookingFlow
+        paymentStatus="active"
         client={createBookingClient({ baseUrl: "https://example.invalid" })}
         data={{
           ...data,
@@ -608,14 +615,22 @@ test("voucher link prefills the first step without accepting injected markup", a
     texts,
   };
   const view = render(
-    <BookingFlow {...props} initialVoucherCode="AB1234-CD" />,
+    <BookingFlow
+      paymentStatus="active"
+      {...props}
+      initialVoucherCode="AB1234-CD"
+    />,
   );
   expect(
     ((await screen.findByLabelText("Gutscheincode")) as HTMLInputElement).value,
   ).toBe("AB1234-CD");
   view.unmount();
   render(
-    <BookingFlow {...props} initialVoucherCode={"<script>alert(1)</script>"} />,
+    <BookingFlow
+      paymentStatus="active"
+      {...props}
+      initialVoucherCode={"<script>alert(1)</script>"}
+    />,
   );
   expect(
     ((await screen.findByLabelText("Gutscheincode")) as HTMLInputElement).value,
@@ -642,6 +657,7 @@ test("direct booking blocks an unapplied prefilled voucher until the field is cl
   const steps: number[] = [];
   render(
     <BookingFlow
+      paymentStatus="active"
       client={createBookingClient({ baseUrl: "https://example.invalid" })}
       data={data}
       draftKey="draft"

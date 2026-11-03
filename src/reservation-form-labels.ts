@@ -16,9 +16,12 @@ export const defaultReservationLabels = Object.freeze({
   "Bitte gib ein gültiges Datum ein.": "Bitte gib ein gültiges Datum ein.",
   /** We are closed on {0}.{1} */
   "Geschlossen von {0} bis {1} Uhr.{2}": "Geschlossen von {0} bis {1} Uhr.{2}",
+  /** Selected time overlaps a closure; {0} is an optional reason. */
   "Zu dieser Zeit ist geschlossen.{0} Bitte wähle eine andere Uhrzeit.":
     "Zu dieser Zeit ist geschlossen.{0} Bitte wähle eine andere Uhrzeit.",
+  /** The time input is invalid. */
   "Bitte gib eine gültige Uhrzeit ein.": "Bitte gib eine gültige Uhrzeit ein.",
+  /** Date closure notice; {0} is the date and {1} the optional reason. */
   "Am {0} haben wir geschlossen.{1}": "Am {0} haben wir geschlossen.{1}",
   /** Reservations from {0} until before {1}. */
   "Reservierungen ab {0} Uhr bis vor {1} Uhr.":

@@ -24,8 +24,10 @@ export const englishFormsMessages: {
   /** Please enter the date as {0}. */
   "Bitte gib das Datum als {0} ein.": "Please enter the date as {0}.",
 });
-/** Payment method names, independent of checkout presentation. */
+/** Payment actions and method names, independent of checkout presentation. */
 export const defaultPaymentMessages = Object.freeze({
+  /** Disabled paid action label. */
+  "Bald verfügbar": "Bald verfügbar",
   /** Credit card */
   Kreditkarte: "Kreditkarte",
   /** Debit card */
@@ -35,6 +37,8 @@ export const defaultPaymentMessages = Object.freeze({
 export const englishPaymentMessages: {
   [K in keyof typeof defaultPaymentMessages]: string;
 } = Object.freeze({
+  /** Disabled paid action label, fixed by the payment gate contract. */
+  "Bald verfügbar": "Bald verfügbar",
   /** Credit card */
   Kreditkarte: "Credit card" /** Debit card */,
   Debitkarte: "Debit card",

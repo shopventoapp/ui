@@ -4,6 +4,7 @@ import type { AccountClient, AccountProfile } from "./account-client";
 import { AccountAccess } from "./account-entry";
 import { type BookingLabels, mergeBookingLabels } from "./booking-labels";
 import { writeBookingResult } from "./booking-storage";
+import { bookingVoucherAllocation } from "./booking-voucher-allocation";
 import {
   AvailabilityBadge,
   availability,
@@ -38,6 +39,11 @@ import {
   useMessages,
   useShopventoLocale,
 } from "./locale";
+import { usePaymentStatus } from "./payment-hooks";
+import {
+  type PaymentStatusInput,
+  paymentActionBlocked,
+} from "./payment-status";
 import { Turnstile } from "./turnstile";
 /** Tab-scoped booking draft. Phone, consent and challenge tokens are not persisted. */
 export interface FlowDraft {
@@ -314,72 +320,7 @@ export function voucherProblem(
     return text("Dieser Gutschein gilt nicht für diesen Standort.");
   return null;
 }
-/** Apply checked event vouchers to assigned seats, then value vouchers in submission order. Backend totals remain authoritative.
- * @param seatPrices - Per-seat prices in integer cents.
- * @param orderedCodes - Voucher codes in submission order.
- * @param checks - Public lookup results keyed by voucher code. */
-export function bookingVoucherAllocation(
-  seatPrices: readonly number[],
-  orderedCodes: readonly string[],
-  checks: Readonly<Record<string, VoucherCheck>>,
-) {
-  const remaining = [...seatPrices];
-  const deductions = orderedCodes.map((code) => ({
-    /** Voucher code used for this deduction. */
-    code,
-    /** Amount deducted in integer cents. */
-    amount: 0,
-  }));
-  let pending = false;
-  for (const [index, code] of orderedCodes.entries()) {
-    const check = checks[code];
-    if (!check || check.pending) {
-      pending = true;
-      continue;
-    }
-    if (check.kind === "SINGLE_PURPOSE") {
-      const amount = Math.min(
-        Math.max(0, check.remaining_value ?? 0),
-        remaining[index] ?? 0,
-      );
-      deductions[index].amount = amount;
-      if (index < remaining.length) remaining[index] -= amount;
-    }
-  }
-  for (const [index, code] of orderedCodes.entries()) {
-    const check = checks[code];
-    if (!check || check.pending || check.kind === "SINGLE_PURPOSE") continue;
-    let balance = Math.max(0, check.remaining_value ?? 0);
-    for (let seat = 0; seat < remaining.length && balance > 0; seat++) {
-      const amount = Math.min(balance, remaining[seat]);
-      remaining[seat] -= amount;
-      balance -= amount;
-      deductions[index].amount += amount;
-    }
-  }
-  let amountToPay = remaining.reduce((sum, amount) => sum + amount, 0);
-  if (amountToPay > 0 && amountToPay < 50) {
-    // Release value-voucher funding in reverse order for Stripe's minimum charge.
-    for (
-      let index = deductions.length - 1;
-      index >= 0 && amountToPay < 50;
-      index--
-    ) {
-      if (checks[deductions[index].code]?.kind === "SINGLE_PURPOSE") continue;
-      const released = Math.min(deductions[index].amount, 50 - amountToPay);
-      deductions[index].amount -= released;
-      amountToPay += released;
-    }
-  }
-  return {
-    /** Deductions returned by bookingVoucherAllocation. */
-    deductions,
-    /** Whether booking submission is in progress. */
-    pending,
-    /** Amount to pay returned by bookingVoucherAllocation. */
-    amountToPay,
-  };
-}
+export { bookingVoucherAllocation } from "./booking-voucher-allocation";
 /** Bound untrusted URL input before placing it in a controlled text field. */
 export function voucherCodeFromQuery(value: string | null | undefined): string {
   return value &&
@@ -390,6 +331,8 @@ export function voucherCodeFromQuery(value: string | null | undefined): string {
 }
 /** Host routing, session, availability and copy needed by the multi-step booking flow. */
 export interface BookingFlowProps extends LocaleOptions {
+  /** Host payment capability or state; omitted loads /api/shop/payments/status. */
+  paymentStatus?: PaymentStatusInput;
   /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
   /** Optional prefilled voucher code; still checked by the backend. Optional; omitted unless supplied by the host or backend. */
@@ -451,6 +394,7 @@ export interface BookingFlowProps extends LocaleOptions {
 }
 /** Render the host-routed booking steps with account access, vouchers, review and submission. */
 function BookingFlowContent({
+  paymentStatus: suppliedPaymentStatus,
   labels,
   initialVoucherCode,
   client,
@@ -484,6 +428,8 @@ function BookingFlowContent({
   const text = useMessages("booking");
 
   const copy = mergeBookingLabels(labels, options);
+  const paymentStatus = usePaymentStatus(client, suppliedPaymentStatus);
+  const paymentText = useMessages("payment");
   const [changingDate, setChangingDate] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [draft, setDraft] = useState<FlowDraft | null>(null);
@@ -721,6 +667,16 @@ function BookingFlowContent({
     orderedCodes,
     checks,
   );
+  const paymentDraft = {
+    timewindow_id: draft.windowId,
+    seats: orderedSeats.map((seat, index) => ({
+      ...seat,
+      ...(orderedCodes[index] ? { voucher_code: orderedCodes[index] } : {}),
+    })),
+  };
+  const paymentBlocked =
+    paymentActionBlocked(paymentStatus, allocation.amountToPay) ||
+    submission.paymentRejected(paymentDraft);
   const guestAllowed =
     data.settings.guest_booking_enabled && data.settings.direct_booking_enabled;
   const mode = bookingMode(data.settings);
@@ -883,6 +839,7 @@ function BookingFlowContent({
     }
   };
   const finish = async () => {
+    if (paymentBlocked) return;
     const e = { ...seatErrors(), ...contactErrors() };
     if (!consent)
       e.consent = text("Bitte bestätige die Bedingungen und den Datenschutz.");
@@ -894,14 +851,10 @@ function BookingFlowContent({
       setFocusErrors((n) => n + 1);
       return;
     }
-    const seats = orderedSeats.map((s, i) => ({
-      ...s,
-      ...(orderedCodes[i] ? { voucher_code: orderedCodes[i] } : {}),
-    }));
     const response = await submission.submit(
       {
         timewindow_id: draft.windowId,
-        seats,
+        seats: paymentDraft.seats,
         contact: {
           ...draft.contact,
           ...contact,
@@ -1736,15 +1689,18 @@ function BookingFlowContent({
                       className="btn btn-primary btn-block"
                       type="submit"
                       disabled={
+                        paymentBlocked ||
                         submission.pending ||
                         mode === "paused" ||
                         !a.bookable ||
                         !!submission.result
                       }
                     >
-                      {submission.pending
-                        ? text("Einen Moment")
-                        : text("Zahlungspflichtig buchen")}
+                      {paymentBlocked
+                        ? paymentText("Bald verfügbar")
+                        : submission.pending
+                          ? text("Einen Moment")
+                          : text("Zahlungspflichtig buchen")}
                     </button>
                     <p className="pay-note">
                       {draft.codes.length

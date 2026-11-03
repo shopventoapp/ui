@@ -162,6 +162,7 @@ for (const destination of [
     );
     const view = render(
       <ShopFlow
+        paymentStatus="active"
         client={client}
         accountClient={accountClient}
         dashboardClient={createDashboardClient({

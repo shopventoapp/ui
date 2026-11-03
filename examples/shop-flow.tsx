@@ -1,7 +1,7 @@
 "use client";
 import { defaultCategoryKey, defaultShopProduct } from "@shopvento/ui";
 import { NewsletterSignup, ReservationForm } from "@shopvento/ui/forms";
-import { ShopFlow } from "@shopvento/ui/shop-flow";
+import { type PaymentStatusInput, ShopFlow } from "@shopvento/ui/shop-flow";
 
 const publicApi = async () => ({ shopvento: true, locationId: 1 });
 const sections = [
@@ -18,9 +18,14 @@ const sections = [
     image: "vouchers",
   },
 ];
-export function ShopFlowExample() {
+export function ShopFlowExample({
+  paymentStatus,
+}: {
+  paymentStatus?: PaymentStatusInput;
+} = {}) {
   return (
     <ShopFlow
+      paymentStatus={paymentStatus}
       sections={sections}
       categoryKey={defaultCategoryKey}
       productModel={defaultShopProduct}

@@ -17,6 +17,8 @@ import {
 import { validateCheckoutDetails } from "./checkout-validation";
 import type { ShippingAddress } from "./dashboard-client";
 import { ShopventoProvider } from "./locale";
+import { usePaymentStatus } from "./payment-hooks";
+import { paymentActionBlocked } from "./payment-status";
 import { ShopApiError, type ShopOperations } from "./shop-client";
 import {
   ShopButton,
@@ -312,6 +314,8 @@ function ShopFlowPage({
 } = {}) {
   const {
     client,
+    paymentStatus: suppliedPaymentStatus,
+    paymentUnavailableLabel,
     accountClient,
     dashboardClient,
     newsletterAdapter,
@@ -356,6 +360,9 @@ function ShopFlowPage({
     shippingTerms,
   } = useShopFlow();
 
+  const paymentStatus = usePaymentStatus(client, suppliedPaymentStatus);
+  const currentPaymentStatus = useRef(paymentStatus);
+  currentPaymentStatus.current = paymentStatus;
   const session = useAccountSession(accountClient);
   const [guestCheckout, setGuestCheckout] = useState(false);
   const [securityToken, setSecurityToken] = useState("");
@@ -377,6 +384,10 @@ function ShopFlowPage({
   const [quote, setQuote] = useState<Quote>();
   const [quoteReady, setQuoteReady] = useState(false);
   const [quoteError, setQuoteError] = useState("");
+  const paymentBlocked = paymentActionBlocked(
+    paymentStatus,
+    quoteReady ? quote?.total_price : undefined,
+  );
   const clearedOptionIds = useRef(new Set<string>());
   const [drawer, setDrawer] = useState(false);
   const [filterSheet, setFilterSheet] = useState(false);
@@ -1676,7 +1687,14 @@ function ShopFlowPage({
     setCheckoutError("");
   }
   async function placeOrder() {
-    if (shopPaused() || posting || !quoteReady || !quote || !cart.items.length)
+    if (
+      paymentBlocked ||
+      shopPaused() ||
+      posting ||
+      !quoteReady ||
+      !quote ||
+      !cart.items.length
+    )
       return;
     if (!validateDelivery()) {
       setCheckoutError(text("Prüfe Deine Lieferdaten."));
@@ -1771,6 +1789,12 @@ function ShopFlowPage({
             "Dein Einkauf hat sich geändert. Prüfe die neuen Preise und bestätige Deine Bestellung erneut.",
           ),
         );
+        return;
+      }
+      if (
+        paymentActionBlocked(currentPaymentStatus.current, latest.total_price)
+      ) {
+        setQuote(latest);
         return;
       }
       const response = await client.request("checkout", {
@@ -2708,6 +2732,7 @@ function ShopFlowPage({
                         <ShopButton
                           type="submit"
                           disabled={
+                            paymentBlocked ||
                             shopPaused() ||
                             !quoteReady ||
                             posting ||
@@ -2718,9 +2743,11 @@ function ShopFlowPage({
                             settings?.shop_checkout_review_required !== true
                           }
                         >
-                          {posting
-                            ? text("Bestellung wird aufgegeben …")
-                            : text("Zahlungspflichtig bestellen")}
+                          {paymentBlocked
+                            ? paymentUnavailableLabel
+                            : posting
+                              ? text("Bestellung wird aufgegeben …")
+                              : text("Zahlungspflichtig bestellen")}
                         </ShopButton>
                         <p className="sv-shop-meta">
                           {text(

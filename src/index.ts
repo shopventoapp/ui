@@ -22,6 +22,8 @@ export * from "./locale";
 export type { NewsletterSignupProps } from "./newsletter-signup";
 export { NewsletterSignup, newsletterOptInLabel } from "./newsletter-signup";
 export { defaultNewsletterLabels } from "./newsletter-signup-labels";
+export { usePaymentStatus } from "./payment-hooks";
+export * from "./payment-status";
 export type {
   PublicFormApiConfig,
   PublicFormOptions,
