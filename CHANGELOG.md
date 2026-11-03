@@ -17,6 +17,8 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Added
 
+- Timed private-event opening exceptions preserve outside-window reservations, including buffered closures across midnight, with localized closure notices and focused time validation. Legacy all-day closures and replacement opening hours remain compatible.
+
 - English static documentation with integration guides, TypeDoc component/type reference and a locally bundled read-only Shop API reference.
 - Typechecked source and built-package examples, a host-owned session proxy recipe, a public OpenAPI exporter and static link checks.
 - SHA-pinned GitHub Pages workflow for main and version tags.

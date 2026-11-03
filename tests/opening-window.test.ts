@@ -94,3 +94,78 @@ test("calendar weekdays do not depend on the browser timezone", () => {
     process.env.TZ = previous;
   }
 });
+
+test("timed closures preserve the day and reject only their half-open intervals", () => {
+  const config = {
+    opening_hours: null,
+    opening_exceptions: [
+      {
+        from: "2027-01-04",
+        until: "2027-01-04",
+        closed_from: "2027-01-04T17:00",
+        closed_until: "2027-01-04T22:30",
+        label: "geschlossene Gesellschaft",
+      },
+    ],
+  };
+  const window = openingWindow("2027-01-04", config);
+  expect(window.kind).toBe("unrestricted");
+  for (const clock of ["16:59", "22:30", "23:59"])
+    expect(timeInOpeningWindow(clock, window)).toBe(true);
+  for (const clock of ["17:00", "18:00", "22:29"])
+    expect(timeInOpeningWindow(clock, window)).toBe(false);
+  expect(openingWindow("2027-01-05", config)).toEqual({ kind: "unrestricted" });
+});
+test("timed exceptions compose with manual opening overrides and multiple closures", () => {
+  const window = openingWindow("2026-12-22", {
+    ...settings,
+    opening_exceptions: [
+      {
+        from: "2026-12-22",
+        until: "2026-12-22",
+        closed_from: "2026-12-22T14:00",
+        closed_until: "2026-12-22T14:30",
+      },
+      ...(settings.opening_exceptions || []),
+      {
+        from: "2026-12-22",
+        until: "2026-12-22",
+        private_event_id: 4,
+        opens: "15:00",
+        closes: "15:30",
+      },
+    ],
+  });
+  expect(window.kind).toBe("open");
+  for (const clock of ["13:00", "14:30", "15:30"])
+    expect(timeInOpeningWindow(clock, window)).toBe(true);
+  for (const clock of ["12:59", "14:00", "15:00", "16:00"])
+    expect(timeInOpeningWindow(clock, window)).toBe(false);
+});
+test("buffered closures crossing midnight are clipped without closing adjacent free time", () => {
+  const config = {
+    opening_exceptions: [
+      {
+        from: "2027-01-03",
+        until: "2027-01-05",
+        closed_from: "2027-01-03T23:30",
+        closed_until: "2027-01-05T00:30",
+      },
+    ],
+  };
+  expect(
+    timeInOpeningWindow("23:29", openingWindow("2027-01-03", config)),
+  ).toBe(true);
+  expect(
+    timeInOpeningWindow("23:30", openingWindow("2027-01-03", config)),
+  ).toBe(false);
+  expect(
+    timeInOpeningWindow("12:00", openingWindow("2027-01-04", config)),
+  ).toBe(false);
+  expect(
+    timeInOpeningWindow("00:29", openingWindow("2027-01-05", config)),
+  ).toBe(false);
+  expect(
+    timeInOpeningWindow("00:30", openingWindow("2027-01-05", config)),
+  ).toBe(true);
+});
