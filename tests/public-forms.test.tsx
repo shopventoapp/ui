@@ -553,6 +553,13 @@ test.each(["de", "en"])(
     expect(
       view.getAllByText(/geschlossene Gesellschaft/).length,
     ).toBeGreaterThan(0);
+    expect(
+      view.getByText(
+        locale === "en"
+          ? "We are closed at this time. (geschlossene Gesellschaft) Please choose another time."
+          : "Zu dieser Uhrzeit haben wir geschlossen. (geschlossene Gesellschaft) Bitte wähle eine andere Uhrzeit.",
+      ),
+    ).toBeTruthy();
     expect(posts).toHaveLength(0);
     fill("#resv-time", "2230");
     fireEvent.submit(view.container.querySelector("form")!);

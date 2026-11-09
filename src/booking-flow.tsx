@@ -1696,6 +1696,7 @@ function BookingFlowContent({
                       )}
                     </div>
                     <PaymentNotice
+                      variant="booking"
                       id={paymentNoticeId}
                       status={paymentStatus}
                       blocked={paymentBlocked}

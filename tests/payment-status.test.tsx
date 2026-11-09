@@ -909,14 +909,14 @@ test("compact voucher typing sends one lookup after a pause and skips short code
 });
 
 for (const retryBy of ["button", "submit"] as const) {
-  test(`compact booking rechecks a rate-limited voucher on ${retryBy} without editing`, async () => {
+  test(`compact booking rechecks a temporarily unavailable voucher on ${retryBy} without editing`, async () => {
     const { view, vouchers, posts } = bookingFixture({
       balance: 4900,
       voucherResponse: (count) =>
         count === 1
           ? Response.json(
-              { detail: "Rate limit exceeded: 12/minute" },
-              { status: 429 },
+              { detail: "Temporarily unavailable" },
+              { status: 503 },
             )
           : Response.json({
               voucher_code: "COVER",
@@ -930,15 +930,21 @@ for (const retryBy of ["button", "submit"] as const) {
     if (retryBy === "button") fireEvent.click(retry);
     else fireEvent.submit(required(view.container.querySelector("form")));
     if (retryBy === "button") {
-      const button = await view.findByRole("button", {
-        name: "Zahlungspflichtig buchen",
+      const button = await view.findByRole(
+        "button",
+        {
+          name: "Zahlungspflichtig buchen",
+        },
+        { timeout: 7000 },
+      );
+      await waitFor(() => expect(button.hasAttribute("disabled")).toBe(false), {
+        timeout: 7000,
       });
-      await waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
       fireEvent.click(button);
     }
-    await waitFor(() => expect(posts()).toBe(1));
+    await waitFor(() => expect(posts()).toBe(1), { timeout: 7000 });
     expect(vouchers()).toBe(2);
-  });
+  }, 10000);
 }
 
 test("checkout recovers automatically from 503 to 200 without remount", async () => {
@@ -1019,7 +1025,7 @@ test("editing a voucher during its submit retry cancels the obsolete submission"
   await view.findByRole("button", { name: "Erneut versuchen" });
   fireEvent.click(view.getByRole("checkbox"));
   fireEvent.submit(required(view.container.querySelector("form")));
-  await waitFor(() => expect(vouchers()).toBe(2));
+  await waitFor(() => expect(vouchers()).toBe(2), { timeout: 7000 });
   fireEvent.change(view.getByLabelText(/Gutscheincode/), {
     target: { value: "OTHER" },
   });
@@ -1027,6 +1033,53 @@ test("editing a voucher during its submit retry cancels the obsolete submission"
     release();
   });
   expect(posts()).toBe(0);
-  await waitFor(() => expect(vouchers()).toBe(3));
+  await waitFor(() => expect(vouchers()).toBe(3), { timeout: 7000 });
   expect(posts()).toBe(0);
-});
+}, 15000);
+
+test.each([404, 400, 429, 408])(
+  "compact voucher HTTP %s is definitive and never retried",
+  async (status) => {
+    const { view, vouchers } = bookingFixture({
+      balance: 4900,
+      voucherResponse: () =>
+        Response.json({ detail: "Unavailable" }, { status }),
+    });
+    await view.findByText(
+      status === 404
+        ? "Gutschein nicht gefunden."
+        : "Dieser Gutschein kann derzeit nicht eingelöst werden.",
+    );
+    expect(view.queryByRole("button", { name: "Erneut versuchen" })).toBeNull();
+    fireEvent.submit(required(view.container.querySelector("form")));
+    fireEvent.submit(required(view.container.querySelector("form")));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 450));
+    });
+    expect(vouchers()).toBe(1);
+  },
+);
+
+test.each(["shop", "booking", "compact"] as const)(
+  "payment notice uses %s secondary controls",
+  (variant) => {
+    const view = render(
+      <PaymentNotice
+        id="notice"
+        status="error"
+        blocked
+        retry={() => {}}
+        variant={variant}
+      />,
+    );
+    const button = view.getByRole("button", { name: "Erneut versuchen" });
+    expect(button.className).toContain(
+      variant === "shop"
+        ? "is-secondary"
+        : variant === "booking"
+          ? "btn-outline"
+          : "sv-payment-retry",
+    );
+    expect(view.getByRole("status").id).toBe("notice");
+  },
+);

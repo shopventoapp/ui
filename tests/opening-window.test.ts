@@ -200,3 +200,42 @@ test("only closed_from marks an exception as a timed closure", () => {
     ).toEqual({ kind: "closed" });
   }
 });
+
+test.each([
+  ["2026-07-10T22:00+02:00", "2026-07-11T00:00+02:00", "2026-07-11", undefined],
+  ["2026-11-10T22:00+01:00", "2026-11-11T00:00+01:00", "2026-11-11", undefined],
+  [
+    "2026-03-29T01:00+01:00",
+    "2026-03-29T04:00+02:00",
+    "2026-03-29",
+    [{ starts: "01:00", ends: "04:00" }],
+  ],
+  [
+    "2026-10-25T01:00+02:00",
+    "2026-10-25T04:00+01:00",
+    "2026-10-25",
+    [{ starts: "01:00", ends: "04:00" }],
+  ],
+  [
+    "2026-07-10T22:00+02:00",
+    "2026-07-11T02:00+02:00",
+    "2026-07-11",
+    [{ starts: "00:00", ends: "02:00" }],
+  ],
+  ["2026-11-10T18:00+01:00", "2026-11-10T18:00+01:00", "2026-11-10", undefined],
+])(
+  "clips Berlin offset closure %s to %s on %s",
+  (start, end, date, expected) => {
+    const result = openingWindow(date as string, {
+      opening_exceptions: [
+        {
+          from: (start as string).slice(0, 10),
+          until: (end as string).slice(0, 10),
+          closed_from: start as string,
+          closed_until: end as string,
+        },
+      ],
+    });
+    expect(result.closures).toEqual(expected);
+  },
+);

@@ -112,16 +112,23 @@ export function ShopButton({
 export function ShopNotice({
   children,
   error = false,
+  id,
+  className,
 }: {
   /** Host-supplied child content. */
   children: ReactNode;
   /** Customer-visible error or error presentation flag.
    * @defaultValue false */
   error?: boolean;
+  /** Accessible notice identifier. */
+  id?: string;
+  /** Additional host presentation classes. */
+  className?: string;
 }) {
   return (
     <div
-      className={`sv-shop-notice ${error ? "is-error" : ""}`}
+      id={id}
+      className={`sv-shop-notice ${error ? "is-error" : ""} ${className ?? ""}`}
       role={error ? "alert" : "status"}
     >
       {children}

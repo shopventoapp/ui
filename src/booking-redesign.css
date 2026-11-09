@@ -2566,3 +2566,10 @@
 .sv-redesign .notice.info {
   grid-template-columns: 20px minmax(0, 1fr);
 }
+
+.sv-redesign .sv-payment-notice {
+  margin-block: 12px;
+}
+.sv-redesign .sv-payment-notice p {
+  margin: 0 0 8px;
+}

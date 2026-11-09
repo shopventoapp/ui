@@ -2744,6 +2744,7 @@ function ShopFlowPage({
 
                       <div className="vv-shop-final-order">
                         <PaymentNotice
+                          variant="shop"
                           id={paymentNoticeId}
                           status={paymentStatus}
                           blocked={paymentBlocked}

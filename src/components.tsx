@@ -707,8 +707,17 @@ function EventBookingContent(props: EventBookingProps) {
         blocked={paymentBlocked}
         retry={retryPaymentStatus}
       />
+      {(voucherPayment.notFound || voucherPayment.rejected) && (
+        <p className="sv-summary" role="status">
+          {voucherPayment.notFound
+            ? paymentText("Gutschein nicht gefunden.")
+            : paymentText(
+                "Dieser Gutschein kann derzeit nicht eingelöst werden.",
+              )}
+        </p>
+      )}
       {voucherPayment.failed && (
-        <div role="status">
+        <div className="sv-summary" role="status">
           <p>
             {paymentText(
               "Der Gutschein konnte nicht geprüft werden. Bitte versuche es erneut.",
@@ -716,6 +725,7 @@ function EventBookingContent(props: EventBookingProps) {
           </p>
           <button
             type="button"
+            className="sv-payment-retry"
             disabled={voucherPayment.checking}
             onClick={() => {
               void voucherPayment.retry();

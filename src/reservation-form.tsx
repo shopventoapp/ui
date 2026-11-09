@@ -258,7 +258,7 @@ function ReservationFormContent({
       ? text("Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.")
       : timeInvalid && timeTouched && selectedClosure
         ? text(
-            "Zu dieser Zeit ist geschlossen.{0} Bitte wähle eine andere Uhrzeit.",
+            "Zu dieser Uhrzeit haben wir geschlossen.{0} Bitte wähle eine andere Uhrzeit.",
             selectedClosure.label ? ` (${selectedClosure.label})` : "",
           )
         : timeInvalid && timeTouched && opening?.kind === "open"

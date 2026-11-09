@@ -49,14 +49,23 @@ function closureOnDate(
   entry: OpeningException,
   date: string,
 ): OpeningClosure | null {
-  const start = entry.closed_from || `${entry.from}T${entry.opens}`;
-  const end = entry.closed_until || `${entry.until}T${entry.closes}`;
+  const start = (entry.closed_from || `${entry.from}T${entry.opens}`).slice(
+    0,
+    16,
+  );
+  const end = (entry.closed_until || `${entry.until}T${entry.closes}`).slice(
+    0,
+    16,
+  );
   const dayStart = `${date}T00:00`;
   const dayEnd = `${date}T24:00`;
   if (end <= dayStart || start >= dayEnd) return null;
+  const starts = start < dayStart ? "00:00" : start.slice(11, 16);
+  const ends = end >= dayEnd ? "24:00" : end.slice(11, 16);
+  if (starts >= ends) return null;
   return {
-    starts: start < dayStart ? "00:00" : start.slice(11, 16),
-    ends: end >= dayEnd ? "24:00" : end.slice(11, 16),
+    starts,
+    ends,
     ...(entry.label ? { label: entry.label } : {}),
   };
 }

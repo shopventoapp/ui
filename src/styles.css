@@ -357,3 +357,12 @@ button.sv-google-sign-in > svg {
   min-height: 50px;
   padding-block: 12px;
 }
+
+.sv-booking .sv-payment-retry {
+  color: var(--sv-text, #241a20);
+  background: transparent;
+  border-color: var(--sv-border, #c9bdc3);
+}
+.sv-booking .sv-payment-notice p:last-child {
+  margin-bottom: 0;
+}

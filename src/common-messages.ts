@@ -40,6 +40,11 @@ export const defaultPaymentMessages = Object.freeze({
   /** Retry the failed capability or voucher lookup. */
   "Erneut versuchen": "Erneut versuchen",
 
+  /** Voucher not found. */
+  "Gutschein nicht gefunden.": "Gutschein nicht gefunden.",
+  /** This voucher cannot currently be redeemed. */
+  "Dieser Gutschein kann derzeit nicht eingelöst werden.":
+    "Dieser Gutschein kann derzeit nicht eingelöst werden.",
   /** Disabled paid action label. */
   "Bald verfügbar": "Bald verfügbar",
   /** Credit card */
@@ -65,6 +70,11 @@ export const englishPaymentMessages: {
   /** Retry the failed capability or voucher lookup. */
   "Erneut versuchen": "Try again",
 
+  /** Voucher not found. */
+  "Gutschein nicht gefunden.": "Voucher not found.",
+  /** This voucher cannot currently be redeemed. */
+  "Dieser Gutschein kann derzeit nicht eingelöst werden.":
+    "This voucher cannot currently be redeemed.",
   /** Disabled paid action label, fixed by the payment gate contract. */
   "Bald verfügbar": "Bald verfügbar",
   /** Credit card */

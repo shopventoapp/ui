@@ -17,10 +17,8 @@ export const defaultReservationLabels = Object.freeze({
   /** Closed from {0} until {1}.{2} */
   "Geschlossen von {0} bis {1} Uhr.{2}": "Geschlossen von {0} bis {1} Uhr.{2}",
   /** Selected time overlaps a closure; {0} is an optional reason. */
-  "Zu dieser Zeit ist geschlossen.{0} Bitte wähle eine andere Uhrzeit.":
-    "Zu dieser Zeit ist geschlossen.{0} Bitte wähle eine andere Uhrzeit.",
-  /** The time input is invalid. */
-  "Bitte gib eine gültige Uhrzeit ein.": "Bitte gib eine gültige Uhrzeit ein.",
+  "Zu dieser Uhrzeit haben wir geschlossen.{0} Bitte wähle eine andere Uhrzeit.":
+    "Zu dieser Uhrzeit haben wir geschlossen.{0} Bitte wähle eine andere Uhrzeit.",
   /** Date closure notice; {0} is the date and {1} the optional reason. */
   "Am {0} haben wir geschlossen.{1}": "Am {0} haben wir geschlossen.{1}",
   /** Reservations from {0} until before {1}. */
@@ -167,10 +165,8 @@ export const englishReservationLabels: {
   /** Closed from {0} until {1}.{2} */
   "Geschlossen von {0} bis {1} Uhr.{2}": "Closed from {0} until {1}.{2}",
   /** We are closed at this time.{0} Please choose another time. */
-  "Zu dieser Zeit ist geschlossen.{0} Bitte wähle eine andere Uhrzeit.":
+  "Zu dieser Uhrzeit haben wir geschlossen.{0} Bitte wähle eine andere Uhrzeit.":
     "We are closed at this time.{0} Please choose another time.",
-  /** Please enter a valid time. */
-  "Bitte gib eine gültige Uhrzeit ein.": "Please enter a valid time.",
   /** We are closed on {0}.{1} */
   "Am {0} haben wir geschlossen.{1}": "We are closed on {0}.{1}",
   /** Reservations from {0} until before {1}. */

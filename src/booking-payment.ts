@@ -1,8 +1,11 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bookingVoucherAllocation } from "./booking-voucher-allocation";
+import { voucherLookupFor } from "./booking-voucher-lookup";
 import type { BookingClient, Seat, ShopEvent, VoucherCheck } from "./client";
 import type { BookingDraft } from "./hooks";
+
+type CheckedVoucher = VoucherCheck & { rejected?: number };
 
 /** Identity of the payment-relevant booking selection, excluding contact and consent. */
 export function bookingPaymentSelection(
@@ -27,15 +30,10 @@ export function useBookingPayable(
   const key = JSON.stringify(
     seats.map((seat) => seat.voucher_code?.trim() || ""),
   );
-  const cache = useRef<{
-    client: BookingClient;
-    checks: Record<string, VoucherCheck>;
-  }>({ client, checks: {} });
-  if (cache.current.client !== client) cache.current = { client, checks: {} };
   const [checked, setChecked] = useState<{
     client: BookingClient;
     key: string;
-    checks: Record<string, VoucherCheck>;
+    checks: Record<string, CheckedVoucher>;
   } | null>(null);
   const [checking, setChecking] = useState(false);
   const request = useRef<AbortController | null>(null);
@@ -52,12 +50,10 @@ export function useBookingPayable(
       [...new Set(codes.filter((code) => code.length >= 5))].map(
         async (code) => {
           try {
-            const check =
-              cache.current.checks[code] ??
-              (await client.checkVoucher(code, controller.signal));
-            if (!controller.signal.aborted && !check.pending)
-              cache.current.checks[code] = check;
-            return [code, check] as const;
+            return [
+              code,
+              await voucherLookupFor(client)(code, controller.signal),
+            ] as const;
           } catch {
             return [code, { voucher_code: code, pending: true }] as const;
           }
@@ -88,7 +84,7 @@ export function useBookingPayable(
         (variant) => (variant.variant_id ?? undefined) === seat.variant_id,
       )?.price,
   );
-  const amount = (checks: Record<string, VoucherCheck>) => {
+  const amount = (checks: Record<string, CheckedVoucher>) => {
     if (
       !prices.length ||
       prices.some(
@@ -107,6 +103,10 @@ export function useBookingPayable(
   return {
     payable: amount(checks),
     checking,
+    notFound: codes.some((code) => checks[code]?.rejected === 404),
+    rejected: codes.some(
+      (code) => checks[code]?.rejected && checks[code].rejected !== 404,
+    ),
     failed: codes.some((code) => Boolean(checks[code]?.pending)),
     retry: async () => {
       const refreshed = await lookup();

@@ -13,7 +13,9 @@ All notable changes to this package are documented here. The format follows [Kee
 ### Fixed
 
 - Retry transient payment-status failures once with backoff, refresh on entering checkout or the booking summary, and expose an explicit retry with a visible disabled-action reason.
-- Debounce compact booking voucher lookups, skip incomplete codes and reuse successful checks; failed checks can be retried without editing the code and are rechecked on submit.
+- Debounce compact booking voucher lookups, skip incomplete codes and cache successful and definitive 4xx results. Unknown codes show a not-found notice without retry. Only network and 5xx failures can be retried, with increasing backoff and serialized requests at least 5,001 ms apart per client (below twelve requests per minute).
+- Normalize Berlin offset timestamps before clipping timed closures, including both DST transitions, and discard empty intervals to prevent phantom midnight notices.
+- Payment notices use existing shop notices and secondary controls, booking hints and outline controls, and compact-form summary styling.
 - Honor booking credentials for status reads, match backend timed-closure detection using only `closed_from`, and preserve the closed-date message when timed closures overlap.
 
 ### Changed
@@ -22,6 +24,9 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ### Compatibility
 
+- New overridable `reservation` labels: `Geschlossen von {0} bis {1} Uhr.{2}` and `Zu dieser Uhrzeit haben wir geschlossen.{0} Bitte wähle eine andere Uhrzeit.`. The unused short invalid-time key was removed before release; the existing example-based validation key remains.
+- New overridable `payment` messages: `Der Zahlungsstatus konnte nicht geladen werden. Bitte versuche es erneut.`, `Online-Zahlung ist derzeit nicht verfügbar. Gutscheine kannst Du weiterhin einlösen.`, `Zahlungsstatus wird geladen…`, `Der Gutschein konnte nicht geprüft werden. Bitte versuche es erneut.`, `Erneut versuchen`, `Bald verfügbar`, `Gutschein nicht gefunden.`, and `Dieser Gutschein kann derzeit nicht eingelöst werden.`.
+- New overridable `booking` message: `Bald verfügbar: Online-Zahlungen sind derzeit nicht freigeschaltet. Bitte versuche es später erneut.`. All new catalogue entries include English TSDoc; complete catalogues must supply the new keys, while partial overrides remain compatible.
 - Both client factories expose `getPaymentStatus`; it is optional on custom `BookingClient` implementations. A missing method or a 404 endpoint retains legacy active behavior.
 - `useSubmitBooking` adds `paymentRejected`, and `OpeningWindow` adds optional `closures`. `bookingVoucherAllocation` moved to a shared module and remains exported from the package root.
 
