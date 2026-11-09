@@ -4,6 +4,10 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- Underline inline links in public reservation forms and add persistent, translatable field validation with accessible error descriptions and first-invalid-field focus to newsletter and reservation forms (#43825).
+
 ### Added
 
 - English static documentation with integration guides, TypeDoc component/type reference and a locally bundled read-only Shop API reference.

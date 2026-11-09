@@ -143,6 +143,9 @@ function ReservationFormContent({
   const [status, setStatus] = useState<Status>("idle");
   const [apiSiteKey, setApiSiteKey] = useState<string | null>(null);
   const [limits, setLimits] = useState(reservationGuests);
+  const [submitted, setSubmitted] = useState(false);
+  const [emailMalformed, setEmailMalformed] = useState(false);
+  const [guestsError, setGuestsError] = useState<string | null>(null);
   const [dateValue, setDateValue] = useState("");
   const [openingSettings, setOpeningSettings] = useState<OpeningSettings>({});
   const [newsletter, setNewsletter] = useState(false);
@@ -159,6 +162,17 @@ function ReservationFormContent({
   const formRootRef = useRef<HTMLFormElement>(null);
   const contact = useAccountContactPrefill(accountEnabled);
 
+  const nameMissing = !contact.name.value.trim();
+  const emailMissing = !contact.email.value.trim();
+  const nameError =
+    submitted && nameMissing ? text("Bitte gib Deinen Namen ein.") : null;
+  const emailError = submitted
+    ? emailMissing
+      ? text("Bitte gib Deine E-Mail-Adresse ein.")
+      : emailMalformed
+        ? text("Bitte gib eine gültige E-Mail-Adresse ein.")
+        : null
+    : null;
   let isoDate: string | null = null;
   let dateError: string | null = null;
   if (dateValue.length === 10) {
@@ -170,6 +184,9 @@ function ReservationFormContent({
           ? text(error.message)
           : text("Bitte gib ein gültiges Datum ein.");
     }
+  }
+  if (submitted && !isoDate && !dateError) {
+    dateError = text("Bitte gib ein gültiges Datum ein.");
   }
   const opening = isoDate ? openingWindow(isoDate, openingSettings) : null;
   if (opening?.kind === "closed") {
@@ -192,23 +209,29 @@ function ReservationFormContent({
             : localeTime(opening.closes, locale),
         )
       : null);
+  const timeMalformed = !/^([01]\d|2[0-3]):[0-5]\d$/.test(
+    normalizeTimeInput(timeValue),
+  );
   const timeInvalid =
-    opening?.kind === "open" &&
-    Boolean(timeValue) &&
-    !timeInOpeningWindow(normalizeTimeInput(timeValue), opening);
+    timeMalformed ||
+    (opening?.kind === "open" &&
+      Boolean(timeValue) &&
+      !timeInOpeningWindow(normalizeTimeInput(timeValue), opening));
   // Shown after blur or a submit attempt, so typing "1" for "12:30" does not flash an error.
   const timeError =
-    timeInvalid && timeTouched && opening?.kind === "open"
-      ? text(
-          "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
-          locale.startsWith("de")
-            ? opening.opens
-            : localeTime(opening.opens, locale),
-          locale.startsWith("de")
-            ? opening.closes
-            : localeTime(opening.closes, locale),
-        )
-      : null;
+    timeTouched && timeMalformed
+      ? text("Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.")
+      : timeInvalid && timeTouched && opening?.kind === "open"
+        ? text(
+            "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
+            locale.startsWith("de")
+              ? opening.opens
+              : localeTime(opening.opens, locale),
+            locale.startsWith("de")
+              ? opening.closes
+              : localeTime(opening.closes, locale),
+          )
+        : null;
   const fieldMessageStyle: React.CSSProperties = {
     fontFamily: "var(--sv-font, Georgia, serif)",
     fontSize: 14,
@@ -308,14 +331,34 @@ function ReservationFormContent({
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (inFlight.current) return;
-    if (dateError || timeInvalid) {
-      setTimeTouched(true);
+    const email = e.currentTarget.elements.namedItem(
+      "email",
+    ) as HTMLInputElement;
+    const emailInvalid = email.validity.typeMismatch;
+    setEmailMalformed(emailInvalid);
+    setSubmitted(true);
+    setTimeTouched(true);
+    const guests = e.currentTarget.elements.namedItem(
+      "guests",
+    ) as HTMLSelectElement;
+    const invalidGuests =
+      !guests.value ||
+      !Number.isInteger(Number(guests.value)) ||
+      Number(guests.value) < limits.min ||
+      Number(guests.value) > limits.max + 1;
+    setGuestsError(
+      invalidGuests ? text("Bitte wähle eine Personenzahl aus.") : null,
+    );
+    const firstInvalid = [
+      ["resv-name", nameMissing],
+      ["resv-email", emailMissing || emailInvalid],
+      ["resv-date", !isoDate || Boolean(dateError)],
+      ["resv-time", timeInvalid],
+      ["resv-guests", invalidGuests],
+    ].find(([, invalid]) => invalid)?.[0];
+    if (firstInvalid) {
       setErrorMsg(null);
-      e.currentTarget
-        .querySelector<HTMLInputElement>(
-          dateError ? "#resv-date" : "#resv-time",
-        )
-        ?.focus();
+      e.currentTarget.querySelector<HTMLElement>(`#${firstInvalid}`)?.focus();
       return;
     }
     inFlight.current = true;
@@ -440,9 +483,20 @@ function ReservationFormContent({
           {text(
             "Es wurde kein Tisch reserviert und keine Anfrage versendet. Bitte ",
           )}
-          <a href={groupInquiryHref}>{text("sende uns eine Gruppenanfrage")}</a>
+          <a
+            href={groupInquiryHref}
+            style={{ textDecoration: "underline", textUnderlineOffset: 3 }}
+          >
+            {text("sende uns eine Gruppenanfrage")}
+          </a>
           {text(" oder rufe uns unter ")}
-          <a href={phoneHref}>{phoneLabel}</a> {text(" an.")}
+          <a
+            href={phoneHref}
+            style={{ textDecoration: "underline", textUnderlineOffset: 3 }}
+          >
+            {phoneLabel}
+          </a>{" "}
+          {text(" an.")}
         </p>
       </div>
     );
@@ -528,7 +582,14 @@ function ReservationFormContent({
             }}
           >
             {text("Wenn es dringend ist, ruf uns auch gerne direkt an:")}{" "}
-            <a href={phoneHref} style={{ color: "var(--sv-primary, #0b5cad)" }}>
+            <a
+              href={phoneHref}
+              style={{
+                color: "var(--sv-primary, #0b5cad)",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+              }}
+            >
               {phoneLabel}
             </a>
             .
@@ -550,6 +611,7 @@ function ReservationFormContent({
         className="sv-reservation"
         ref={formRootRef}
         onSubmit={onSubmit}
+        noValidate
         style={{
           background: "var(--sv-background, #fff)",
           padding: 36,
@@ -597,8 +659,15 @@ function ReservationFormContent({
             required
             maxLength={120}
             autoComplete="name"
+            aria-invalid={Boolean(nameError)}
+            aria-describedby={nameError ? "resv-name-error" : undefined}
             style={inputStyle}
           />
+          {nameError && (
+            <p id="resv-name-error" role="alert" style={fieldMessageStyle}>
+              {nameError}
+            </p>
+          )}
         </div>
 
         <div className="sv-reservation-fields-two">
@@ -610,12 +679,23 @@ function ReservationFormContent({
               id="resv-email"
               name="email"
               {...contact.email}
+              onChange={(event) => {
+                contact.email.onChange(event);
+                setEmailMalformed(event.currentTarget.validity.typeMismatch);
+              }}
               type="email"
               required
               maxLength={200}
               autoComplete="email"
+              aria-invalid={Boolean(emailError)}
+              aria-describedby={emailError ? "resv-email-error" : undefined}
               style={inputStyle}
             />
+            {emailError && (
+              <p id="resv-email-error" role="alert" style={fieldMessageStyle}>
+                {emailError}
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="resv-phone" style={labelStyle}>
@@ -724,7 +804,11 @@ function ReservationFormContent({
               {text("Für Gruppen ab 9 Personen sende uns bitte eine ")}
               <a
                 href={groupInquiryHref}
-                style={{ color: "var(--sv-primary, #0b5cad)" }}
+                style={{
+                  color: "var(--sv-primary, #0b5cad)",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 3,
+                }}
               >
                 {text("Anfrage")}
               </a>
@@ -738,6 +822,9 @@ function ReservationFormContent({
               name="guests"
               required
               defaultValue="2"
+              aria-invalid={Boolean(guestsError)}
+              aria-describedby={guestsError ? "resv-guests-error" : undefined}
+              onChange={() => setGuestsError(null)}
               style={inputStyle}
             >
               {Array.from(
@@ -752,6 +839,11 @@ function ReservationFormContent({
                 {text("{0} oder mehr Personen (Anfrage)", limits.max + 1)}
               </option>
             </select>
+            {guestsError && (
+              <p id="resv-guests-error" role="alert" style={fieldMessageStyle}>
+                {guestsError}
+              </p>
+            )}
           </div>
         </div>
 
@@ -855,7 +947,14 @@ function ReservationFormContent({
         {termsEnabled && (
           <p style={{ margin: 0 }}>
             {text("Es gelten unsere ")}
-            <a href={termsUrl} style={{ color: "var(--sv-primary, #0b5cad)" }}>
+            <a
+              href={termsUrl}
+              style={{
+                color: "var(--sv-primary, #0b5cad)",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+              }}
+            >
               {text("AGB")}
             </a>
             .
@@ -874,7 +973,14 @@ function ReservationFormContent({
           {text(
             "Deine Angaben nutzen wir nur für Deine Reservierung. Mehr dazu in der",
           )}{" "}
-          <a href={privacyUrl} style={{ color: "var(--sv-primary, #0b5cad)" }}>
+          <a
+            href={privacyUrl}
+            style={{
+              color: "var(--sv-primary, #0b5cad)",
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+            }}
+          >
             {text("Datenschutzerklärung")}
           </a>
           {text(". Dieses Formular ist durch")}{" "}
