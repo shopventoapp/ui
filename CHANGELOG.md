@@ -4,6 +4,16 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- Underline inline links in public reservation forms and add persistent, translatable field validation with accessible error descriptions and first-invalid-field focus to newsletter and reservation forms (#43825).
+
+### Compatibility
+
+- Complete host catalogues typed as `ShopventoMessages` must add five `reservation` keys: `Bitte gib Deinen Namen ein.`, `Bitte gib Deine E-Mail-Adresse ein.`, `Bitte gib eine gültige E-Mail-Adresse ein.`, `Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.`, and `Bitte wähle eine Personenzahl aus.`; and two `newsletter` keys: `Bitte gib Deine E-Mail-Adresse ein.` and `Bitte gib eine gültige E-Mail-Adresse ein.`. Partial `ShopventoCatalogue` overrides and per-key `labels` remain compatible.
+- Newsletter and reservation forms now use `noValidate` and persistent translated field errors instead of native browser validation bubbles. API payloads, existing message keys, exports and props are unchanged.
+- These catalogue and validation changes should ship in the next minor release, recommended as 0.5.0 for this pre-1.0 package.
+
 ### Added
 
 - English static documentation with integration guides, TypeDoc component/type reference and a locally bundled read-only Shop API reference.

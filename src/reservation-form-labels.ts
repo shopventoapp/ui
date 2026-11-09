@@ -1,5 +1,17 @@
 /** German customer-visible defaults. Numbered placeholders preserve interpolation. */
 export const defaultReservationLabels = Object.freeze({
+  /** Please enter your name. */
+  "Bitte gib Deinen Namen ein.": "Bitte gib Deinen Namen ein.",
+  /** Please enter your email address. */
+  "Bitte gib Deine E-Mail-Adresse ein.": "Bitte gib Deine E-Mail-Adresse ein.",
+  /** Please enter a valid email address. */
+  "Bitte gib eine gültige E-Mail-Adresse ein.":
+    "Bitte gib eine gültige E-Mail-Adresse ein.",
+  /** Please enter a valid time, for example 18:30. */
+  "Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.":
+    "Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.",
+  /** Please select the number of guests. */
+  "Bitte wähle eine Personenzahl aus.": "Bitte wähle eine Personenzahl aus.",
   /** Please enter a valid date. */
   "Bitte gib ein gültiges Datum ein.": "Bitte gib ein gültiges Datum ein.",
   /** We are closed on {0}.{1} */
@@ -136,6 +148,13 @@ export const defaultReservationLabels = Object.freeze({
 export const englishReservationLabels: {
   [K in keyof typeof defaultReservationLabels]: string;
 } = Object.freeze({
+  "Bitte gib Deinen Namen ein.": "Please enter your name.",
+  "Bitte gib Deine E-Mail-Adresse ein.": "Please enter your email address.",
+  "Bitte gib eine gültige E-Mail-Adresse ein.":
+    "Please enter a valid email address.",
+  "Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.":
+    "Please enter a valid time, for example 18:30.",
+  "Bitte wähle eine Personenzahl aus.": "Please select the number of guests.",
   /** Please enter a valid date. */
   "Bitte gib ein gültiges Datum ein.": "Please enter a valid date.",
   /** We are closed on {0}.{1} */

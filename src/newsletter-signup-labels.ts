@@ -1,5 +1,10 @@
 /** German customer-visible defaults. Numbered placeholders preserve interpolation. */
 export const defaultNewsletterLabels = Object.freeze({
+  /** Please enter your email address. */
+  "Bitte gib Deine E-Mail-Adresse ein.": "Bitte gib Deine E-Mail-Adresse ein.",
+  /** Please enter a valid email address. */
+  "Bitte gib eine gültige E-Mail-Adresse ein.":
+    "Bitte gib eine gültige E-Mail-Adresse ein.",
   /** Sign-up is currently unavailable. Please try again later. */
   "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.":
     "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.",
@@ -67,6 +72,9 @@ export const defaultNewsletterLabels = Object.freeze({
 export const englishNewsletterLabels: {
   [K in keyof typeof defaultNewsletterLabels]: string;
 } = Object.freeze({
+  "Bitte gib Deine E-Mail-Adresse ein.": "Please enter your email address.",
+  "Bitte gib eine gültige E-Mail-Adresse ein.":
+    "Please enter a valid email address.",
   /** Sign-up is currently unavailable. Please try again later. */
   "Anmeldung gerade nicht möglich. Bitte später erneut versuchen.":
     "Sign-up is currently unavailable. Please try again later.",

@@ -1,12 +1,14 @@
 "use client";
 
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { ShopventoProvider, useMessages } from "./locale";
 import {
   defaultPublicFormApi,
   type PublicFormOptions,
   PublicFormScript,
 } from "./public-form-options";
+
+import { publicFormFieldErrorStyle } from "./public-form-styles";
 
 type Status = "idle" | "submitting" | "success" | "error";
 /** Default optional newsletter consent label. */
@@ -52,7 +54,15 @@ function NewsletterSignupContent({
   privacyUrl = "/datenschutz",
 }: NewsletterSignupProps) {
   const text = useMessages("newsletter", labels);
+  const [invalidFocus, setInvalidFocus] = useState<{
+    field: HTMLElement;
+  } | null>(null);
+  useEffect(() => {
+    invalidFocus?.field.focus();
+  }, [invalidFocus]);
   const [status, setStatus] = useState<Status>("idle");
+  const emailErrorId = useId();
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [scriptEnabled, setScriptEnabled] = useState(false);
   const widgetIdRef = useRef<string | null>(null);
@@ -151,6 +161,20 @@ function NewsletterSignupContent({
 
   async function subscribe(form: HTMLFormElement) {
     if (status === "submitting") return;
+    const email = form.elements.namedItem("email") as HTMLInputElement | null;
+    const validationError = email
+      ? !email.value.trim()
+        ? text("Bitte gib Deine E-Mail-Adresse ein.")
+        : email.validity.typeMismatch
+          ? text("Bitte gib eine gültige E-Mail-Adresse ein.")
+          : null
+      : null;
+    setEmailError(validationError);
+    if (validationError) {
+      setErrorMsg(null);
+      if (email) setInvalidFocus({ field: email });
+      return;
+    }
     setStatus("submitting");
     setErrorMsg(null);
 
@@ -374,6 +398,7 @@ function NewsletterSignupContent({
           <form
             ref={formRef}
             onSubmit={onSubmit}
+            noValidate
             style={{
               maxWidth: 600,
               margin: "0 auto",
@@ -391,20 +416,29 @@ function NewsletterSignupContent({
                   maxLength={80}
                   autoComplete="given-name"
                   defaultValue={initialFirstName}
-                  style={inputStyle}
+                  style={{ ...inputStyle, alignSelf: "start" }}
                   aria-label={text("Vorname")}
                 />
-                <input
-                  name="email"
-                  type="email"
-                  placeholder={text("E-Mail-Adresse")}
-                  required
-                  maxLength={200}
-                  autoComplete="email"
-                  defaultValue={initialEmail}
-                  style={inputStyle}
-                  aria-label={text("E-Mail")}
-                />
+                <div style={{ minWidth: 0, textAlign: "left" }}>
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder={text("E-Mail-Adresse")}
+                    required
+                    maxLength={200}
+                    autoComplete="email"
+                    defaultValue={initialEmail}
+                    style={inputStyle}
+                    aria-label={text("E-Mail")}
+                    aria-invalid={Boolean(emailError)}
+                    aria-describedby={emailError ? emailErrorId : undefined}
+                  />
+                  {emailError && (
+                    <p id={emailErrorId} style={publicFormFieldErrorStyle}>
+                      {emailError}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
