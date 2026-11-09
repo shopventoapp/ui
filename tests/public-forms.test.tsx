@@ -414,3 +414,86 @@ test("English newsletter errors use the shipped catalogue and isolated descripti
       "Please enter your email address.",
     );
 });
+
+test("submit focus observes committed field errors without submit-only alert bursts", async () => {
+  const view = render(
+    <>
+      <ReservationForm
+        siteKey="test"
+        accountEnabled={false}
+        publicApi={async () => ({ shopvento: false, locationId: 1 })}
+        ScriptComponent={ScriptComponent}
+      />
+      <NewsletterSignup siteKey="test" ScriptComponent={ScriptComponent} />
+    </>,
+  );
+  const captured: { invalid: string | null; error: string | null }[] = [];
+  const reservationName = view.getByLabelText("Name *");
+  const newsletterEmail = view.container.querySelector(
+    '.sv-newsletter input[name="email"]',
+  ) as HTMLInputElement;
+  for (const field of [reservationName, newsletterEmail]) {
+    field.addEventListener("focus", () =>
+      captured.push({
+        invalid: field.getAttribute("aria-invalid"),
+        error:
+          document.getElementById(field.getAttribute("aria-describedby") ?? "")
+            ?.textContent ?? null,
+      }),
+    );
+  }
+  for (const form of Array.from(view.container.querySelectorAll("form")))
+    fireEvent.submit(form);
+  expect(captured).toEqual([
+    { invalid: "true", error: "Bitte gib Deinen Namen ein." },
+    { invalid: "true", error: "Bitte gib Deine E-Mail-Adresse ein." },
+  ]);
+  for (const selector of [
+    "#resv-name-error",
+    "#resv-email-error",
+    ".sv-newsletter input[name=email]",
+  ]) {
+    const node = view.container.querySelector(selector);
+    const error =
+      node?.tagName === "INPUT"
+        ? document.getElementById(node.getAttribute("aria-describedby") ?? "")
+        : node;
+    expect(error?.getAttribute("role")).toBeNull();
+    expect((error as HTMLElement).style.color).toBe(
+      "var(--sv-primary, #0b5cad)",
+    );
+  }
+  // A new submit attempt must focus again even when the same field is invalid.
+  newsletterEmail.blur();
+  fireEvent.submit(newsletterEmail.closest("form") as HTMLFormElement);
+  expect(captured).toHaveLength(3);
+  await waitFor(() =>
+    expect(view.container.querySelector("#resv-time-message")).toBeDefined(),
+  );
+});
+
+test("empty time stays quiet on blur until submit while malformed entered time stays live", async () => {
+  const view = render(
+    <ReservationForm
+      siteKey="test"
+      accountEnabled={false}
+      publicApi={async () => ({ shopvento: false, locationId: 1 })}
+      ScriptComponent={ScriptComponent}
+    />,
+  );
+  const time = view.getByLabelText("Uhrzeit *");
+  fireEvent.blur(time);
+  expect(time.getAttribute("aria-invalid")).toBe("false");
+  expect(time.hasAttribute("aria-describedby")).toBe(false);
+  fireEvent.change(time, { target: { value: "29:99" } });
+  fireEvent.blur(time);
+  expect(time.getAttribute("aria-invalid")).toBe("true");
+  expect(view.getByRole("alert").textContent).toContain("gültige Uhrzeit");
+  fireEvent.change(time, { target: { value: "" } });
+  expect(time.getAttribute("aria-invalid")).toBe("false");
+  fireEvent.submit(time.closest("form") as HTMLFormElement);
+  expect(time.getAttribute("aria-invalid")).toBe("true");
+  await waitFor(() =>
+    expect(view.container.querySelector("#resv-date-message")).toBeDefined(),
+  );
+});

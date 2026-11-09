@@ -8,6 +8,8 @@ import {
   PublicFormScript,
 } from "./public-form-options";
 
+import { publicFormFieldErrorStyle } from "./public-form-styles";
+
 type Status = "idle" | "submitting" | "success" | "error";
 /** Default optional newsletter consent label. */
 export const newsletterOptInLabel = "Newsletter per E-Mail abonnieren";
@@ -52,6 +54,12 @@ function NewsletterSignupContent({
   privacyUrl = "/datenschutz",
 }: NewsletterSignupProps) {
   const text = useMessages("newsletter", labels);
+  const [invalidFocus, setInvalidFocus] = useState<{
+    field: HTMLElement;
+  } | null>(null);
+  useEffect(() => {
+    invalidFocus?.field.focus();
+  }, [invalidFocus]);
   const [status, setStatus] = useState<Status>("idle");
   const emailErrorId = useId();
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -164,7 +172,7 @@ function NewsletterSignupContent({
     setEmailError(validationError);
     if (validationError) {
       setErrorMsg(null);
-      email?.focus();
+      if (email) setInvalidFocus({ field: email });
       return;
     }
     setStatus("submitting");
@@ -426,15 +434,7 @@ function NewsletterSignupContent({
                     aria-describedby={emailError ? emailErrorId : undefined}
                   />
                   {emailError && (
-                    <p
-                      id={emailErrorId}
-                      role="alert"
-                      style={{
-                        margin: "6px 0 0",
-                        fontSize: 14,
-                        lineHeight: 1.5,
-                      }}
-                    >
+                    <p id={emailErrorId} style={publicFormFieldErrorStyle}>
                       {emailError}
                     </p>
                   )}

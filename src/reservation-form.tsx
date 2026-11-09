@@ -51,6 +51,8 @@ declare global {
   }
 }
 
+import { publicFormFieldErrorStyle } from "./public-form-styles";
+
 type Status = "idle" | "submitting" | "success" | "inquiry" | "error";
 
 const inputStyle: React.CSSProperties = {
@@ -140,6 +142,12 @@ function ReservationFormContent({
   const text = useMessages("reservation", labels);
   const localeOptions = useShopventoLocale();
   const { locale } = localeOptions;
+  const [invalidFocus, setInvalidFocus] = useState<{
+    field: HTMLElement;
+  } | null>(null);
+  useEffect(() => {
+    invalidFocus?.field.focus();
+  }, [invalidFocus]);
   const [status, setStatus] = useState<Status>("idle");
   const [apiSiteKey, setApiSiteKey] = useState<string | null>(null);
   const [limits, setLimits] = useState(reservationGuests);
@@ -219,7 +227,7 @@ function ReservationFormContent({
       !timeInOpeningWindow(normalizeTimeInput(timeValue), opening));
   // Shown after blur or a submit attempt, so typing "1" for "12:30" does not flash an error.
   const timeError =
-    timeTouched && timeMalformed
+    timeMalformed && (submitted || (timeTouched && Boolean(timeValue)))
       ? text("Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.")
       : timeInvalid && timeTouched && opening?.kind === "open"
         ? text(
@@ -358,7 +366,10 @@ function ReservationFormContent({
     ].find(([, invalid]) => invalid)?.[0];
     if (firstInvalid) {
       setErrorMsg(null);
-      e.currentTarget.querySelector<HTMLElement>(`#${firstInvalid}`)?.focus();
+      const field = e.currentTarget.querySelector<HTMLElement>(
+        `#${firstInvalid}`,
+      );
+      if (field) setInvalidFocus({ field });
       return;
     }
     inFlight.current = true;
@@ -664,7 +675,7 @@ function ReservationFormContent({
             style={inputStyle}
           />
           {nameError && (
-            <p id="resv-name-error" role="alert" style={fieldMessageStyle}>
+            <p id="resv-name-error" style={publicFormFieldErrorStyle}>
               {nameError}
             </p>
           )}
@@ -692,7 +703,7 @@ function ReservationFormContent({
               style={inputStyle}
             />
             {emailError && (
-              <p id="resv-email-error" role="alert" style={fieldMessageStyle}>
+              <p id="resv-email-error" style={publicFormFieldErrorStyle}>
                 {emailError}
               </p>
             )}
@@ -755,12 +766,9 @@ function ReservationFormContent({
               <p
                 id="resv-date-message"
                 role={dateError ? "alert" : undefined}
-                style={{
-                  ...fieldMessageStyle,
-                  color: dateError
-                    ? "var(--sv-primary, #0b5cad)"
-                    : "var(--sv-text-2, #444)",
-                }}
+                style={
+                  dateError ? publicFormFieldErrorStyle : fieldMessageStyle
+                }
               >
                 {dateMessage}
               </p>
@@ -790,10 +798,7 @@ function ReservationFormContent({
               <p
                 id="resv-time-message"
                 role="alert"
-                style={{
-                  ...fieldMessageStyle,
-                  color: "var(--sv-primary, #0b5cad)",
-                }}
+                style={publicFormFieldErrorStyle}
               >
                 {timeError}
               </p>
@@ -840,7 +845,7 @@ function ReservationFormContent({
               </option>
             </select>
             {guestsError && (
-              <p id="resv-guests-error" role="alert" style={fieldMessageStyle}>
+              <p id="resv-guests-error" style={publicFormFieldErrorStyle}>
                 {guestsError}
               </p>
             )}
