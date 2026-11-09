@@ -4,6 +4,8 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-10
+
 ### Added
 
 - Tenant payment-status gating for shop checkout and both event-booking forms, with host capability/state props or uncached client loading and guest/account/retry guards. `Bald verfügbar` is reserved for inactive payments; loading stays neutral, and failed status reads offer retry.
