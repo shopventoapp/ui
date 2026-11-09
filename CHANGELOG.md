@@ -4,25 +4,11 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-11-10
-
-### Fixed
-
-- Underline inline links in public reservation forms and add persistent, translatable field validation with accessible error descriptions and first-invalid-field focus to newsletter and reservation forms (#43825).
-
-### Compatibility
-
-- Complete host catalogues typed as `ShopventoMessages` must add five `reservation` keys: `Bitte gib Deinen Namen ein.`, `Bitte gib Deine E-Mail-Adresse ein.`, `Bitte gib eine gültige E-Mail-Adresse ein.`, `Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.`, and `Bitte wähle eine Personenzahl aus.`; and two `newsletter` keys: `Bitte gib Deine E-Mail-Adresse ein.` and `Bitte gib eine gültige E-Mail-Adresse ein.`. Partial `ShopventoCatalogue` overrides and per-key `labels` remain compatible.
-- Newsletter and reservation forms now use `noValidate` and persistent translated field errors instead of native browser validation bubbles. API payloads, existing message keys, exports and props are unchanged.
-
 ### Added
 
 - Tenant payment-status gating for shop checkout and both event-booking forms, with host capability/state props or uncached client loading and guest/account/retry guards. `Bald verfügbar` is reserved for inactive payments; loading stays neutral, and failed status reads offer retry.
 - Zero-payable backend cart quotes, estimated fully voucher-funded/free event bookings and free table reservations remain usable without card payments. Event bookings use public voucher allocation estimates because there is no booking quote endpoint; backend payment-unavailable rejections show their message and lock retries for that exact selection.
 - Timed private-event opening exceptions preserve outside-window reservations, including buffered closures across midnight, with localized closure notices and focused time validation. Legacy all-day closures and replacement opening hours remain compatible.
-- English static documentation with integration guides, TypeDoc component/type reference and a locally bundled read-only Shop API reference.
-- Typechecked source and built-package examples, a host-owned session proxy recipe, a public OpenAPI exporter and static link checks.
-- SHA-pinned GitHub Pages workflow for main and version tags.
 
 ### Fixed
 
@@ -38,6 +24,23 @@ All notable changes to this package are documented here. The format follows [Kee
 
 - Both client factories expose `getPaymentStatus`; it is optional on custom `BookingClient` implementations. A missing method or a 404 endpoint retains legacy active behavior.
 - `useSubmitBooking` adds `paymentRejected`, and `OpeningWindow` adds optional `closures`. `bookingVoucherAllocation` moved to a shared module and remains exported from the package root.
+
+## [0.5.0] - 2026-11-10
+
+### Fixed
+
+- Underline inline links in public reservation forms and add persistent, translatable field validation with accessible error descriptions and first-invalid-field focus to newsletter and reservation forms (#43825).
+
+### Compatibility
+
+- Complete host catalogues typed as `ShopventoMessages` must add five `reservation` keys: `Bitte gib Deinen Namen ein.`, `Bitte gib Deine E-Mail-Adresse ein.`, `Bitte gib eine gültige E-Mail-Adresse ein.`, `Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.`, and `Bitte wähle eine Personenzahl aus.`; and two `newsletter` keys: `Bitte gib Deine E-Mail-Adresse ein.` and `Bitte gib eine gültige E-Mail-Adresse ein.`. Partial `ShopventoCatalogue` overrides and per-key `labels` remain compatible.
+- Newsletter and reservation forms now use `noValidate` and persistent translated field errors instead of native browser validation bubbles. API payloads, existing message keys, exports and props are unchanged.
+
+### Added
+
+- English static documentation with integration guides, TypeDoc component/type reference and a locally bundled read-only Shop API reference.
+- Typechecked source and built-package examples, a host-owned session proxy recipe, a public OpenAPI exporter and static link checks.
+- SHA-pinned GitHub Pages workflow for main and version tags.
 
 ## [0.4.0] - 2026-10-31
 
