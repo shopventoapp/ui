@@ -121,6 +121,7 @@ test("compact English booking renders all fields from its own prop scope", async
   });
   const view = render(
     <EventBooking
+      paymentStatus="active"
       locale="en"
       client={client}
       baseUrl=""

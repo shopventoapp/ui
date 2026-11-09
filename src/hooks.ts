@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { bookingPaymentSelection } from "./booking-payment";
 import {
+  BookingApiError,
   type BookingClient,
   type BookingResponse,
   bookingErrorMessage,
@@ -202,13 +204,20 @@ export function useSubmitBooking(
   const [result, setResult] = useState<BookingResponse | null>(null);
   const [fieldErrors, setFieldErrors] = useState<GuestFieldErrors>({});
   const busy = useRef(false);
+  const paymentRejections = useRef(new Set<string>());
+  const [, setPaymentRevision] = useState(0);
   async function submit(
     draft: BookingDraft,
     guest: boolean,
     token: string,
     consent = false,
   ) {
-    if (busy.current) return;
+    if (
+      busy.current ||
+      paymentRejections.current.has(bookingPaymentSelection(draft))
+    )
+      return;
+    const selection = bookingPaymentSelection(draft);
     busy.current = true;
     setPending(true);
     setError(null);
@@ -267,6 +276,15 @@ export function useSubmitBooking(
       setResult(response);
       return response;
     } catch (error) {
+      if (
+        error instanceof BookingApiError &&
+        error.status === 409 &&
+        typeof error.detail === "string" &&
+        /^Bald verfügbar:/.test(error.detail)
+      ) {
+        paymentRejections.current.add(selection);
+        setPaymentRevision((revision) => revision + 1);
+      }
       onFailure?.(error);
       setFieldErrors(bookingFieldErrors(error, options));
       setError(bookingErrorMessage(error, options));
@@ -282,6 +300,9 @@ export function useSubmitBooking(
   return {
     /** Submit an authenticated booking request. In useSubmitBooking, pass guest, challenge token and consent explicitly for guest submissions; consent defaults to false. */
     submit,
+    /** Whether the backend rejected this exact selection because it requires payment. */
+    paymentRejected: (draft: Pick<BookingDraft, "timewindow_id" | "seats">) =>
+      paymentRejections.current.has(bookingPaymentSelection(draft)),
     /** Whether booking submission is in progress. */
     pending,
     /** Customer-visible error, or null. */

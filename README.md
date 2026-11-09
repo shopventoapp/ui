@@ -69,6 +69,23 @@ The [shop flow guide](docs/guides/shop.md), [reservations guide](docs/guides/res
 
 The [integration guide](docs/integration.md) describes every component, the booking flow, the account dashboard, the shop primitives and the backend contract in detail.
 
+## Tenant payment availability
+
+`ShopFlow`, `EventBooking` and `BookingFlow` accept `paymentStatus`. Forward the host's public capability `{ online_payments_enabled: boolean, checkout_label: string }` or one of `"active"`, `"inactive"`, `"unknown"`, `"loading"`, `"error"`. While the host is loading or has failed, pass the matching state explicitly. Only `active` enables a paid action. Disabled payment actions use the exact label `Bald verfügbar`; the backend label never overrides this gate label.
+
+When the prop is omitted, the flow reads `/api/shop/payments/status` through its configured client transport and origin, with cookie credentials, `cache: "no-store"`, an abort signal and a 10-second timeout. Keep the client identity stable. The response must contain both correctly typed capability fields. Only a 404 enables payments for compatibility with older single-tenant backends without this endpoint. Other HTTP/network/JSON failures remain `error`, and malformed capability data remains `unknown`; both block paid submissions. Clients expose `getPaymentStatus(signal?)`, and `usePaymentStatus(client, supplied?)` is exported from the root and `shop-flow` entrypoints. A host-provided state skips the package fetch.
+
+```tsx
+// Keep the host's loading/error state explicit until its capability is known.
+<ShopFlow paymentStatus={paymentCapability ?? "loading"} />
+<EventBooking baseUrl="" eventId={123} termsUrl="/terms" privacyUrl="/privacy"
+  paymentStatus={paymentCapability ?? "loading"} />
+```
+
+Shop checkout uses the backend cart quote's `total_price`, including voucher funding. A current zero-payable quote can submit while card payments are unavailable; a partial voucher discount cannot. The final action rechecks its quote before checkout, including after guest/account entry or a failed attempt. Browsing, voucher entry and account access remain usable.
+
+There is no public event-booking quote endpoint. Both booking forms therefore use `bookingVoucherAllocation` with the public variant prices and voucher lookups as an estimate, as agreed for this integration. A zero estimate permits free or fully funded bookings; a positive or unknown estimate blocks paid booking while capability is unavailable. The backend is authoritative: if it rejects a zero estimate with its `Bald verfügbar: Online-Zahlungen ...` payment-unavailable response, the UI shows that message and disables further submissions for that exact window, seat/variant and voucher selection for the mounted flow. Changing only contact details, consent or guest/account mode does not bypass the rejection. A different selection can be checked and submitted again. Free table reservations remain independent of payment status. Do not use `paused` as a payment-status substitute, because it disables broader shop flows.
+
 ## Theming
 
 All selectors are scoped (`.sv-booking`, `.sv-account`, `.sv-redesign`, `.sv-shop-*`) and no global reset is shipped. Components read CSS custom properties with the `--sv-` prefix; set them on any ancestor:

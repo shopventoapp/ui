@@ -204,7 +204,7 @@ function ReservationFormContent({
       opening.label ? ` (${opening.label})` : "",
     );
   }
-  const dateMessage =
+  const openingMessage =
     dateError ??
     (opening?.kind === "open"
       ? text(
@@ -217,29 +217,61 @@ function ReservationFormContent({
             : localeTime(opening.closes, locale),
         )
       : null);
+  const closureMessage = opening?.closures
+    ?.map((closure) =>
+      text(
+        "Geschlossen von {0} bis {1} Uhr.{2}",
+        locale.startsWith("de")
+          ? closure.starts
+          : localeTime(closure.starts, locale),
+        locale.startsWith("de")
+          ? closure.ends
+          : localeTime(
+              closure.ends === "24:00" ? "00:00" : closure.ends,
+              locale,
+            ),
+        closure.label ? ` (${closure.label})` : "",
+      ),
+    )
+    .join(" ");
+  const dateMessage =
+    dateError ||
+    [openingMessage, closureMessage].filter(Boolean).join(" ") ||
+    null;
+  const selectedClosure = opening?.closures?.find(
+    (closure) =>
+      closure.starts <= normalizeTimeInput(timeValue) &&
+      normalizeTimeInput(timeValue) < closure.ends,
+  );
   const timeMalformed = !/^([01]\d|2[0-3]):[0-5]\d$/.test(
     normalizeTimeInput(timeValue),
   );
   const timeInvalid =
     timeMalformed ||
-    (opening?.kind === "open" &&
+    (opening != null &&
+      (opening.kind === "open" || opening.kind === "unrestricted") &&
       Boolean(timeValue) &&
       !timeInOpeningWindow(normalizeTimeInput(timeValue), opening));
   // Shown after blur or a submit attempt, so typing "1" for "12:30" does not flash an error.
   const timeError =
     timeMalformed && (submitted || (timeTouched && Boolean(timeValue)))
       ? text("Bitte gib eine gültige Uhrzeit ein, zum Beispiel 18:30.")
-      : timeInvalid && timeTouched && opening?.kind === "open"
+      : timeInvalid && timeTouched && selectedClosure
         ? text(
-            "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
-            locale.startsWith("de")
-              ? opening.opens
-              : localeTime(opening.opens, locale),
-            locale.startsWith("de")
-              ? opening.closes
-              : localeTime(opening.closes, locale),
+            "Zu dieser Uhrzeit haben wir geschlossen.{0} Bitte wähle eine andere Uhrzeit.",
+            selectedClosure.label ? ` (${selectedClosure.label})` : "",
           )
-        : null;
+        : timeInvalid && timeTouched && opening?.kind === "open"
+          ? text(
+              "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
+              locale.startsWith("de")
+                ? opening.opens
+                : localeTime(opening.opens, locale),
+              locale.startsWith("de")
+                ? opening.closes
+                : localeTime(opening.closes, locale),
+            )
+          : null;
   const fieldMessageStyle: React.CSSProperties = {
     fontFamily: "var(--sv-font, Georgia, serif)",
     fontSize: 14,

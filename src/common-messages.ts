@@ -24,8 +24,29 @@ export const englishFormsMessages: {
   /** Please enter the date as {0}. */
   "Bitte gib das Datum als {0} ein.": "Please enter the date as {0}.",
 });
-/** Payment method names, independent of checkout presentation. */
+/** Payment actions and method names, independent of checkout presentation. */
 export const defaultPaymentMessages = Object.freeze({
+  /** Payment capability could not be read; the customer can retry. */
+  "Der Zahlungsstatus konnte nicht geladen werden. Bitte versuche es erneut.":
+    "Der Zahlungsstatus konnte nicht geladen werden. Bitte versuche es erneut.",
+  /** Visible reason for a disabled paid action. */
+  "Online-Zahlung ist derzeit nicht verfügbar. Gutscheine kannst Du weiterhin einlösen.":
+    "Online-Zahlung ist derzeit nicht verfügbar. Gutscheine kannst Du weiterhin einlösen.",
+  /** Neutral payment capability loading notice. */
+  "Zahlungsstatus wird geladen…": "Zahlungsstatus wird geladen…",
+  /** A voucher lookup failed and can be retried. */
+  "Der Gutschein konnte nicht geprüft werden. Bitte versuche es erneut.":
+    "Der Gutschein konnte nicht geprüft werden. Bitte versuche es erneut.",
+  /** Retry the failed capability or voucher lookup. */
+  "Erneut versuchen": "Erneut versuchen",
+
+  /** Voucher not found. */
+  "Gutschein nicht gefunden.": "Gutschein nicht gefunden.",
+  /** This voucher cannot currently be redeemed. */
+  "Dieser Gutschein kann derzeit nicht eingelöst werden.":
+    "Dieser Gutschein kann derzeit nicht eingelöst werden.",
+  /** Disabled paid action label. */
+  "Bald verfügbar": "Bald verfügbar",
   /** Credit card */
   Kreditkarte: "Kreditkarte",
   /** Debit card */
@@ -35,6 +56,27 @@ export const defaultPaymentMessages = Object.freeze({
 export const englishPaymentMessages: {
   [K in keyof typeof defaultPaymentMessages]: string;
 } = Object.freeze({
+  /** Payment capability could not be read; the customer can retry. */
+  "Der Zahlungsstatus konnte nicht geladen werden. Bitte versuche es erneut.":
+    "Payment status could not be loaded. Please try again.",
+  /** Visible reason for a disabled paid action. */
+  "Online-Zahlung ist derzeit nicht verfügbar. Gutscheine kannst Du weiterhin einlösen.":
+    "Online payment is currently unavailable. You can still redeem vouchers.",
+  /** Neutral payment capability loading notice. */
+  "Zahlungsstatus wird geladen…": "Loading payment status…",
+  /** A voucher lookup failed and can be retried. */
+  "Der Gutschein konnte nicht geprüft werden. Bitte versuche es erneut.":
+    "The voucher could not be checked. Please try again.",
+  /** Retry the failed capability or voucher lookup. */
+  "Erneut versuchen": "Try again",
+
+  /** Voucher not found. */
+  "Gutschein nicht gefunden.": "Voucher not found.",
+  /** This voucher cannot currently be redeemed. */
+  "Dieser Gutschein kann derzeit nicht eingelöst werden.":
+    "This voucher cannot currently be redeemed.",
+  /** Disabled paid action label, fixed by the payment gate contract. */
+  "Bald verfügbar": "Bald verfügbar",
   /** Credit card */
   Kreditkarte: "Credit card" /** Debit card */,
   Debitkarte: "Debit card",

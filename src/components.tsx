@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { type BookingLabels, mergeBookingLabels } from "./booking-labels";
+import { useBookingPayable } from "./booking-payment";
 import {
   type BookingClient,
   type ClientOptions,
@@ -36,6 +37,12 @@ import {
   useMessages,
   useShopventoLocale,
 } from "./locale";
+import { usePaymentStatusControl } from "./payment-hooks";
+import { PaymentNotice } from "./payment-notice";
+import {
+  type PaymentStatusInput,
+  paymentActionBlocked,
+} from "./payment-status";
 import { Turnstile } from "./turnstile";
 
 function slotLabel(slot: Timewindow, options: LocaleOptions = {}) {
@@ -363,6 +370,8 @@ export function BookingSummary({
 }
 /** Host configuration for the compact booking form. */
 export interface EventBookingOptions extends ClientOptions, LocaleOptions {
+  /** Host payment capability or state; omitted loads /api/shop/payments/status. */
+  paymentStatus?: PaymentStatusInput;
   /** Host-owned copy overrides or account terminology. Optional; omitted unless supplied by the host or backend. */
   labels?: Partial<BookingLabels>;
   /** Positive installation location identifier used to filter availability. Optional; omitted unless supplied by the host or backend. */
@@ -421,17 +430,38 @@ function EventBookingContent(props: EventBookingProps) {
   const { draft, setDraft, ready, clear } = useBookingDraft(
     `vv:booking:${props.baseUrl}:${eventId}:${props.locationId ?? "all"}:${props.mode ?? "guest"}`,
   );
-  const { submit, pending, error, fieldErrors, result } = useSubmitBooking(
+  const { submit, pending, error, fieldErrors, result, paymentRejected } =
+    useSubmitBooking(
+      client,
+      props.onRedirect ?? ((url) => window.location.assign(url)),
+      props.checkoutHosts,
+    );
+  const { status: paymentStatus, retry: retryPaymentStatus } =
+    usePaymentStatusControl(client, props.paymentStatus, true);
+  const paymentNoticeId = useId();
+  const paymentText = useMessages("payment");
+  const voucherPayment = useBookingPayable(
     client,
-    props.onRedirect ?? ((url) => window.location.assign(url)),
-    props.checkoutHosts,
+    draft.seats,
+    data?.variants ?? [],
+    paymentStatus !== "active" && paymentStatus !== "loading",
   );
+  const paymentBlocked =
+    paymentActionBlocked(paymentStatus, voucherPayment.payable) ||
+    paymentRejected(draft);
   const [consent, setConsent] = useState(false);
   const [token, setToken] = useState("");
   const [challenge, setChallenge] = useState(0);
   const [validation, setValidation] = useState<string | null>(null);
   const [validationAttempt, setValidationAttempt] = useState(0);
   const [now, setNow] = useState(Date.now);
+  const currentPayment = useRef({
+    status: paymentStatus,
+    draft,
+    consent,
+    token,
+  });
+  currentPayment.current = { status: paymentStatus, draft, consent, token };
   const alert = useRef<HTMLParagraphElement>(null);
   const guest = (props.mode ?? "guest") === "guest";
   const message = validation ?? error;
@@ -460,7 +490,33 @@ function EventBookingContent(props: EventBookingProps) {
     event.preventDefault();
     setValidationAttempt((attempt) => attempt + 1);
     setValidation(null);
-    if (!data || pending || result) return;
+    if (
+      !data ||
+      pending ||
+      voucherPayment.checking ||
+      result ||
+      paymentRejected(draft)
+    )
+      return;
+    let payable = voucherPayment.payable;
+    if (voucherPayment.failed) {
+      payable = await voucherPayment.retry();
+      if (
+        payable === null ||
+        currentPayment.current.draft !== draft ||
+        currentPayment.current.consent !== consent ||
+        currentPayment.current.token !== token
+      )
+        return;
+    }
+    if (paymentActionBlocked(currentPayment.current.status, payable)) {
+      if (
+        props.paymentStatus === undefined &&
+        (paymentStatus === "error" || paymentStatus === "unknown")
+      )
+        retryPaymentStatus();
+      return;
+    }
     const slot = data.windows.find(
       (w) => w.timewindow_id === draft.timewindow_id,
     );
@@ -645,10 +701,57 @@ function EventBookingContent(props: EventBookingProps) {
           {message}
         </p>
       )}
-      <button type="submit" disabled={pending}>
-        {pending
-          ? text("Deine Buchung wird gesendet…")
-          : text("Zahlungspflichtig buchen")}
+      <PaymentNotice
+        id={paymentNoticeId}
+        status={paymentStatus}
+        blocked={paymentBlocked}
+        retry={retryPaymentStatus}
+      />
+      {(voucherPayment.notFound || voucherPayment.rejected) && (
+        <p className="sv-summary" role="status">
+          {voucherPayment.notFound
+            ? paymentText("Gutschein nicht gefunden.")
+            : paymentText(
+                "Dieser Gutschein kann derzeit nicht eingelöst werden.",
+              )}
+        </p>
+      )}
+      {voucherPayment.failed && (
+        <div className="sv-summary" role="status">
+          <p>
+            {paymentText(
+              "Der Gutschein konnte nicht geprüft werden. Bitte versuche es erneut.",
+            )}
+          </p>
+          <button
+            type="button"
+            className="sv-payment-retry"
+            disabled={voucherPayment.checking}
+            onClick={() => {
+              void voucherPayment.retry();
+            }}
+          >
+            {paymentText("Erneut versuchen")}
+          </button>
+        </div>
+      )}
+      <button
+        type="submit"
+        disabled={pending || voucherPayment.checking || paymentBlocked}
+        aria-busy={
+          paymentStatus === "loading" || voucherPayment.checking || pending
+        }
+        aria-describedby={
+          paymentBlocked && paymentStatus !== "active"
+            ? paymentNoticeId
+            : undefined
+        }
+      >
+        {paymentBlocked && paymentStatus === "inactive"
+          ? paymentText("Bald verfügbar")
+          : pending
+            ? text("Deine Buchung wird gesendet…")
+            : text("Zahlungspflichtig buchen")}
       </button>
     </form>
   );

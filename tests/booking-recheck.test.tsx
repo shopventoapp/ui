@@ -91,7 +91,9 @@ test("summary and review deduct a value voucher and hide the pending hint", asyn
       }),
   });
   const props = { ...base, client, data, draftKey: "summary" };
-  const view = render(<BookingFlow {...props} step={1} />);
+  const view = render(
+    <BookingFlow paymentStatus="active" {...props} step={1} />,
+  );
   const assertSummary = () => {
     const summaries = view.container.querySelectorAll(".lines");
     expect(summaries.length).toBeGreaterThan(0);
@@ -121,7 +123,7 @@ test("summary and review deduct a value voucher and hide the pending hint", asyn
   );
   assertSummary();
   fireEvent.click(screen.getByRole("button", { name: "Schließen" }));
-  view.rerender(<BookingFlow {...props} step={3} />);
+  view.rerender(<BookingFlow paymentStatus="active" {...props} step={3} />);
   assertSummary();
   expect(view.container.querySelectorAll(".lines").length).toBe(2);
 });
@@ -145,7 +147,9 @@ for (const status of [404, 429]) {
             }),
     });
     const props = { ...base, client, data, draftKey: "pendingSummary" };
-    const view = render(<BookingFlow {...props} step={1} />);
+    const view = render(
+      <BookingFlow paymentStatus="active" {...props} step={1} />,
+    );
     const assertPendingSummary = () => {
       const summaries = view.container.querySelectorAll(".lines");
       expect(summaries.length).toBeGreaterThan(0);
@@ -169,7 +173,7 @@ for (const status of [404, 429]) {
     );
     assertPendingSummary();
     fireEvent.click(screen.getByRole("button", { name: "Schließen" }));
-    view.rerender(<BookingFlow {...props} step={3} />);
+    view.rerender(<BookingFlow paymentStatus="active" {...props} step={3} />);
     assertPendingSummary();
     expect(screen.getAllByText(/Restbetrag bestätigt Stripe/).length).toBe(2);
   });
@@ -194,7 +198,9 @@ test("an unchecked restored code stays pending until its check finishes", async 
     },
   });
   const props = { ...base, client, data, draftKey: "uncheckedSummary" };
-  const view = render(<BookingFlow {...props} step={1} />);
+  const view = render(
+    <BookingFlow paymentStatus="active" {...props} step={1} />,
+  );
   try {
     await screen.findByText("Wird bei der Buchung geprüft");
     expect(screen.queryByText("Für diese Buchung nicht benötigt")).toBeNull();
@@ -225,7 +231,7 @@ test("an unchecked restored code stays pending until its check finishes", async 
   expect(
     view.container.querySelector(".summary-toggle strong")?.textContent,
   ).toBe(bookingMoney(50));
-  view.rerender(<BookingFlow {...props} step={3} />);
+  view.rerender(<BookingFlow paymentStatus="active" {...props} step={3} />);
   assertMinimumSummary();
   expect(view.container.querySelectorAll(".lines").length).toBe(2);
 });
@@ -244,6 +250,7 @@ test("summary explains an unneeded voucher without a zero amount", async () => {
   });
   const view = render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -280,6 +287,7 @@ test("a voucher booking rejection shows its real cause and no seat conflict", as
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -309,6 +317,7 @@ test("choosing another date clears a seat conflict and the submission error", as
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -359,6 +368,7 @@ test("removing a code aborts its restore check and releases the flow", async () 
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -403,6 +413,7 @@ test("removing an invalid restored voucher unblocks step one", async () => {
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -441,6 +452,7 @@ test("double Enter cannot start concurrent voucher checks", async () => {
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -562,6 +574,7 @@ test("an aborted restored voucher cannot overwrite a newly checked code", async 
   const steps: number[] = [];
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -616,6 +629,7 @@ test("four sequential adds and removals use four checks under the 12 per minute 
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -668,6 +682,7 @@ test("rate limited restored vouchers allow progress and an explicit retry", asyn
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={data}
@@ -700,6 +715,7 @@ test("voucher counter uses the missing count and disappears when complete", asyn
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={{
@@ -755,7 +771,9 @@ test("voucher rejection focuses the code after asynchronous navigation and clear
       target = n;
     },
   };
-  const view = render(<BookingFlow {...props} step={3} />);
+  const view = render(
+    <BookingFlow paymentStatus="active" {...props} step={3} />,
+  );
   await waitFor(() =>
     expect(
       screen
@@ -772,7 +790,7 @@ test("voucher rejection focuses the code after asynchronous navigation and clear
   );
   await new Promise((r) => setTimeout(r, 30));
   expect(target).toBe(1);
-  view.rerender(<BookingFlow {...props} step={1} />);
+  view.rerender(<BookingFlow paymentStatus="active" {...props} step={1} />);
   await waitFor(() => expect(document.activeElement?.id).toBe("f-code"));
   fireEvent.click(
     screen.getByRole("button", { name: "Gutschein REJECT entfernen" }),
@@ -795,6 +813,7 @@ test("a new rate limited voucher stays pending without automatic retries in vouc
   });
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={client}
       data={{
@@ -840,11 +859,13 @@ test("contact error links focus the field after delayed step navigation", async 
       target = n;
     },
   };
-  const view = render(<BookingFlow {...props} step={2} />);
+  const view = render(
+    <BookingFlow paymentStatus="active" {...props} step={2} />,
+  );
   fireEvent.click(
     await screen.findByRole("button", { name: "Als Gast fortfahren" }),
   );
-  view.rerender(<BookingFlow {...props} step={3} />);
+  view.rerender(<BookingFlow paymentStatus="active" {...props} step={3} />);
   fireEvent.click(
     await screen.findByRole("button", { name: /Zahlungspflichtig/ }),
   );
@@ -853,7 +874,7 @@ test("contact error links focus the field after delayed step navigation", async 
   );
   await new Promise((r) => setTimeout(r, 30));
   expect(target).toBe(2);
-  view.rerender(<BookingFlow {...props} step={2} />);
+  view.rerender(<BookingFlow paymentStatus="active" {...props} step={2} />);
   await waitFor(() => expect(document.activeElement?.id).toBe("f-first_name"));
 });
 
@@ -880,7 +901,9 @@ test("booking flow overrides every event voucher message with host copy", async 
       eventVoucherDescription: "Tasting-Gutschein für einen Platz",
     },
   };
-  const view = render(<BookingFlow {...props} step={1} />);
+  const view = render(
+    <BookingFlow paymentStatus="active" {...props} step={1} />,
+  );
   const input = await screen.findByLabelText("Gutscheincode");
   expect(screen.getByText("Tastings nur mit Gutschein.")).toBeTruthy();
   expect(screen.getByText("Noch 2 Tasting-Gutscheine.")).toBeTruthy();
@@ -889,7 +912,7 @@ test("booking flow overrides every event voucher message with host copy", async 
   await screen.findByText("Tasting-Gutschein für einen Platz");
   expect(screen.getByText("Noch 1 Tasting-Gutscheine.")).toBeTruthy();
   // Host-owned navigation can open review with an incomplete voucher selection.
-  view.rerender(<BookingFlow {...props} step={3} />);
+  view.rerender(<BookingFlow paymentStatus="active" {...props} step={3} />);
   fireEvent.submit(
     screen
       .getByRole("button", { name: "Zahlungspflichtig buchen" })
@@ -904,6 +927,7 @@ test("undefined voucher count label renders the booking flow default", async () 
   startFlowDraft("undefined-label", slot.timewindow_id, 2, "v1");
   render(
     <BookingFlow
+      paymentStatus="active"
       {...base}
       client={createBookingClient({ baseUrl: "https://example.invalid" })}
       data={{

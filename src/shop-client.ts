@@ -1,3 +1,4 @@
+import { loadPaymentStatus } from "./payment-status";
 import { type ShopOperations, shopPaths } from "./shop-wire";
 
 export type { ShopOperations } from "./shop-wire";
@@ -66,5 +67,8 @@ export function createShopClient({
   return {
     /** Call one public shop operation with its typed body, optional slug/order identifier, query and abort signal. */
     request,
+    /** Read uncached tenant payment capability; 404 means a legacy backend. */
+    getPaymentStatus: (signal?: AbortSignal) =>
+      loadPaymentStatus(fetcher, baseUrl, signal),
   };
 }

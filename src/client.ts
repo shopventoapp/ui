@@ -1,4 +1,5 @@
 import { getMessages, type LocaleOptions } from "./locale";
+import { loadPaymentStatus } from "./payment-status";
 import type {
   BookingRequest,
   BookingResponse,
@@ -155,6 +156,14 @@ export function bookingErrorMessage(
   if (!(error instanceof BookingApiError))
     return text("Die Verbindung ist fehlgeschlagen. Bitte versuche es erneut.");
   if (
+    error.status === 409 &&
+    typeof error.detail === "string" &&
+    /^Bald verfügbar:/.test(error.detail)
+  )
+    return text(
+      "Bald verfügbar: Online-Zahlungen sind derzeit nicht freigeschaltet. Bitte versuche es später erneut.",
+    );
+  if (
     safeGermanDetail(error.detail) &&
     (!(options.locale ?? "de").startsWith("en") ||
       text(error.detail) !== error.detail)
@@ -232,6 +241,14 @@ export function createBookingClient(options: ClientOptions) {
   return {
     /** List public event variants. Optional signal cancels the request. */
     listEvents,
+    /** Read public payment capability through the configured same-origin transport. */
+    getPaymentStatus: (signal?: AbortSignal) =>
+      loadPaymentStatus(
+        transport,
+        options.baseUrl,
+        signal,
+        options.credentials ?? "omit",
+      ),
     /** Filter the public list by event identifier; there is no public detail endpoint. */
     getEvent,
     /** List slots for one event. Date defaults to today in Europe/Berlin; optional location filters availability. */
@@ -299,7 +316,11 @@ export function createBookingClient(options: ClientOptions) {
   };
 }
 /** Public booking client contract used by the storefront clients. */
-export type BookingClient = ReturnType<typeof createBookingClient>;
+export type BookingClient = Omit<
+  ReturnType<typeof createBookingClient>,
+  "getPaymentStatus"
+> &
+  Partial<Pick<ReturnType<typeof createBookingClient>, "getPaymentStatus">>;
 /** Backend timewindow dates and times use Europe/Berlin local time. */
 function berlinTimestamp(now: number): string {
   return new Intl.DateTimeFormat("sv-SE", {
