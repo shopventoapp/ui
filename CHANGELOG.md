@@ -4,6 +4,19 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-11
+
+### Added
+
+- Reservation settings prefer `opening_intervals`, list every split-day window and refuse arrivals in gaps before submission (#43882).
+- Overnight hours include 23:59 and carry the previous opening day's early hours onto the next calendar date. Manual exceptions and timed closures still apply.
+
+### Compatibility
+
+- Absent `opening_intervals` retains the legacy `opening_hours` behavior. Present `null` is unrestricted; `[]` closes weekly hours. Single-window tenants retain their existing hints and validation.
+- Four new overridable reservation labels: `ab {0} Uhr bis vor {1} Uhr`, ` und `, `Reservierungen {0}.`, and `Bitte wähle eine Uhrzeit {0}.`. Complete host catalogues must add these keys; partial overrides remain compatible. Existing single-window keys remain in use.
+- `OpeningSettings` adds optional `opening_intervals`; resolved `OpeningWindow` values may include an `intervals` list. Closing midnight is represented as the exclusive bound `24:00`.
+
 ## [0.6.0] - 2026-11-10
 
 ### Added

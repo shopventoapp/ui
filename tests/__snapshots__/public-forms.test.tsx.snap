@@ -1,0 +1,13 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`split-day hint lists every interval and refuses the gap (de) 1`] = `"Reservierungen ab 12:00 Uhr bis vor 14:30 Uhr und ab 17:30 Uhr bis vor 23:00 Uhr."`;
+
+exports[`split-day hint lists every interval and refuses the gap (de) 2`] = `"Bitte wähle eine Uhrzeit ab 12:00 Uhr bis vor 14:30 Uhr und ab 17:30 Uhr bis vor 23:00 Uhr."`;
+
+exports[`split-day hint lists every interval and refuses the gap (en) 1`] = `"Reservations from 12:00 PM until before 02:30 PM and from 05:30 PM until before 11:00 PM."`;
+
+exports[`split-day hint lists every interval and refuses the gap (en) 2`] = `"Please choose a time from 12:00 PM until before 02:30 PM and from 05:30 PM until before 11:00 PM."`;
+
+exports[`overnight booking posts the calendar date 20112026 1`] = `"Reservierungen ab 18:00 Uhr bis vor 24:00 Uhr."`;
+
+exports[`overnight booking posts the calendar date 21112026 1`] = `"Reservierungen ab 00:00 Uhr bis vor 02:00 Uhr."`;

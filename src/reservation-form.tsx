@@ -204,18 +204,32 @@ function ReservationFormContent({
       opening.label ? ` (${opening.label})` : "",
     );
   }
+  const displayTime = (time: string) =>
+    locale.startsWith("de")
+      ? time
+      : localeTime(time === "24:00" ? "00:00" : time, locale);
+  const openingRanges =
+    opening?.kind === "open"
+      ? (opening.intervals || [opening])
+          .map(({ opens, closes }) =>
+            text(
+              "ab {0} Uhr bis vor {1} Uhr",
+              displayTime(opens),
+              displayTime(closes),
+            ),
+          )
+          .join(text(" und "))
+      : "";
   const openingMessage =
     dateError ??
     (opening?.kind === "open"
-      ? text(
-          "Reservierungen ab {0} Uhr bis vor {1} Uhr.",
-          locale.startsWith("de")
-            ? opening.opens
-            : localeTime(opening.opens, locale),
-          locale.startsWith("de")
-            ? opening.closes
-            : localeTime(opening.closes, locale),
-        )
+      ? opening.intervals
+        ? text("Reservierungen {0}.", openingRanges)
+        : text(
+            "Reservierungen ab {0} Uhr bis vor {1} Uhr.",
+            displayTime(opening.opens),
+            displayTime(opening.closes),
+          )
       : null);
   const closureMessage = opening?.closures
     ?.map((closure) =>
@@ -262,15 +276,13 @@ function ReservationFormContent({
             selectedClosure.label ? ` (${selectedClosure.label})` : "",
           )
         : timeInvalid && timeTouched && opening?.kind === "open"
-          ? text(
-              "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
-              locale.startsWith("de")
-                ? opening.opens
-                : localeTime(opening.opens, locale),
-              locale.startsWith("de")
-                ? opening.closes
-                : localeTime(opening.closes, locale),
-            )
+          ? opening.intervals
+            ? text("Bitte wähle eine Uhrzeit {0}.", openingRanges)
+            : text(
+                "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
+                displayTime(opening.opens),
+                displayTime(opening.closes),
+              )
           : null;
   const fieldMessageStyle: React.CSSProperties = {
     fontFamily: "var(--sv-font, Georgia, serif)",

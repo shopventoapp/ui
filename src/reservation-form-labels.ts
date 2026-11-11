@@ -1,5 +1,13 @@
 /** German customer-visible defaults. Numbered placeholders preserve interpolation. */
 export const defaultReservationLabels = Object.freeze({
+  /** One reservation interval in a list. */
+  "ab {0} Uhr bis vor {1} Uhr": "ab {0} Uhr bis vor {1} Uhr",
+  /** Join reservation intervals. */
+  " und ": " und ",
+  /** Reservation hint listing all intervals. */
+  "Reservierungen {0}.": "Reservierungen {0}.",
+  /** Invalid-time hint listing all intervals. */
+  "Bitte wähle eine Uhrzeit {0}.": "Bitte wähle eine Uhrzeit {0}.",
   /** Please enter your name. */
   "Bitte gib Deinen Namen ein.": "Bitte gib Deinen Namen ein.",
   /** Please enter your email address. */
@@ -153,6 +161,10 @@ export const defaultReservationLabels = Object.freeze({
 export const englishReservationLabels: {
   [K in keyof typeof defaultReservationLabels]: string;
 } = Object.freeze({
+  "ab {0} Uhr bis vor {1} Uhr": "from {0} until before {1}",
+  " und ": " and ",
+  "Reservierungen {0}.": "Reservations {0}.",
+  "Bitte wähle eine Uhrzeit {0}.": "Please choose a time {0}.",
   "Bitte gib Deinen Namen ein.": "Please enter your name.",
   "Bitte gib Deine E-Mail-Adresse ein.": "Please enter your email address.",
   "Bitte gib eine gültige E-Mail-Adresse ein.":

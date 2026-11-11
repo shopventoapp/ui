@@ -1,0 +1,38 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`wine bar single-window payloads preserve every minute and window snapshot 1`] = `
+[
+  {
+    "kind": "closed",
+  },
+  {
+    "closes": "21:00",
+    "kind": "open",
+    "opens": "12:00",
+  },
+  {
+    "closes": "22:00",
+    "kind": "open",
+    "opens": "12:00",
+  },
+  {
+    "closes": "20:00",
+    "kind": "open",
+    "label": "Special",
+    "opens": "14:00",
+  },
+  {
+    "closes": "22:00",
+    "kind": "open",
+    "opens": "12:00",
+  },
+  {
+    "closes": "22:00",
+    "kind": "open",
+    "opens": "12:00",
+  },
+  {
+    "kind": "closed",
+  },
+]
+`;

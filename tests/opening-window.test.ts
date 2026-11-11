@@ -239,3 +239,174 @@ test.each([
     expect(result.closures).toEqual(expected);
   },
 );
+
+test("split intervals override the covering legacy span", () => {
+  const window = openingWindow("2026-11-17", {
+    opening_hours: [{ weekday: 1, opens: "12:00", closes: "23:00" }],
+    opening_intervals: [
+      { weekday: 1, opens: "17:30", closes: "23:00" },
+      { weekday: 1, opens: "12:00", closes: "14:30" },
+    ],
+  });
+  for (const time of ["12:00", "14:29", "17:30", "22:59"])
+    expect(timeInOpeningWindow(time, window)).toBe(true);
+  for (const time of ["11:59", "14:30", "15:30", "23:00"])
+    expect(timeInOpeningWindow(time, window)).toBe(false);
+});
+
+test("overnight hours carry onto the next calendar date and across the week", () => {
+  for (const [weekday, date, next] of [
+    [4, "2026-11-20", "2026-11-21"],
+    [6, "2026-11-22", "2026-11-23"],
+  ] as const) {
+    const config = {
+      opening_intervals: [{ weekday, opens: "18:00", closes: "02:00" }],
+    };
+    expect(timeInOpeningWindow("23:59", openingWindow(date, config))).toBe(
+      true,
+    );
+    expect(timeInOpeningWindow("00:30", openingWindow(date, config))).toBe(
+      false,
+    );
+    expect(timeInOpeningWindow("00:00", openingWindow(next, config))).toBe(
+      true,
+    );
+    expect(timeInOpeningWindow("01:59", openingWindow(next, config))).toBe(
+      true,
+    );
+    expect(timeInOpeningWindow("02:00", openingWindow(next, config))).toBe(
+      false,
+    );
+    expect(timeInOpeningWindow("18:00", openingWindow(next, config))).toBe(
+      false,
+    );
+  }
+});
+
+test("present null and empty intervals override legacy hours", () => {
+  const opening_hours = [{ weekday: 1, opens: "12:00", closes: "23:00" }];
+  expect(
+    openingWindow("2026-11-17", { opening_hours, opening_intervals: null }),
+  ).toEqual({ kind: "unrestricted" });
+  expect(
+    openingWindow("2026-11-17", { opening_hours, opening_intervals: [] }),
+  ).toEqual({ kind: "closed" });
+});
+
+test("exceptions replace their opening day, while next-day closures preserve carry", () => {
+  const config = {
+    opening_intervals: [{ weekday: 4, opens: "18:00", closes: "02:00" }],
+  };
+  const closed = (day: string) => ({
+    ...config,
+    opening_exceptions: [{ from: day, until: day, label: "Holiday" }],
+  });
+  expect(openingWindow("2026-11-21", closed("2026-11-20")).kind).toBe("closed");
+  expect(
+    timeInOpeningWindow(
+      "00:30",
+      openingWindow("2026-11-21", closed("2026-11-21")),
+    ),
+  ).toBe(true);
+  const replacement = {
+    ...config,
+    opening_exceptions: [
+      {
+        from: "2026-11-20",
+        until: "2026-11-20",
+        opens: "19:00",
+        closes: "01:00",
+      },
+    ],
+  };
+  expect(
+    timeInOpeningWindow("00:59", openingWindow("2026-11-21", replacement)),
+  ).toBe(true);
+  expect(
+    timeInOpeningWindow("01:00", openingWindow("2026-11-21", replacement)),
+  ).toBe(false);
+  const timed = {
+    ...config,
+    opening_exceptions: [
+      {
+        from: "2026-11-20",
+        until: "2026-11-21",
+        closed_from: "2026-11-20T23:30",
+        closed_until: "2026-11-21T00:30",
+      },
+    ],
+  };
+  expect(timeInOpeningWindow("00:29", openingWindow("2026-11-21", timed))).toBe(
+    false,
+  );
+  expect(timeInOpeningWindow("00:30", openingWindow("2026-11-21", timed))).toBe(
+    true,
+  );
+});
+
+test("midnight closing has no carry and a real 23:59 closing stays exclusive", () => {
+  for (const closes of ["00:00", "23:59"]) {
+    const config = {
+      opening_intervals: [{ weekday: 4, opens: "18:00", closes }],
+    };
+    expect(
+      timeInOpeningWindow("23:59", openingWindow("2026-11-20", config)),
+    ).toBe(closes === "00:00");
+    expect(openingWindow("2026-11-21", config).kind).toBe("closed");
+  }
+});
+
+test("wine bar single-window payloads preserve every minute and window snapshot", () => {
+  const opening_hours = [1, 2, 3, 4, 5].map((weekday) => ({
+    weekday,
+    opens: "12:00",
+    closes: weekday === 1 ? "21:00" : "22:00",
+  }));
+  const legacy = {
+    opening_hours,
+    opening_exceptions: [
+      {
+        from: "2026-11-19",
+        until: "2026-11-19",
+        opens: "14:00",
+        closes: "20:00",
+        label: "Special",
+      },
+    ],
+  };
+  const current = { ...legacy, opening_intervals: opening_hours };
+  const windows = [];
+  for (let day = 16; day <= 22; day++) {
+    const date = `2026-11-${day}`;
+    const before = openingWindow(date, legacy),
+      after = openingWindow(date, current);
+    expect(after).toEqual(before);
+    for (let minute = 0; minute < 1440; minute++) {
+      const time = `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+      expect(timeInOpeningWindow(time, after)).toBe(
+        timeInOpeningWindow(time, before),
+      );
+    }
+    windows.push(after);
+  }
+  expect(windows).toMatchSnapshot();
+});
+
+test("carried hours and the next days own hours stay separate across calendar boundaries", () => {
+  for (const [date, weekday] of [
+    ["2027-01-01", 3],
+    ["2027-03-28", 5],
+    ["2027-10-31", 5],
+  ] as const) {
+    const window = openingWindow(date, {
+      opening_intervals: [
+        { weekday, opens: "18:00", closes: "03:00" },
+        { weekday: (weekday + 1) % 7, opens: "17:30", closes: "22:00" },
+      ],
+    });
+    for (const time of ["00:00", "02:59", "17:30", "21:59"])
+      expect(timeInOpeningWindow(time, window)).toBe(true);
+    for (const time of ["03:00", "12:00", "22:00", "23:59"])
+      expect(timeInOpeningWindow(time, window)).toBe(false);
+  }
+});

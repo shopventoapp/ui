@@ -22,6 +22,8 @@ export type OpeningClosure = { starts: string; ends: string; label?: string };
 /** Public weekly opening hours and date exceptions. */
 export type OpeningSettings = {
   opening_hours?: OpeningHours[] | null;
+  /** Preferred weekly intervals; null is unrestricted and [] is closed. */
+  opening_intervals?: OpeningHours[] | null;
   opening_exceptions?: OpeningException[];
 };
 /** Resolved open, closed or unrestricted reservation window. */
@@ -38,6 +40,8 @@ export type OpeningWindow = (
       opens: string;
       closes: string;
       label?: string;
+      /** Calendar-date windows; 24:00 is the exclusive next midnight. */
+      intervals?: { opens: string; closes: string }[];
     }
 ) & { closures?: OpeningClosure[] };
 
@@ -79,7 +83,10 @@ export function openingWindow(
     .filter(isTimedClosure)
     .map((entry) => closureOnDate(entry, date))
     .filter((entry): entry is OpeningClosure => entry !== null);
-  const result = baseOpeningWindow(date, settings);
+  const result =
+    settings.opening_intervals === undefined
+      ? baseOpeningWindow(date, settings)
+      : intervalOpeningWindow(date, settings);
   return closures.length ? { ...result, closures } : result;
 }
 
@@ -113,6 +120,59 @@ function baseOpeningWindow(
     : { kind: "closed" };
 }
 
+/** Resolve each opening date before carrying its overnight part forward. */
+function intervalOpeningWindow(
+  date: string,
+  settings: OpeningSettings,
+): OpeningWindow {
+  const ownSettings = {
+    ...settings,
+    opening_hours: settings.opening_intervals,
+  };
+  const own = baseOpeningWindow(date, ownSettings);
+  if (own.kind === "unrestricted") return own;
+  const previousDate = new Date(`${date}T12:00:00Z`);
+  previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+  const previous = previousDate.toISOString().slice(0, 10);
+  const dayIntervals = (day: string) => {
+    const resolved = baseOpeningWindow(day, ownSettings);
+    if (resolved.kind !== "open") return [];
+    const exception = settings.opening_exceptions?.some(
+      (entry) =>
+        !isTimedClosure(entry) && entry.from <= day && day <= entry.until,
+    );
+    const weekday = (new Date(`${day}T12:00:00Z`).getUTCDay() + 6) % 7;
+    return exception
+      ? [resolved]
+      : (settings.opening_intervals || []).filter(
+          (entry) => entry.weekday === weekday,
+        );
+  };
+  const intervals = [
+    ...dayIntervals(previous)
+      .filter(({ opens, closes }) => "00:00" < closes && closes < opens)
+      .map(({ closes }) => ({ opens: "00:00", closes })),
+    ...dayIntervals(date).map(({ opens, closes }) => ({
+      opens,
+      closes: closes <= opens ? "24:00" : closes,
+    })),
+  ].sort((a, b) => a.opens.localeCompare(b.opens));
+  if (!intervals.length) return own;
+  const first = intervals[0];
+  const label = own.kind === "open" && own.label ? { label: own.label } : {};
+  // Keep the single-window result byte-compatible for existing tenants.
+  return {
+    kind: "open",
+    opens: first.opens,
+    closes: intervals.reduce(
+      (end, item) => (item.closes > end ? item.closes : end),
+      first.closes,
+    ),
+    ...label,
+    ...(intervals.length > 1 ? { intervals } : {}),
+  };
+}
+
 /** Validate a 24-hour time against an opening window, excluding the closing time. */
 export function timeInOpeningWindow(
   time: string,
@@ -126,5 +186,10 @@ export function timeInOpeningWindow(
   )
     return false;
   if (window.kind === "unrestricted") return true;
-  return window.kind === "open" && window.opens <= time && time < window.closes;
+  return (
+    window.kind === "open" &&
+    (window.intervals || [window]).some(
+      ({ opens, closes }) => opens <= time && time < closes,
+    )
+  );
 }

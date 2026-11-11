@@ -629,3 +629,157 @@ test("a fully closed date with a timed closure shows the date error for a valid 
   );
   expect(posts).toBe(0);
 });
+
+test.each(["de", "en"])(
+  "split-day hint lists every interval and refuses the gap (%s)",
+  async (locale) => {
+    challenge();
+    const posts: unknown[] = [];
+    globalThis.fetch = (async (url, init) => {
+      if (String(url).includes("settings"))
+        return Response.json({
+          ready: true,
+          turnstile_site_key: "test",
+          online_party_min: 2,
+          online_party_max: 8,
+          opening_hours: [{ weekday: 1, opens: "12:00", closes: "23:00" }],
+          opening_intervals: [
+            { weekday: 1, opens: "12:00", closes: "14:30" },
+            { weekday: 1, opens: "17:30", closes: "23:00" },
+          ],
+        });
+      posts.push(JSON.parse(String(init?.body)));
+      return Response.json({ status: "confirmed" });
+    }) as typeof fetch;
+    const view = render(
+      <ReservationForm
+        locale={locale}
+        siteKey="test"
+        publicApi={publicApi}
+        ScriptComponent={ScriptComponent}
+        accountEnabled={false}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        view.container.querySelectorAll("#resv-guests option").length,
+      ).toBe(8),
+    );
+    const fill = (id: string, value: string) =>
+      fireEvent.change(view.container.querySelector(id)!, {
+        target: { value },
+      });
+    fill("#resv-name", "Alex Guest");
+    fill("#resv-email", "alex@example.invalid");
+    fill("#resv-date", locale === "de" ? "17112026" : "11172026");
+    await waitFor(() =>
+      expect(view.container.querySelector("#resv-date-message")).not.toBeNull(),
+    );
+    expect(
+      view.container.querySelector("#resv-date-message")?.textContent,
+    ).toMatchSnapshot();
+    fill("#resv-time", "1530");
+    fireEvent.submit(view.container.querySelector("form")!);
+    expect(posts).toHaveLength(0);
+    expect(
+      view.container.querySelector("#resv-time")?.getAttribute("aria-invalid"),
+    ).toBe("true");
+    expect(view.getByRole("alert").textContent).toMatchSnapshot();
+    fill("#resv-time", "1730");
+    fireEvent.submit(view.container.querySelector("form")!);
+    await waitFor(() => expect(posts).toHaveLength(1));
+  },
+);
+
+test.each([false, true])(
+  "wine bar hint remains unchanged with intervals=%s",
+  async (modern) => {
+    const hours = [{ weekday: 1, opens: "12:00", closes: "21:00" }];
+    globalThis.fetch = (async (_url: unknown) =>
+      Response.json({
+        ready: true,
+        turnstile_site_key: "test",
+        online_party_min: 2,
+        online_party_max: 8,
+        opening_hours: hours,
+        ...(modern ? { opening_intervals: hours } : {}),
+      })) as typeof fetch;
+    const view = render(
+      <ReservationForm
+        siteKey="test"
+        publicApi={publicApi}
+        ScriptComponent={ScriptComponent}
+        accountEnabled={false}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        view.container.querySelectorAll("#resv-guests option").length,
+      ).toBe(8),
+    );
+    fireEvent.change(view.container.querySelector("#resv-date")!, {
+      target: { value: "17112026" },
+    });
+    await waitFor(() =>
+      expect(view.container.querySelector("#resv-date-message")).not.toBeNull(),
+    );
+    expect(
+      view.container.querySelector("#resv-date-message")?.textContent,
+    ).toMatchInlineSnapshot('"Reservierungen ab 12:00 Uhr bis vor 21:00 Uhr."');
+  },
+);
+
+test.each([
+  ["20112026", "2359", "2026-11-20", "23:59"],
+  ["21112026", "0030", "2026-11-21", "00:30"],
+])(
+  "overnight booking posts the calendar date %s",
+  async (date, time, expectedDate, expectedTime) => {
+    challenge();
+    const posts: unknown[] = [];
+    globalThis.fetch = (async (url, init) => {
+      if (String(url).includes("settings"))
+        return Response.json({
+          ready: true,
+          turnstile_site_key: "test",
+          online_party_min: 2,
+          online_party_max: 8,
+          opening_hours: [{ weekday: 4, opens: "18:00", closes: "23:59" }],
+          opening_intervals: [{ weekday: 4, opens: "18:00", closes: "02:00" }],
+        });
+      posts.push(JSON.parse(String(init?.body)));
+      return Response.json({ status: "confirmed" });
+    }) as typeof fetch;
+    const view = render(
+      <ReservationForm
+        siteKey="test"
+        publicApi={publicApi}
+        ScriptComponent={ScriptComponent}
+        accountEnabled={false}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        view.container.querySelectorAll("#resv-guests option").length,
+      ).toBe(8),
+    );
+    for (const [id, value] of [
+      ["name", "Alex Guest"],
+      ["email", "alex@example.invalid"],
+      ["date", date],
+      ["time", time],
+    ])
+      fireEvent.change(view.container.querySelector(`#resv-${id}`)!, {
+        target: { value },
+      });
+    await waitFor(() =>
+      expect(view.container.querySelector("#resv-date-message")).not.toBeNull(),
+    );
+    expect(
+      view.container.querySelector("#resv-date-message")?.textContent,
+    ).toMatchSnapshot();
+    fireEvent.submit(view.container.querySelector("form")!);
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toMatchObject({ date: expectedDate, time: expectedTime });
+  },
+);
