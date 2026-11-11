@@ -39,17 +39,23 @@ Every split-day interval appears in the date hint and invalid-time message.
 Opening is inclusive and closing is exclusive. A Friday `18:00` to `02:00`
 interval allows Friday 23:59 and Saturday 00:00 through 01:59. Guests select
 Saturday for a 00:30 reservation and the form submits Saturday as `date`.
-The Friday hint ends at `24:00`; the Saturday hint includes `00:00` to `02:00`
-as well as Saturday's own hours. A `00:00` closing adds no next-day window.
+The Friday hint shows the real `02:00` closing on the next day and asks guests
+to select the next date for after-midnight arrivals; the Saturday hint includes `00:00` to `02:00`
+as well as Saturday's own hours. A `00:00` closing is described as midnight and adds no next-day window.
 A genuine same-day `23:59` closing remains exclusive.
 
 Manual exceptions replace the intervals of their opening day before overnight
 hours are carried forward. Closing Friday removes its Saturday carry; closing
 Saturday does not remove Friday's carried hours. Timed closures still block their
-actual calendar-date times, including carried hours. Capacity, daylight-saving
-ambiguities and reservation duration remain subject to backend validation.
+actual calendar-date times, including carried hours. For schedules using `opening_intervals`, the skipped spring-forward and repeated
+fall-back Berlin hour (02:00 to 02:59) is removed from offered calendar-date
+windows and refused before submission. The hints list the remaining windows.
+Unrestricted and legacy schedules retain their previous behavior; the backend
+remains authoritative for DST, capacity and reservation duration.
 
 Single-window hints keep their existing translation keys. Complete reservation
 catalogues must additionally supply `ab {0} Uhr bis vor {1} Uhr`, ` und `,
-`Reservierungen {0}.`, and `Bitte wähle eine Uhrzeit {0}.`; partial overrides
+`Reservierungen {0}.`, `Bitte wähle eine Uhrzeit {0}.`, ` oder `,
+`ab {0} Uhr bis vor {1} Uhr am Folgetag`, `ab {0} Uhr bis Mitternacht`, and
+`Für Zeiten nach Mitternacht wähle bitte den Folgetag.`; partial overrides
 remain compatible. German and English defaults are included.

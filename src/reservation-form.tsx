@@ -208,23 +208,41 @@ function ReservationFormContent({
     locale.startsWith("de")
       ? time
       : localeTime(time === "24:00" ? "00:00" : time, locale);
+  const overnight =
+    opening?.kind === "open" &&
+    (opening.intervals || [opening]).some((interval) => interval.nextDayCloses);
   const openingRanges =
     opening?.kind === "open"
-      ? (opening.intervals || [opening])
-          .map(({ opens, closes }) =>
-            text(
-              "ab {0} Uhr bis vor {1} Uhr",
-              displayTime(opens),
-              displayTime(closes),
-            ),
-          )
-          .join(text(" und "))
+      ? (opening.intervals || [opening]).map(
+          ({ opens, closes, nextDayCloses }) =>
+            nextDayCloses === "00:00"
+              ? text("ab {0} Uhr bis Mitternacht", displayTime(opens))
+              : text(
+                  nextDayCloses
+                    ? "ab {0} Uhr bis vor {1} Uhr am Folgetag"
+                    : "ab {0} Uhr bis vor {1} Uhr",
+                  displayTime(opens),
+                  displayTime(nextDayCloses || closes),
+                ),
+        )
+      : [];
+  const nextDateMessage =
+    opening?.kind === "open" &&
+    (opening.intervals || [opening]).some(
+      ({ nextDayCloses }) => nextDayCloses && nextDayCloses !== "00:00",
+    )
+      ? text("Für Zeiten nach Mitternacht wähle bitte den Folgetag.")
       : "";
   const openingMessage =
     dateError ??
     (opening?.kind === "open"
-      ? opening.intervals
-        ? text("Reservierungen {0}.", openingRanges)
+      ? opening.intervals || overnight
+        ? [
+            text("Reservierungen {0}.", openingRanges.join(text(" und "))),
+            nextDateMessage,
+          ]
+            .filter(Boolean)
+            .join(" ")
         : text(
             "Reservierungen ab {0} Uhr bis vor {1} Uhr.",
             displayTime(opening.opens),
@@ -276,8 +294,16 @@ function ReservationFormContent({
             selectedClosure.label ? ` (${selectedClosure.label})` : "",
           )
         : timeInvalid && timeTouched && opening?.kind === "open"
-          ? opening.intervals
-            ? text("Bitte wähle eine Uhrzeit {0}.", openingRanges)
+          ? opening.intervals || overnight
+            ? [
+                text(
+                  "Bitte wähle eine Uhrzeit {0}.",
+                  openingRanges.join(text(" oder ")),
+                ),
+                nextDateMessage,
+              ]
+                .filter(Boolean)
+                .join(" ")
             : text(
                 "Bitte wähle eine Uhrzeit ab {0} Uhr bis vor {1} Uhr.",
                 displayTime(opening.opens),

@@ -26,6 +26,12 @@ export type OpeningSettings = {
   opening_intervals?: OpeningHours[] | null;
   opening_exceptions?: OpeningException[];
 };
+/** Validation bounds on this date, with the original overnight close for display. */
+type OpeningInterval = {
+  opens: string;
+  closes: string;
+  nextDayCloses?: string;
+};
 /** Resolved open, closed or unrestricted reservation window. */
 export type OpeningWindow = (
   | {
@@ -41,7 +47,8 @@ export type OpeningWindow = (
       closes: string;
       label?: string;
       /** Calendar-date windows; 24:00 is the exclusive next midnight. */
-      intervals?: { opens: string; closes: string }[];
+      intervals?: OpeningInterval[];
+      nextDayCloses?: string;
     }
 ) & { closures?: OpeningClosure[] };
 
@@ -155,9 +162,16 @@ function intervalOpeningWindow(
     ...dayIntervals(date).map(({ opens, closes }) => ({
       opens,
       closes: closes <= opens ? "24:00" : closes,
+      ...(closes <= opens ? { nextDayCloses: closes } : {}),
     })),
-  ].sort((a, b) => a.opens.localeCompare(b.opens));
-  if (!intervals.length) return own;
+  ]
+    .flatMap((interval) => withoutBerlinTransitionHour(date, interval))
+    .sort((a, b) => a.opens.localeCompare(b.opens));
+  if (!intervals.length)
+    return {
+      kind: "closed",
+      ...(own.kind === "closed" && own.label ? { label: own.label } : {}),
+    };
   const first = intervals[0];
   const label = own.kind === "open" && own.label ? { label: own.label } : {};
   // Keep the single-window result byte-compatible for existing tenants.
@@ -169,8 +183,39 @@ function intervalOpeningWindow(
       first.closes,
     ),
     ...label,
-    ...(intervals.length > 1 ? { intervals } : {}),
+    ...(intervals.length > 1
+      ? { intervals }
+      : first.nextDayCloses
+        ? { nextDayCloses: first.nextDayCloses }
+        : {}),
   };
+}
+
+// Berlin's modern DST transitions skip or repeat 02:00-02:59. Test both
+// possible offsets rather than depending on the browser's local timezone.
+const berlinClock = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Berlin",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+function withoutBerlinTransitionHour(
+  date: string,
+  interval: OpeningInterval,
+): OpeningInterval[] {
+  if (interval.opens >= "03:00" || interval.closes <= "02:00")
+    return [interval];
+  const candidates = ["00:30", "01:30"].filter(
+    (utcTime) =>
+      berlinClock.format(new Date(`${date}T${utcTime}:00Z`)) === "02:30",
+  );
+  if (candidates.length === 1) return [interval];
+  return [
+    ...(interval.opens < "02:00"
+      ? [{ opens: interval.opens, closes: "02:00" }]
+      : []),
+    ...(interval.closes > "03:00" ? [{ ...interval, opens: "03:00" }] : []),
+  ];
 }
 
 /** Validate a 24-hour time against an opening window, excluding the closing time. */

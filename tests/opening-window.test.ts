@@ -404,9 +404,26 @@ test("carried hours and the next days own hours stay separate across calendar bo
         { weekday: (weekday + 1) % 7, opens: "17:30", closes: "22:00" },
       ],
     });
-    for (const time of ["00:00", "02:59", "17:30", "21:59"])
+    for (const time of ["00:00", "01:59", "17:30", "21:59"])
       expect(timeInOpeningWindow(time, window)).toBe(true);
     for (const time of ["03:00", "12:00", "22:00", "23:59"])
       expect(timeInOpeningWindow(time, window)).toBe(false);
   }
 });
+
+test.each(["2027-03-28", "2027-10-31"])(
+  "Berlin transition hour is not offered on %s",
+  (date) => {
+    const config = {
+      opening_intervals: [{ weekday: 5, opens: "20:00", closes: "05:00" }],
+    };
+    const window = openingWindow(date, config);
+    for (let minute = 0; minute < 60; minute++)
+      expect(
+        timeInOpeningWindow(`02:${String(minute).padStart(2, "0")}`, window),
+      ).toBe(false);
+    for (const time of ["00:00", "01:59", "03:00", "04:59"])
+      expect(timeInOpeningWindow(time, window)).toBe(true);
+    expect(timeInOpeningWindow("05:00", window)).toBe(false);
+  },
+);

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -162,4 +162,19 @@ test("theme guide covers every package CSS token", async () => {
   const tokens = new Set(sources.join("\n").match(/--sv-[a-z0-9-]+/g));
   expect(tokens.size).toBeGreaterThan(50);
   for (const token of tokens) expect(guide.includes(`\`${token}\``)).toBe(true);
+});
+
+test("documentation version displays follow the package release", async () => {
+  const { version } = await Bun.file(
+    new URL("../package.json", import.meta.url),
+  ).json();
+  for (const file of ["../docs/index.md", "../scripts/build-docs.ts"]) {
+    const source = await readFile(new URL(file, import.meta.url), "utf8");
+    expect(source).toContain(
+      `UI ${version}`.replace(
+        "UI",
+        file.endsWith(".md") ? "@shopvento/ui" : "UI",
+      ),
+    );
+  }
 });

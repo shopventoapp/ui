@@ -684,6 +684,9 @@ test.each(["de", "en"])(
     expect(
       view.container.querySelector("#resv-time")?.getAttribute("aria-invalid"),
     ).toBe("true");
+    expect(view.getByRole("alert").textContent).toContain(
+      locale === "de" ? " oder " : " or ",
+    );
     expect(view.getByRole("alert").textContent).toMatchSnapshot();
     fill("#resv-time", "1730");
     fireEvent.submit(view.container.querySelector("form")!);
@@ -783,3 +786,132 @@ test.each([
     expect(posts[0]).toMatchObject({ date: expectedDate, time: expectedTime });
   },
 );
+
+test.each(["de", "en"])(
+  "overnight copy gives the real close and next-date instruction (%s)",
+  async (locale) => {
+    globalThis.fetch = (async (_url: unknown) =>
+      Response.json({
+        ready: true,
+        turnstile_site_key: "test",
+        online_party_min: 2,
+        online_party_max: 8,
+        opening_intervals: [{ weekday: 4, opens: "18:00", closes: "02:00" }],
+      })) as typeof fetch;
+    const view = render(
+      <ReservationForm
+        locale={locale}
+        siteKey="test"
+        publicApi={publicApi}
+        ScriptComponent={ScriptComponent}
+        accountEnabled={false}
+      />,
+    );
+    fireEvent.change(view.container.querySelector("#resv-date")!, {
+      target: { value: locale === "de" ? "20112026" : "11202026" },
+    });
+    await waitFor(() =>
+      expect(view.container.querySelector("#resv-date-message")).not.toBeNull(),
+    );
+    fireEvent.change(view.container.querySelector("#resv-time")!, {
+      target: { value: "0030" },
+    });
+    fireEvent.blur(view.container.querySelector("#resv-time")!);
+    for (const selector of ["#resv-date-message", "#resv-time-message"]) {
+      const copy = view.container.querySelector(selector)?.textContent;
+      expect(copy).toContain(
+        locale === "de"
+          ? "bis vor 02:00 Uhr am Folgetag"
+          : "until before 02:00 AM the next day",
+      );
+      expect(copy).toContain(
+        locale === "de" ? "wähle bitte den Folgetag" : "select the next date",
+      );
+      expect(copy).not.toContain("24:00");
+      expect(copy).not.toContain("12:00 AM");
+    }
+  },
+);
+
+test.each(["de", "en"])(
+  "midnight-only closing is named without an after-midnight invitation (%s)",
+  async (locale) => {
+    globalThis.fetch = (async (_url: unknown) =>
+      Response.json({
+        ready: true,
+        turnstile_site_key: "test",
+        online_party_min: 2,
+        online_party_max: 8,
+        opening_intervals: [{ weekday: 4, opens: "18:00", closes: "00:00" }],
+      })) as typeof fetch;
+    const view = render(
+      <ReservationForm
+        locale={locale}
+        siteKey="test"
+        publicApi={publicApi}
+        ScriptComponent={ScriptComponent}
+        accountEnabled={false}
+      />,
+    );
+    fireEvent.change(view.container.querySelector("#resv-date")!, {
+      target: { value: locale === "de" ? "20112026" : "11202026" },
+    });
+    await waitFor(() =>
+      expect(view.container.querySelector("#resv-date-message")).not.toBeNull(),
+    );
+    const copy =
+      view.container.querySelector("#resv-date-message")?.textContent;
+    expect(copy).toBe(
+      locale === "de"
+        ? "Reservierungen ab 18:00 Uhr bis Mitternacht."
+        : "Reservations from 06:00 PM until midnight.",
+    );
+  },
+);
+
+test("spring-forward carried hour is rejected before submission", async () => {
+  challenge();
+  const posts: unknown[] = [];
+  globalThis.fetch = (async (url, init) => {
+    if (String(url).includes("settings"))
+      return Response.json({
+        ready: true,
+        turnstile_site_key: "test",
+        online_party_min: 2,
+        online_party_max: 8,
+        opening_intervals: [{ weekday: 5, opens: "20:00", closes: "05:00" }],
+      });
+    posts.push(JSON.parse(String(init?.body)));
+    return Response.json({ status: "confirmed" });
+  }) as typeof fetch;
+  const view = render(
+    <ReservationForm
+      siteKey="test"
+      publicApi={publicApi}
+      ScriptComponent={ScriptComponent}
+      accountEnabled={false}
+    />,
+  );
+  const fill = (id: string, value: string) =>
+    fireEvent.change(view.container.querySelector(`#resv-${id}`)!, {
+      target: { value },
+    });
+  fill("name", "Alex Guest");
+  fill("email", "alex@example.invalid");
+  fill("date", "28032027");
+  await waitFor(() =>
+    expect(view.container.querySelector("#resv-date-message")).not.toBeNull(),
+  );
+  expect(view.container.querySelector("#resv-date-message")?.textContent).toBe(
+    "Reservierungen ab 00:00 Uhr bis vor 02:00 Uhr und ab 03:00 Uhr bis vor 05:00 Uhr.",
+  );
+  fill("time", "0230");
+  fireEvent.submit(view.container.querySelector("form")!);
+  expect(posts).toHaveLength(0);
+  expect(
+    view.container.querySelector("#resv-time")?.getAttribute("aria-invalid"),
+  ).toBe("true");
+  fill("time", "0300");
+  fireEvent.submit(view.container.querySelector("form")!);
+  await waitFor(() => expect(posts).toHaveLength(1));
+});

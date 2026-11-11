@@ -1,5 +1,15 @@
 /** German customer-visible defaults. Numbered placeholders preserve interpolation. */
 export const defaultReservationLabels = Object.freeze({
+  /** Interval ending exactly at midnight, with no carried hours. */
+  "ab {0} Uhr bis Mitternacht": "ab {0} Uhr bis Mitternacht",
+  /** Alternatives in an invalid-time message. */
+  " oder ": " oder ",
+  /** Overnight interval ending on the next calendar date. */
+  "ab {0} Uhr bis vor {1} Uhr am Folgetag":
+    "ab {0} Uhr bis vor {1} Uhr am Folgetag",
+  /** Select the next calendar date for after-midnight arrivals. */
+  "Für Zeiten nach Mitternacht wähle bitte den Folgetag.":
+    "Für Zeiten nach Mitternacht wähle bitte den Folgetag.",
   /** One reservation interval in a list. */
   "ab {0} Uhr bis vor {1} Uhr": "ab {0} Uhr bis vor {1} Uhr",
   /** Join reservation intervals. */
@@ -161,6 +171,12 @@ export const defaultReservationLabels = Object.freeze({
 export const englishReservationLabels: {
   [K in keyof typeof defaultReservationLabels]: string;
 } = Object.freeze({
+  "ab {0} Uhr bis Mitternacht": "from {0} until midnight",
+  " oder ": " or ",
+  "ab {0} Uhr bis vor {1} Uhr am Folgetag":
+    "from {0} until before {1} the next day",
+  "Für Zeiten nach Mitternacht wähle bitte den Folgetag.":
+    "For times after midnight, please select the next date.",
   "ab {0} Uhr bis vor {1} Uhr": "from {0} until before {1}",
   " und ": " and ",
   "Reservierungen {0}.": "Reservations {0}.",
