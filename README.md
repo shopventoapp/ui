@@ -130,3 +130,19 @@ MIT, see [LICENSE](LICENSE). Bundled third-party code and assets (qrcode-generat
 - `AccountReservationDetail` accepts omitted `rules` and `onChanged` for read-only details; `readOnly` also suppresses editing with rules present. The bundled public OpenAPI has no rules endpoint. Supply authoritative host `ReservationRules` to enable changes; no policy is invented.
 - `AccountHelp.phone`, `phoneLabel` and `email` are optional. Empty entries are hidden. `help.company` can reuse already loaded public company contact as a fallback; this never reads the customer's profile phone/email.
 - Catalogue placeholders are neutral parcels. Configure section `placeholder` artwork and `filterChips` attribute/query/options data for host presentation. Copy uses the existing label catalogues. See the [shop guide](docs/guides/shop.md#neutral-defaults-and-section-presentation).
+
+### Booking-only import
+
+Import guest reservation and tasting components from `@shopvento/ui/booking`
+to keep the account dashboard and shop checkout outside an embed bundle. The
+entry exports `ReservationForm`, `EventBooking`, `DateList`, `createBookingClient`,
+`ShopventoProvider`, and `Turnstile`. Load interactive flows after the visitor
+chooses a service when the initial page has a strict payload budget.
+
+`ShopFlow` also accepts `embedded` with `initialPath` and `onNavigate`. In this
+mode the host controls navigation and cart/contact drafts stay in memory. Keep
+one mounted instance while changing `initialPath`; remounting intentionally
+restarts the guest flow. Supply a cookie-free `createShopClient` transport and
+`accountEnabled={false}` for a guest-only iframe. `ReservationForm` and
+`EventBooking` expose `onOutcome` with a coarse authoritative state; checkout
+redirects are pending and must never be counted as confirmed purchases.

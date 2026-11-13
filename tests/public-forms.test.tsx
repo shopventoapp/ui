@@ -99,6 +99,7 @@ test("newsletter account cooldown remains visible and retryable", async () => {
 test("reservation uses runtime settings and posts a normalized date and time", async () => {
   challenge();
   const posts: unknown[] = [];
+  const outcomes: string[] = [];
   globalThis.fetch = (async (url, init) => {
     if (String(url).includes("settings"))
       return Response.json({
@@ -112,6 +113,7 @@ test("reservation uses runtime settings and posts a normalized date and time", a
   }) as typeof fetch;
   const view = render(
     <ReservationForm
+      onOutcome={(status) => outcomes.push(status)}
       siteKey="test"
       publicApi={publicApi}
       ScriptComponent={ScriptComponent}
@@ -132,6 +134,7 @@ test("reservation uses runtime settings and posts a normalized date and time", a
   fill("#resv-time", "1830");
   fireEvent.submit(view.container.querySelector("form")!);
   await waitFor(() => expect(posts).toHaveLength(1));
+  expect(outcomes).toEqual(["confirmed"]);
   expect(posts[0]).toMatchObject({
     franchise_location_id: 1,
     date: "2026-12-12",

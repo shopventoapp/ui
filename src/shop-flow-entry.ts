@@ -3,6 +3,7 @@
 export * from "./locale";
 export { usePaymentStatus } from "./payment-hooks";
 export * from "./payment-status";
+export { createShopClient } from "./shop-client";
 /** Complete shop flow entrypoint for host shop routes. */
 export { ShopFlow } from "./shop-flow";
 export type {

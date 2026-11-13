@@ -315,6 +315,7 @@ function ShopFlowPage({
   initialPath?: string;
 } = {}) {
   const {
+    embedded,
     client,
     paymentStatus: suppliedPaymentStatus,
     paymentUnavailableLabel,
@@ -432,7 +433,9 @@ function ShopFlowPage({
   const errorRef = useRef<HTMLDivElement>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Preserve transaction lifecycle; host adapters must keep stable identities.
   useEffect(() => {
-    const path = canonicalPath(window.location.pathname.replace(/\/$/, ""));
+    const path = embedded
+      ? initialPath.split("?")[0]
+      : canonicalPath(window.location.pathname.replace(/\/$/, ""));
     const resolvedPath = [
       "/kasse/lieferung",
       "/kasse/zahlung",
@@ -440,7 +443,7 @@ function ShopFlowPage({
     ].includes(path)
       ? "/kasse"
       : path;
-    if (path !== resolvedPath)
+    if (!embedded && path !== resolvedPath)
       window.history.replaceState(
         null,
         "",
@@ -450,14 +453,16 @@ function ShopFlowPage({
       );
     setRoute({
       path: resolvedPath,
-      query: new URLSearchParams(window.location.search),
+      query: new URLSearchParams(
+        embedded ? initialPath.split("?")[1] : window.location.search,
+      ),
     });
     setCart(readCart());
-    const loadedDraft = readDraft(checkoutKey);
+    const loadedDraft = embedded ? freshDraft() : readDraft(checkoutKey);
     setDraft(loadedDraft);
     try {
       const pending = JSON.parse(
-        sessionStorage.getItem(pendingOrderKey) || "null",
+        (!embedded && sessionStorage.getItem(pendingOrderKey)) || "null",
       );
       if (
         pending?.created > Date.now() - 86400000 &&
@@ -476,6 +481,16 @@ function ShopFlowPage({
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+  useEffect(() => {
+    if (embedded) {
+      setDrawer(false);
+      setFilterSheet(false);
+      setRoute({
+        path: initialPath.split("?")[0],
+        query: new URLSearchParams(initialPath.split("?")[1]),
+      });
+    }
+  }, [embedded, initialPath]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Storage adapters stay stable for this mounted flow.
   const updateCart = useCallback((next: ShopCart) => {
     setCart(next);
@@ -485,7 +500,7 @@ function ShopFlowPage({
   }, []);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Preserve transaction lifecycle; host adapters must keep stable identities.
   useEffect(() => {
-    if (hydrated) {
+    if (hydrated && !embedded) {
       try {
         sessionStorage.setItem(
           checkoutKey,
@@ -1832,7 +1847,7 @@ function ShopFlowPage({
         terms_accepted: true,
         turnstile_token: session.profile ? undefined : securityToken,
       });
-      if (response.order_id) {
+      if (response.order_id && !embedded) {
         try {
           sessionStorage.setItem(
             pendingOrderKey,

@@ -104,6 +104,8 @@ function normalizeTimeInput(val: string): string {
 export interface ReservationFormProps extends PublicFormOptions {
   /** Public challenge key; runtime settings take precedence. */
   siteKey: string;
+  /** Observe only the authoritative public outcome, without guest data. */
+  onOutcome?: (status: "confirmed" | "pending" | "inquiry") => void;
   /** Disable optional account contact prefill. */
   accountEnabled?: boolean;
   /** Show the terms link. */
@@ -126,6 +128,7 @@ export interface ReservationFormProps extends PublicFormOptions {
 /** Table reservation form with runtime party limits, opening hours, strict calendar dates and Turnstile. */
 function ReservationFormContent({
   siteKey,
+  onOutcome,
   publicApi = defaultPublicFormApi,
   ScriptComponent = PublicFormScript,
   labels = {},
@@ -513,10 +516,16 @@ function ReservationFormContent({
       };
 
       if (res.ok && data.status === "inquiry") {
+        onOutcome?.("inquiry");
         setStatus("inquiry");
         return;
       }
       if (res.ok && (data.status === "confirmed" || data.ok)) {
+        onOutcome?.(
+          data.status === "confirmed" || data.confirmed === true
+            ? "confirmed"
+            : "pending",
+        );
         setNewsletter(config.shopvento && payload.newsletter);
         setGuestEmail(payload.email);
         setConfirmed(data.status === "confirmed" || Boolean(data.confirmed));

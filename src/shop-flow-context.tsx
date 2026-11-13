@@ -24,6 +24,7 @@ import { createShopClient } from "./shop-client";
 import type { ShopProduct } from "./shop-components";
 import {
   type Article,
+  emptyCart,
   filterShopArticles,
   formatFulfillmentDate,
   fulfillmentPriceLabel,
@@ -101,6 +102,8 @@ export interface ShopFlowStorage {
 export interface ShopFlowProps extends LocaleOptions {
   /** Initial canonical route, useful for server rendering a static route shell. */
   initialPath?: string;
+  /** Keep navigation, cart and contact drafts in memory for an iframe host. */
+  embedded?: boolean;
   /** Partial German copy overrides, keyed by default text. */
   labels?: ShopFlowLabels;
   /** Optional route replacements; category/product suffixes are appended to shop. */
@@ -302,6 +305,7 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
         ((target: string) => window.location.assign(target))
       )(/^https?:\/\//i.test(path) ? path : resolveHref(path)),
     client: config.client || defaultClient,
+    embedded: config.embedded === true,
     paymentStatus: config.paymentStatus,
     paymentUnavailableLabel: paymentText("Bald verfügbar"),
     accountClient,
@@ -311,9 +315,12 @@ function resolveConfig(config: Omit<ShopFlowProps, "initialPath">) {
     ),
     checkoutKey: config.storage?.checkout || "sv-shop-checkout-v1",
     pendingOrderKey: config.storage?.pendingOrder || "sv-shop-pending-order-v1",
-    readCart: () => readCart(config.storage?.cart),
+    readCart: () =>
+      config.embedded ? emptyCart() : readCart(config.storage?.cart),
     writeCart: (cart: Parameters<typeof writeCart>[0]) =>
-      writeCart(cart, config.storage?.cart, config.storage?.cartEvent),
+      config.embedded
+        ? undefined
+        : writeCart(cart, config.storage?.cart, config.storage?.cartEvent),
     categoryKey: config.categoryKey || defaultCategoryKey,
     productModel: (article: Article) => {
       const product = config.productModel
