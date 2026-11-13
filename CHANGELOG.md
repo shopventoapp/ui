@@ -4,6 +4,19 @@ All notable changes to this package are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-13
+
+### Added
+
+- A narrow `@shopvento/ui/booking` entry for guest reservation and event booking embeds (#43880).
+- Embedded ShopFlow mode keeps host-controlled navigation, cart and contact drafts in memory. Account entry remains optional; the shop-flow entry now also exports `createShopClient` for cookie-free guest transports.
+- ReservationForm and EventBooking expose coarse authoritative outcome callbacks without personal data. Checkout redirects remain pending.
+- Shared compact form grid styles for guest request forms.
+
+### Fixed
+
+- Embedded route changes close the cart drawer and filter sheet so overlays cannot block the next checkout step.
+
 ## [0.7.0] - 2026-11-11
 
 ### Added
