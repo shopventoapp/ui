@@ -366,3 +366,36 @@ button.sv-google-sign-in > svg {
 .sv-booking .sv-payment-notice p:last-child {
   margin-bottom: 0;
 }
+
+/* Compact guest forms share field spacing across embedded services. */
+.sv-booking .sv-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.sv-booking .sv-form-grid label {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+}
+.sv-booking .sv-form-grid input {
+  margin: 0;
+  padding: 0.5rem;
+  min-height: 2.75rem;
+}
+.sv-booking textarea {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--sv-border, #c9bdc3);
+  border-radius: var(--sv-radius, 0.5rem);
+  background: var(--sv-background, #fff);
+  color: var(--sv-text, #241a20);
+}
+@media (max-width: 600px) {
+  .sv-booking .sv-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}

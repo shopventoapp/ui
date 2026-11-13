@@ -392,6 +392,8 @@ export interface EventBookingOptions extends ClientOptions, LocaleOptions {
   client?: BookingClient;
   /** Navigate to a validated checkout URL; defaults to window.location.assign. Optional; omitted unless supplied by the host or backend. */
   onRedirect?: (url: string) => void;
+  /** Observe the authoritative backend outcome, without identifiers or guest data. */
+  onOutcome?: (status: "confirmed" | "pending") => void;
 }
 /** Event booking configuration with a required event identifier. */
 export type EventBookingProps = EventBookingOptions & {
@@ -436,6 +438,22 @@ function EventBookingContent(props: EventBookingProps) {
       props.onRedirect ?? ((url) => window.location.assign(url)),
       props.checkoutHosts,
     );
+  const reportedResult = useRef<typeof result>(null);
+  useEffect(() => {
+    if (!result || reportedResult.current === result) return;
+    reportedResult.current = result;
+    if (result.checkout_url) callbacks.current.onOutcome?.("pending");
+    else if (
+      result.success &&
+      [
+        "confirmed",
+        "completed",
+        "no_payment_required",
+        "success - no_additional_payment_required",
+      ].includes(result.status)
+    )
+      callbacks.current.onOutcome?.("confirmed");
+  }, [result]);
   const { status: paymentStatus, retry: retryPaymentStatus } =
     usePaymentStatusControl(client, props.paymentStatus, true);
   const paymentNoticeId = useId();
