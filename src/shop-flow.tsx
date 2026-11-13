@@ -482,11 +482,14 @@ function ShopFlowPage({
     return () => window.removeEventListener("storage", onStorage);
   }, []);
   useEffect(() => {
-    if (embedded)
+    if (embedded) {
+      setDrawer(false);
+      setFilterSheet(false);
       setRoute({
         path: initialPath.split("?")[0],
         query: new URLSearchParams(initialPath.split("?")[1]),
       });
+    }
   }, [embedded, initialPath]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Storage adapters stay stable for this mounted flow.
   const updateCart = useCallback((next: ShopCart) => {
